@@ -1,3 +1,5 @@
+datasets/
+lightning_logs/
 lulc-venv/
-Sentinel2GlobalLULC/
 my_logs/
+__pycache__/
