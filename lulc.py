@@ -8,7 +8,7 @@ np.random.seed(42)
 tf.random.set_seed(42)
 
 
-def tf_data_loader(split_train_val=0.3, shuffle=True, ratio_val_test=3):
+def tf_data_loader(path_dir, split_train_val=0.3, shuffle=True, ratio_val_test=3):
     """
     Loads the dataset in TensorFlow format.
 
@@ -25,6 +25,7 @@ def tf_data_loader(split_train_val=0.3, shuffle=True, ratio_val_test=3):
     -------
     lists
         Three tf.data.Dataset objects containing each dataset.
+        One list with the class names.
     """
     
     # TensorFlow setup.
@@ -35,7 +36,6 @@ def tf_data_loader(split_train_val=0.3, shuffle=True, ratio_val_test=3):
     # Samples info.
     BATCH_SIZE = 32
     IMG_SIZE = (224, 224)
-    path_dir = 'Sentinel2GlobalLULC/Sentinel2LULC_JPEG/'    # /home/sfandres/Downloads/Sentinel-dataset/'    
 
     # Train set.
     train_dataset = image_dataset_from_directory(path_dir,
@@ -153,4 +153,4 @@ def tf_data_loader(split_train_val=0.3, shuffle=True, ratio_val_test=3):
 
     print('\nTotal approx.: ' + str(total_samples))
     
-    return train_dataset, validation_dataset, test_dataset
+    return (train_dataset, validation_dataset, test_dataset), class_names
