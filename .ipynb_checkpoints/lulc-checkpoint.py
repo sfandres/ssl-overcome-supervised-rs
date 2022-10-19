@@ -2,15 +2,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.utils import image_dataset_from_directory
+import os
+import random
 
 # Setting seed value
 # from https://stackoverflow.com/a/52897216
 # generated randomly by running `random.randint(0, 100)` once
 SEED = 42
 # 1. Set the `PYTHONHASHSEED` environment variable at a fixed value.
-# os.environ['PYTHONHASHSEED'] = str(SEED)
+os.environ['PYTHONHASHSEED'] = str(SEED)
 # 2. Set the `python` built-in pseudo-random generator at a fixed value.
-# random.seed(SEED)
+random.seed(SEED)
 # 3. Set the `numpy` pseudo-random generator at a fixed value.
 np.random.seed(SEED)
 # 4. Set the `tensorflow` pseudo-random generator at a fixed value.
