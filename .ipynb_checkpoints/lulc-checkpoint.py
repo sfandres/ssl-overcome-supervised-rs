@@ -3,9 +3,21 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.utils import image_dataset_from_directory
 
-# Replicability.
-np.random.seed(42)
-tf.random.set_seed(42)
+# Setting seed value
+# from https://stackoverflow.com/a/52897216
+# generated randomly by running `random.randint(0, 100)` once
+SEED = 42
+# 1. Set the `PYTHONHASHSEED` environment variable at a fixed value.
+# os.environ['PYTHONHASHSEED'] = str(SEED)
+# 2. Set the `python` built-in pseudo-random generator at a fixed value.
+# random.seed(SEED)
+# 3. Set the `numpy` pseudo-random generator at a fixed value.
+np.random.seed(SEED)
+# 4. Set the `tensorflow` pseudo-random generator at a fixed value.
+tf.random.set_seed(SEED)
+# 5. More just in case.
+tf.keras.utils.set_random_seed(SEED)
+tf.config.experimental.enable_op_determinism()
 
 
 def tf_data_loader(path_dir, split_train_val=0.3, shuffle=True, ratio_val_test=3):
@@ -32,7 +44,7 @@ def tf_data_loader(path_dir, split_train_val=0.3, shuffle=True, ratio_val_test=3
     print(tf.__version__)
     # os.environ["CUDA_VISIBLE_DEVICES"] = '-1'    # Enabled: Disable GPU.
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-        
+           
     # Samples info.
     BATCH_SIZE = 32
     IMG_SIZE = (224, 224)
