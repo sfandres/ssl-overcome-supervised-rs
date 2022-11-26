@@ -1,14 +1,107 @@
 import torch
 import os
+import numpy as np
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import pandas as pd
+from sklearn.metrics import classification_report
+import matplotlib.pyplot as plt
 
 
-def get_mean_std_dataloader(loader):
+def simple_bar_plot(data_x, data_y, x_axis_label=r'x axis label',
+                    y_axis_label=r'y axis label',
+                    plt_name='simple_bar_plot',
+                    fig_size=(15, 5), save=False):
     """
-    Takes the dataloader and computes
-    the mean and std of the entire dataset.
-    
+    Takes the "data_x" and "data_y" 
+    and creates a bar plot.
+
     Args:
-        loader: PyTorch DataLoader.
+        data_x: data x axis.
+        data_y: height of the bars.
+        x_axis_label: label of the x axis.
+        y_axis_label: label of the y axis.
+        plt_name: name of the plot.
+        fig_size: size of the figure.
+        save: whether the plot is saved.
+
+    Returns:
+        none
+    """
+
+    # Barplot.
+    fig, ax = plt.subplots(figsize=fig_size)
+
+    # Set bar width.
+    barWidth = 0.4
+
+    # Set y values.
+    y = data_y
+
+    # Set position of bar on X axis.
+    x_pos = np.arange(len(y))
+
+    # Make the plot.
+    plt.bar(x_pos,
+            y,
+            width=barWidth,
+            zorder=3,
+            color='#005f8a',
+            edgecolor='black',
+            linewidth=.25,
+            label=r'')
+
+    plt.ylim(0, np.max(y) + np.max(y) * 0.1)
+
+    # Add the numbers on top of each bar.
+    for x in range(len(x_pos)):
+        plt.text(x=x,
+                 y=y[x],
+                 s=r'{}'.format(int(y[x])),
+                 ha='center',
+                 va='bottom',
+                 fontsize=13)
+
+    # Add xticks on the middle of the group bars.
+    plt.xticks([r for r in range(len(data_x))], data_x, fontsize=15)
+    plt.yticks(fontsize=15)
+                 
+    # Set grid.
+    # plt.grid(axis='y',
+    #          color='gainsboro',
+    #          linestyle='-',
+    #          linewidth=0.2,
+    #          zorder=0)
+
+    # Remaining options.
+    plt.xlabel(x_axis_label, labelpad=15, fontsize=17)
+    plt.ylabel(y_axis_label, labelpad=15, fontsize=17)
+
+    # Adjust margins.
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.15)
+
+    # Adjust X ticks.
+    # fig.autofmt_xdate()
+
+    # Plot.
+    plt.show()
+
+    # Save resulting figure in two formats.
+    if save:
+        fig.savefig(f'figures/{plt_name}.png',
+                    bbox_inches='tight')
+        fig.savefig(f'figures/{plt_name}.pdf',
+                    bbox_inches='tight')
+
+
+def get_mean_std_dataloader(dataloader):
+    """
+    Takes the "dataloader" and computes
+    the mean and std of the entire dataset.
+
+    Args:
+        dataloader: PyTorch DataLoader.
 
     Returns:
         mean: mean of the samples per dimension.
@@ -19,7 +112,7 @@ def get_mean_std_dataloader(loader):
     channels_sum, channels_squares_sum, num_batches = 0, 0, 0
 
     # Loop over the batches.
-    for data, _ in loader:
+    for data, _ in dataloader:
 
         # Compute the mean in the given dimensions (not channel).
         channels_sum += torch.mean(data, dim=[0, 2, 3])
@@ -35,7 +128,7 @@ def get_mean_std_dataloader(loader):
 
 def listdir_fullpath(directory):
     """
-    Takes the directory and creates a list of
+    Takes the "directory" and creates a list of
     the subdirectories with the root path included.
 
     Args:
@@ -47,3 +140,70 @@ def listdir_fullpath(directory):
 
     return sorted([os.path.join(directory, x)
                    for x in os.listdir(directory)])
+
+
+def create_confusion_matrix(model, dataloader, device, class_names):
+    """
+    Takes the "model" and "dataloader" and computes
+    the confusion matrix required to calculate and
+    plot the F1-score using the "device".
+
+    Args:
+        model: trained model.
+        dataloader: PyTorch DataLoader.
+        device: 'cpu' or 'cuda' for PyTorch.
+
+    Returns:
+        conf_mat: resulting confusion matrix.
+        class_accuracy: accuracy results per class.
+    """
+
+    # Initialize the prediction and label lists (tensors).
+    pred_list = torch.zeros(0, dtype=torch.long, device=device)
+    label_list = torch.zeros(0, dtype=torch.long, device=device)
+
+    # Since we're not training, we don't need to calculate
+    # the gradients for our outputs with torch.no_grad():
+    model.eval()
+    with torch.no_grad():
+        for i, data in enumerate(dataloader):
+
+            # Dataset.
+            inputs, labels = data[0].to(device), data[1].to(device)
+
+            # Predict labels.
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+
+            # Append batch prediction results.
+            pred_list = torch.cat([pred_list, predicted.view(-1)])
+            label_list = torch.cat([label_list, labels.view(-1)])
+
+    # Copy back to cpu.
+    pred_list = pred_list.to('cpu')
+    label_list = label_list.to('cpu')
+
+    # Confusion matrix and per-class accuracy.
+    conf_mat = confusion_matrix(label_list.numpy(), pred_list.numpy())
+    class_accuracy = 100 * conf_mat.diagonal() / conf_mat.sum(1)
+    
+    # Create dataframe from confusion matrix.
+    df_conf_mat = pd.DataFrame(conf_mat,
+                               index=class_names,
+                               columns=class_names).astype(int)
+
+    # Plot seaborn confusion matrix.
+    fig = plt.figure(figsize=(22, 12))
+    sns_plot = sns.heatmap(df_conf_mat,
+                           annot=True,
+                           xticklabels=class_names,
+                           yticklabels=class_names,
+                           fmt="d")
+    plt.show()
+
+    # Print the classification report.
+    print(classification_report(pred_list,
+                                label_list,
+                                target_names=class_names))
+
+    return conf_mat, class_accuracy
