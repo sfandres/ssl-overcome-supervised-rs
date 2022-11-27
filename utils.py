@@ -6,6 +6,7 @@ import seaborn as sns
 import pandas as pd
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
+import math
 
 
 def simple_bar_plot(data_x, data_y, x_axis_label=r'x axis label',
@@ -57,7 +58,7 @@ def simple_bar_plot(data_x, data_y, x_axis_label=r'x axis label',
     for x in range(len(x_pos)):
         plt.text(x=x,
                  y=y[x],
-                 s=r'{}'.format(int(y[x])),
+                 s=r'{}'.format(round(y[x])),
                  ha='center',
                  va='bottom',
                  fontsize=13)
