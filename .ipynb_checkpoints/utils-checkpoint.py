@@ -9,6 +9,27 @@ import matplotlib.pyplot as plt
 import math
 
 
+class Experiment:
+    """
+    Experimental setup.
+
+    Attributes:
+        batch_size: Size of the batch of samples to train.
+        epochs: Number of epochs to train the model.
+        input_size: Size of the input images.
+        num_workers: Number of threads for the dataloader.
+        seed: Seed for reproducibility purposes.
+    """
+    def __init__(self, batch_size=128, epochs=10,
+                 input_size=224, num_workers=8, seed=42):
+        """Inits Experiment with default parameters."""
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.input_size = input_size
+        self.num_workers = num_workers
+        self.seed = seed
+
+
 def simple_bar_plot(data_x, data_y, x_axis_label=r'x axis label',
                     y_axis_label=r'y axis label',
                     plt_name='simple_bar_plot',
