@@ -260,12 +260,13 @@ def create_confusion_matrix(model, dataloader, device, class_names):
     # Print the classification report.
     print(classification_report(pred_list,
                                 label_list,
-                                target_names=class_names))
+                                target_names=class_names,
+                                zero_division=0))
 
     return conf_mat, class_accuracy
 
 
-def pca_computation_and_plot(embeddings, labels, seed, plot='all'):
+def pca_computation_and_plot(embeddings, labels, seed, plot='all', filename='', save_2d=False):
     """
     Takes the "embeddings" and "labels" and
     computes and plots the PCA method.
@@ -275,6 +276,8 @@ def pca_computation_and_plot(embeddings, labels, seed, plot='all'):
         labels: labels of the samples.
         seed: seed for reproducibility.
         plot: "2d", "3d", "23d", "3d-plotly", "all".
+        filename: name of the file to save.
+        save_2d: whether the 2d graph is saved.
 
     Returns:
         none
@@ -298,7 +301,7 @@ def pca_computation_and_plot(embeddings, labels, seed, plot='all'):
 
     # 2-D plot.
     if plot == '2d' or plot == "23d" or plot == 'all':
-        plt.figure(figsize=(10, 10))
+        fig = plt.figure(figsize=(10, 10))
         sns.scatterplot(
             x='pca_x',
             y='pca_y',
@@ -309,6 +312,11 @@ def pca_computation_and_plot(embeddings, labels, seed, plot='all'):
             alpha=0.9
         )
         plt.show()
+
+        # Save figure.
+        if save_2d:
+            fig.savefig(f'figures/pca_{filename}.png',
+                        bbox_inches='tight')
 
     # 3-D plot with matplotlib.
     if plot == '3d' or plot == "23d" or plot == 'all':
@@ -343,7 +351,7 @@ def pca_computation_and_plot(embeddings, labels, seed, plot='all'):
         fig.show()
 
 
-def tsne_computation_and_plot(embeddings, labels, seed, plot='all'):
+def tsne_computation_and_plot(embeddings, labels, seed, plot='all', filename='', save_2d=False):
     """
     Takes the "embeddings" and "labels" and
     computes and plots the t-SNE method.
@@ -353,6 +361,8 @@ def tsne_computation_and_plot(embeddings, labels, seed, plot='all'):
         labels: labels of the samples.
         seed: seed for reproducibility.
         plot: "2d", "3d", "23d", "3d-plotly", "all".
+        filename: name of the file to save.
+        save_2d: whether the 2d graph is saved.
 
     Returns:
         none
@@ -380,7 +390,7 @@ def tsne_computation_and_plot(embeddings, labels, seed, plot='all'):
 
     # 2-D plot.
     if plot == '2d' or plot == "23d" or plot == 'all':
-        plt.figure(figsize=(10, 10))
+        fig = plt.figure(figsize=(10, 10))
         sns.scatterplot(
             x='tsne_2d_x',
             y='tsne_2d_y',
@@ -391,6 +401,11 @@ def tsne_computation_and_plot(embeddings, labels, seed, plot='all'):
             alpha=0.9
         )
         plt.show()
+
+        # Save figure.
+        if save_2d:
+            fig.savefig(f'figures/tsne_{filename}.png',
+                        bbox_inches='tight')
 
     # t-SNE computation for 3-D.
     time_start = time.time()
