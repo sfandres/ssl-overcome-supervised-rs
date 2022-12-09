@@ -1,7 +1,5 @@
 datasets/
-lightning_logs/
 lulc-venv/
-my_logs/
 __pycache__/
-runs/
 pytorch_models/
+figures/
