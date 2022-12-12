@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import plotly.express as px
 import time
+import ast
 
 
 class Experiment:
@@ -152,6 +153,22 @@ def simple_bar_plot(data_x, data_y, x_axis_label=r'x axis label',
                     bbox_inches='tight')
 
 
+def listdir_fullpath(directory):
+    """
+    Takes the "directory" and creates a list of
+    the subdirectories with the root path included.
+
+    Args:
+        directory: the target directory.
+
+    Returns:
+        A list of the subdirectories with the full path. 
+    """
+
+    return sorted([os.path.join(directory, x)
+                   for x in os.listdir(directory)])
+
+
 def get_mean_std_dataloader(dataloader):
     """
     Takes the "dataloader" and computes
@@ -183,20 +200,41 @@ def get_mean_std_dataloader(dataloader):
     return mean, std
 
 
-def listdir_fullpath(directory):
+def load_mean_std_values(data_dir):
     """
-    Takes the "directory" and creates a list of
-    the subdirectories with the root path included.
+    Takes the "data_dir" and loads the mean
+    and std values from the txt file.
 
     Args:
-        directory: the target directory.
+        data_dir: path to the directory where the dataset is saved.
 
     Returns:
-        A list of the subdirectories with the full path. 
+        mean: dictionary holding the mean of the samples
+            per dimension and split.
+        std: dictionary holding the standard deviation of
+            the samples per dimension and split.
     """
 
-    return sorted([os.path.join(directory, x)
-                   for x in os.listdir(directory)])
+    # Initialization.
+    splits = ['train', 'val', 'test']
+    filename = 'dataset_mean_std.txt'
+    mean, std = {}, {}
+
+    # Create path to the txt file.
+    filepath = os.path.join(data_dir, filename)
+
+    # Read the values by transforming from str to list
+    # and reading only the target characters.
+    with open(filepath) as f:
+        lines = f.readlines()
+        mean['train'] = ast.literal_eval(lines[1][7:-2])
+        std['train'] = ast.literal_eval(lines[2][7:-2])
+        mean['val'] = ast.literal_eval(lines[4][7:-2])
+        std['val'] = ast.literal_eval(lines[5][7:-2])
+        mean['test'] = ast.literal_eval(lines[7][7:-2])
+        std['test'] = ast.literal_eval(lines[8][7:-2])
+
+    return mean, std
 
 
 def create_confusion_matrix(model, dataloader, device, class_names):
