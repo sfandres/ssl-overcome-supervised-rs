@@ -33,6 +33,7 @@ class Experiment:
         self.input_size = input_size
         self.num_workers = num_workers
         self.seed = seed
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     def reproducibility(self):
         """Makes the experiments reproducible."""
