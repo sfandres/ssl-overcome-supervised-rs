@@ -7,6 +7,7 @@ import utils
 import os
 import splitfolders
 
+
 # Experiment class for reproducibility.
 exp = utils.Experiment()
 exp.reproducibility()
@@ -20,14 +21,14 @@ initial_dir_dataset = ('datasets/'
 print(f'Path to the raw data: {initial_dir_dataset}\n')
 
 # Target division according to the train dataset.
-train = [.99, .9, .7, .5, .3, .1, .01, .001]
+train = [.99, .9, .7, .5, .3, .1, .01]
 ratios = []
 
 # Iterate over the train splits.
 for i, train_s in enumerate(train):
 
-    # Rest: 20% validation and 80% test.
-    val_s = round((1 - train_s) * .2, 4)
+    # Rest: 30% validation and 70% test.
+    val_s = round((1 - train_s) * .3, 4)
     test_s = round(1 - train_s - val_s, 4)
 
     # Stats.
