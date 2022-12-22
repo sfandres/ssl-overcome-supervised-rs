@@ -1,8 +1,8 @@
 import torch
 from lightly.models.modules.heads import SimSiamPredictionHead,SimSiamProjectionHead
 from lightly.models.modules.heads import SimCLRProjectionHead
-from lightly.utils.debug import std_of_l2_normalized
 from lightly.loss import NTXentLoss,NegativeCosineSimilarity
+from datetime import datetime
 
 
 class SimSiam(torch.nn.Module):
@@ -16,9 +16,11 @@ class SimSiam(torch.nn.Module):
         pred_hidden_dim: Dimension of the prediction head.
         out_dim: Dimension of the output of the prediction and projection heads.
     """
+
     def __init__(self, backbone, num_ftrs, proj_hidden_dim,
                  pred_hidden_dim, out_dim):
         """Constructor of the class."""
+
         # Inheritance.
         super().__init__()
 
@@ -40,6 +42,7 @@ class SimSiam(torch.nn.Module):
 
     def forward(self, x):
         """How your model runs from input to output."""
+
         # Get representations.
         f = self.backbone(x).flatten(start_dim=1)
 
@@ -54,6 +57,20 @@ class SimSiam(torch.nn.Module):
 
         return z, p
 
+    def checkpoint_filename(self, epoch, train_loss, val_loss,
+                            avg_rep_collapse):
+        """Creates the name of the checkpoint file."""
+
+        # Filename with stats.
+        filename = f'simsiam_bb_resnet18' \
+                   f'-epoch={epoch:03}' \
+                   f'-train_loss={train_loss:.4f}' \
+                   f'-val_loss={val_loss:.4f}' \
+                   f'-coll={avg_rep_collapse:.4f}(0)' \
+                   f'-time={datetime.now():%Y_%m_%d_%H_%M_%S}'
+
+        return filename
+
 
 class SimCLRModel(torch.nn.Module):
     """
@@ -63,8 +80,10 @@ class SimCLRModel(torch.nn.Module):
         backbone: Architecture of the CNN model.
         hidden_dim: Dimension of the output of the projection head.
     """
+
     def __init__(self, backbone, hidden_dim):
         """Constructor of the class."""
+
         # Inheritance.
         super().__init__()
 
@@ -81,6 +100,7 @@ class SimCLRModel(torch.nn.Module):
 
     def forward(self, x):
         """How your model runs from input to output."""
+
         # Get representations.
         h = self.backbone(x).flatten(start_dim=1)
 
@@ -88,3 +108,18 @@ class SimCLRModel(torch.nn.Module):
         z = self.projection_head(h)
 
         return z
+
+    def checkpoint_filename(self, epoch, train_loss, val_loss,
+                             handle_imb_classes, ratio):
+        """Creates the name of the checkpoint file."""
+
+        # Filename with stats.
+        filename = f'simclr_bb_resnet18' \
+                   f'-epoch={epoch:03}' \
+                   f'-train_loss={train_loss:.4f}' \
+                   f'-val_loss={val_loss:.4f}' \
+                   f'-balanced={handle_imb_classes}' \
+                   f'-ratio={ratio}' \
+                   f'-time={datetime.now():%Y_%m_%d_%H_%M_%S}'
+
+        return filename
