@@ -57,19 +57,39 @@ class SimSiam(torch.nn.Module):
 
         return z, p
 
-    def checkpoint_filename(self, epoch, train_loss, val_loss,
-                            avg_rep_collapse):
-        """Creates the name of the checkpoint file."""
+    def evaluation(self, dataloader_val):
+        """Evaluation process, returns the loss."""
+
+        pass
+
+    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, avg_rep_collapse=None):
+        """Saving the model."""
+        
+        # Save parameters.
+        self.epoch = epoch
+        self.train_loss = train_loss
+        self.handle_imb_classes = handle_imb_classes
+        self.ratio = ratio
+        self.avg_rep_collapse = avg_rep_collapse
+        self.time = datetime.now()
+
+        torch.save(self.backbone.state_dict(),
+                   output_dir_model + 'simsiam/' + self.__str__())
+
+    def __str__(self):
+        """Overwriting the string representation of the class."""
 
         # Filename with stats.
         filename = f'simsiam_bb_resnet18' \
-                   f'-epoch={epoch:03}' \
-                   f'-train_loss={train_loss:.4f}' \
-                   f'-val_loss={val_loss:.4f}' \
-                   f'-coll={avg_rep_collapse:.4f}(0)' \
-                   f'-time={datetime.now():%Y_%m_%d_%H_%M_%S}'
+                   f'-epoch={self.epoch:03}' \
+                   f'-train_loss={self.train_loss:.4f}' \
+                   f'-coll={self.avg_rep_collapse:.4f}(0)' \
+                   f'-balanced={self.handle_imb_classes}' \
+                   f'-ratio={self.ratio}' \
+                   f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
 
         return filename
+
 
 
 class SimCLRModel(torch.nn.Module):
@@ -109,17 +129,34 @@ class SimCLRModel(torch.nn.Module):
 
         return z
 
-    def checkpoint_filename(self, epoch, train_loss, val_loss,
-                             handle_imb_classes, ratio):
-        """Creates the name of the checkpoint file."""
+    def evaluation(self, dataloader_val):
+        """Evaluation process, returns the loss."""
 
-        # Filename with stats.
+        pass
+
+    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, avg_rep_collapse=None):
+        """Saving the model."""
+
+        # Save parameters.
+        self.epoch = epoch
+        self.train_loss = train_loss
+        self.handle_imb_classes = handle_imb_classes
+        self.ratio = ratio
+        self.time = datetime.now()
+
+        # Save weights and biases.
+        torch.save(self.backbone.state_dict(),
+                   output_dir_model + 'simclr/' + self.__str__())
+
+    def __str__(self):
+        """Overwriting the string representation of the class."""
+
+        # Filename with stats (no avg_rep_collapse).
         filename = f'simclr_bb_resnet18' \
-                   f'-epoch={epoch:03}' \
-                   f'-train_loss={train_loss:.4f}' \
-                   f'-val_loss={val_loss:.4f}' \
-                   f'-balanced={handle_imb_classes}' \
-                   f'-ratio={ratio}' \
-                   f'-time={datetime.now():%Y_%m_%d_%H_%M_%S}'
+                   f'-epoch={self.epoch:03}' \
+                   f'-train_loss={self.train_loss:.4f}' \
+                   f'-balanced={self.handle_imb_classes}' \
+                   f'-ratio={self.ratio}' \
+                   f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
 
         return filename
