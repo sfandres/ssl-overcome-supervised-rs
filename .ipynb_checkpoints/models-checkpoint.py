@@ -1,7 +1,13 @@
 import torch
-from lightly.models.modules.heads import SimSiamPredictionHead,SimSiamProjectionHead
+from lightly.models.modules.heads import SimSiamPredictionHead, SimSiamProjectionHead
+from lightly.loss import NegativeCosineSimilarity
+
 from lightly.models.modules.heads import SimCLRProjectionHead
-from lightly.loss import NTXentLoss,NegativeCosineSimilarity
+from lightly.loss import NTXentLoss
+
+from lightly.models.modules import BarlowTwinsProjectionHead
+from lightly.loss import BarlowTwinsLoss
+
 from datetime import datetime
 
 
@@ -121,13 +127,20 @@ class SimCLRModel(torch.nn.Module):
     def forward(self, x):
         """How your model runs from input to output."""
 
-        # Get representations.
+        # Get representations and projections.
         h = self.backbone(x).flatten(start_dim=1)
-
-        # Get projections.
         z = self.projection_head(h)
 
         return z
+
+    def training_step(self, x0, x1):
+        """Calculate loss."""
+
+        z0 = self.forward(x0)
+        z1 = self.forward(x1)
+        loss = self.criterion(z0, z1)
+
+        return loss
 
     def evaluation(self, dataloader_val):
         """Evaluation process, returns the loss."""
@@ -153,6 +166,80 @@ class SimCLRModel(torch.nn.Module):
 
         # Filename with stats (no avg_rep_collapse).
         filename = f'simclr_bb_resnet18' \
+                   f'-epoch={self.epoch:03}' \
+                   f'-train_loss={self.train_loss:.4f}' \
+                   f'-balanced={self.handle_imb_classes}' \
+                   f'-ratio={self.ratio}' \
+                   f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
+
+        return filename
+
+
+class BarlowTwins(torch.nn.Module):
+    """
+    BarlowTwins self-supervised learning model.
+
+    Attributes:
+        backbone: Architecture of the CNN model.
+    """
+
+    def __init__(self, backbone):
+        """Constructor of the class."""
+
+        # Inheritance.
+        super().__init__()
+
+        # Blackbone model.
+        self.backbone = backbone
+
+        # Projection head.
+        self.projection_head = BarlowTwinsProjectionHead(512, 2048, 2048)
+
+        # Loss criterion.
+        self.criterion = BarlowTwinsLoss()
+
+    def forward(self, x):
+        """How your model runs from input to output."""
+
+        # Get representations and projections.
+        x = self.backbone(x).flatten(start_dim=1)
+        z = self.projection_head(x)
+
+        return z
+
+    def training_step(self, x0, x1):
+        """Calculate loss."""
+
+        z0 = self.forward(x0)
+        z1 = self.forward(x1)
+        loss = self.criterion(z0, z1)
+
+        return loss
+
+    def evaluation(self, dataloader_val):
+        """Evaluation process, returns the loss."""
+
+        pass
+
+    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, avg_rep_collapse=None):
+        """Saving the model."""
+
+        # Save parameters.
+        self.epoch = epoch
+        self.train_loss = train_loss
+        self.handle_imb_classes = handle_imb_classes
+        self.ratio = ratio
+        self.time = datetime.now()
+
+        # Save weights and biases.
+        torch.save(self.backbone.state_dict(),
+                   output_dir_model + 'barlowtwins/' + self.__str__())
+
+    def __str__(self):
+        """Overwriting the string representation of the class."""
+
+        # Filename with stats (no avg_rep_collapse).
+        filename = f'barlowtwins_bb_resnet18' \
                    f'-epoch={self.epoch:03}' \
                    f'-train_loss={self.train_loss:.4f}' \
                    f'-balanced={self.handle_imb_classes}' \
