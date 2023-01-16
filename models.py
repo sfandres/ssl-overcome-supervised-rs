@@ -45,6 +45,10 @@ class SimSiam(torch.nn.Module):
 
         # Loss criterion.
         self.criterion = NegativeCosineSimilarity()
+        
+        # Setup (check collapse).
+        self.avg_loss = 0.
+        self.avg_output_std = 0.
 
     def forward(self, x):
         """How your model runs from input to output."""
@@ -62,13 +66,29 @@ class SimSiam(torch.nn.Module):
         z = z.detach()
 
         return z, p
+    
+    def check_collapse(self, p0, loss):
+        """Check the collapse of the model (non-contrastive SSL)."""
+
+        # Calculate the per-dimension standard deviation of the outputs.
+        # We can use this later to check whether the embeddings are collapsing.
+        output = p0.detach()
+        output = torch.nn.functional.normalize(output, dim=1)
+
+        output_std = torch.std(output, 0)
+        output_std = output_std.mean()
+
+        # Use moving averages to track the loss and standard deviation.
+        w = 0.9
+        self.avg_loss = w * self.avg_loss + (1 - w) * loss.item()
+        self.avg_output_std = w * self.avg_output_std + (1 - w) * output_std.item()
 
     def evaluation(self, dataloader_val):
         """Evaluation process, returns the loss."""
 
         pass
 
-    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, avg_rep_collapse=None):
+    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
         """Saving the model."""
         
         # Save parameters.
@@ -76,7 +96,7 @@ class SimSiam(torch.nn.Module):
         self.train_loss = train_loss
         self.handle_imb_classes = handle_imb_classes
         self.ratio = ratio
-        self.avg_rep_collapse = avg_rep_collapse
+        self.collapse_level = collapse_level
         self.time = datetime.now()
 
         torch.save(self.backbone.state_dict(),
@@ -89,7 +109,7 @@ class SimSiam(torch.nn.Module):
         filename = f'simsiam_bb_resnet18' \
                    f'-epoch={self.epoch:03}' \
                    f'-train_loss={self.train_loss:.4f}' \
-                   f'-coll={self.avg_rep_collapse:.4f}(0)' \
+                   f'-coll={self.collapse_level:.4f}(0)' \
                    f'-balanced={self.handle_imb_classes}' \
                    f'-ratio={self.ratio}' \
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
@@ -147,7 +167,7 @@ class SimCLRModel(torch.nn.Module):
 
         pass
 
-    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, avg_rep_collapse=None):
+    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
         """Saving the model."""
 
         # Save parameters.
@@ -221,7 +241,7 @@ class BarlowTwins(torch.nn.Module):
 
         pass
 
-    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, avg_rep_collapse=None):
+    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
         """Saving the model."""
 
         # Save parameters.
