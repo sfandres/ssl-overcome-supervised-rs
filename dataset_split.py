@@ -4,21 +4,44 @@ to the target ratios.
 """
 
 import utils
-import os
 import splitfolders
+import argparse
+import sys
+import os
 
+def create_arg_parser():
+    """Creates and returns the ArgumentParser object."""
+
+    parser = argparse.ArgumentParser(description='Split the target dataset into training, validation and test datasets according to custom splits.')
+
+    parser.add_argument('input_dir',
+                    help='Path to the input directory where the raw dataset is stored.')
+
+    parser.add_argument('--out_folder_name',
+                    help='Beginning of each folder name.')
+
+    return parser
+
+
+# Parser (get arguments).
+if __name__ == "__main__":
+    arg_parser = create_arg_parser()
+    parsed_args = arg_parser.parse_args(sys.argv[1:])
+
+initial_dir_dataset = parsed_args.input_dir
+print(f'\nPath to the raw data: {initial_dir_dataset}')
+
+if (parsed_args.out_folder_name):
+    target_dataset_name = parsed_args.out_folder_name    
+    print(f'Output folder name: {target_dataset_name}')
+else:
+    target_dataset_name = 'NewDataset'
+    print(f'Default name used for the output folders: {target_dataset_name}')
 
 # Experiment class for reproducibility.
 exp = utils.Experiment()
 exp.reproducibility()
 print(f'\nSeed used: {exp.seed}')
-
-# Path to initial dataset.
-initial_dir_dataset = ('datasets/'
-                       '0_Raw/'
-                       'Sentinel2GlobalLULC_full_raw/'
-                       'Sentinel2LULC_JPEG/')
-print(f'Path to the raw data: {initial_dir_dataset}\n')
 
 # Target division according to the train dataset.
 train = [.99, .9, .7, .5, .3, .1, .01]
@@ -61,7 +84,7 @@ for ratio in ratios:
     str_ratio = f'({ratio[0]:.3f},{ratio[1]:.4f},{ratio[2]:.4f})'
     
     # Creating dataset's name.
-    dataset_name = (f'Sentinel2GlobalLULC'
+    dataset_name = (f'{target_dataset_name}'
                     f'-ratio={str_ratio}'
                     f'-seed={exp.seed}')
 
