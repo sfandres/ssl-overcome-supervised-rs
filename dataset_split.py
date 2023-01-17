@@ -44,7 +44,7 @@ exp.reproducibility()
 print(f'\nSeed used: {exp.seed}')
 
 # Target division according to the train dataset.
-train = [.99, .9, .7, .5, .3, .1, .01]
+train = [.98, .9, .7, .5, .3, .1, .02]
 ratios = []
 
 # Iterate over the train splits.
