@@ -20,8 +20,8 @@ datasets_dir = 'datasets/'
 # Get the subsets with full path.
 data_dirs = utils.listdir_fullpath(datasets_dir)
 
-# Leave out unwanted subsets (0_Raw and Clothing-dataset).
-data_dirs = data_dirs[2:]
+# Leave out unwanted subsets (0_Raw).
+data_dirs = data_dirs[1:]
 for dirs in data_dirs:
     print(dirs)
 
