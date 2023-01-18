@@ -66,91 +66,91 @@ class Experiment:
         random.seed(worker_seed)
 
 
-def simple_bar_plot(data_x, data_y, x_axis_label=r'x axis label',
-                    y_axis_label=r'y axis label',
-                    plt_name='simple_bar_plot',
-                    fig_size=(15, 5), save=False):
-    """
-    Takes the "data_x" and "data_y" 
-    and creates a bar plot.
+# def simple_bar_plot(data_x, data_y, x_axis_label=r'x axis label',
+#                     y_axis_label=r'y axis label',
+#                     plt_name='simple_bar_plot',
+#                     fig_size=(15, 5), save=False):
+#     """
+#     Takes the "data_x" and "data_y" 
+#     and creates a bar plot.
 
-    Args:
-        data_x: data x axis.
-        data_y: height of the bars.
-        x_axis_label: label of the x axis.
-        y_axis_label: label of the y axis.
-        plt_name: name of the plot.
-        fig_size: size of the figure.
-        save: whether the plot is saved.
+#     Args:
+#         data_x: data x axis.
+#         data_y: height of the bars.
+#         x_axis_label: label of the x axis.
+#         y_axis_label: label of the y axis.
+#         plt_name: name of the plot.
+#         fig_size: size of the figure.
+#         save: whether the plot is saved.
 
-    Returns:
-        none
-    """
+#     Returns:
+#         none
+#     """
 
-    # Barplot.
-    fig, ax = plt.subplots(figsize=fig_size)
+#     # Barplot.
+#     fig, ax = plt.subplots(figsize=fig_size)
 
-    # Set bar width.
-    barWidth = 0.4
+#     # Set bar width.
+#     barWidth = 0.4
 
-    # Set y values.
-    y = data_y
+#     # Set y values.
+#     y = data_y
 
-    # Set position of bar on X axis.
-    x_pos = np.arange(len(y))
+#     # Set position of bar on X axis.
+#     x_pos = np.arange(len(y))
 
-    # Make the plot.
-    plt.bar(x_pos,
-            y,
-            width=barWidth,
-            zorder=3,
-            color='#005f8a',
-            edgecolor='black',
-            linewidth=.25,
-            label=r'')
+#     # Make the plot.
+#     plt.bar(x_pos,
+#             y,
+#             width=barWidth,
+#             zorder=3,
+#             color='#005f8a',
+#             edgecolor='black',
+#             linewidth=.25,
+#             label=r'')
 
-    plt.ylim(0, np.max(y) + np.max(y) * 0.1)
+#     plt.ylim(0, np.max(y) + np.max(y) * 0.1)
 
-    # Add the numbers on top of each bar.
-    for x in range(len(x_pos)):
-        plt.text(x=x,
-                 y=y[x],
-                 s=r'{}'.format(round(y[x])),
-                 ha='center',
-                 va='bottom',
-                 fontsize=13)
+#     # Add the numbers on top of each bar.
+#     for x in range(len(x_pos)):
+#         plt.text(x=x,
+#                  y=y[x],
+#                  s=r'{}'.format(round(y[x])),
+#                  ha='center',
+#                  va='bottom',
+#                  fontsize=13)
 
-    # Add xticks on the middle of the group bars.
-    plt.xticks([r for r in range(len(data_x))], data_x, fontsize=15)
-    plt.yticks(fontsize=15)
+#     # Add xticks on the middle of the group bars.
+#     plt.xticks([r for r in range(len(data_x))], data_x, fontsize=15)
+#     plt.yticks(fontsize=15)
                  
-    # Set grid.
-    # plt.grid(axis='y',
-    #          color='gainsboro',
-    #          linestyle='-',
-    #          linewidth=0.2,
-    #          zorder=0)
+#     # Set grid.
+#     # plt.grid(axis='y',
+#     #          color='gainsboro',
+#     #          linestyle='-',
+#     #          linewidth=0.2,
+#     #          zorder=0)
 
-    # Remaining options.
-    plt.xlabel(x_axis_label, labelpad=15, fontsize=17)
-    plt.ylabel(y_axis_label, labelpad=15, fontsize=17)
+#     # Remaining options.
+#     plt.xlabel(x_axis_label, labelpad=15, fontsize=17)
+#     plt.ylabel(y_axis_label, labelpad=15, fontsize=17)
 
-    # Adjust margins.
-    plt.gcf().subplots_adjust(bottom=0.15)
-    plt.gcf().subplots_adjust(left=0.15)
+#     # Adjust margins.
+#     plt.gcf().subplots_adjust(bottom=0.15)
+#     plt.gcf().subplots_adjust(left=0.15)
 
-    # Adjust X ticks.
-    # fig.autofmt_xdate()
+#     # Adjust X ticks.
+#     # fig.autofmt_xdate()
 
-    # Plot.
-    plt.show()
+#     # Plot.
+#     plt.show()
 
-    # Save resulting figure in two formats.
-    if save:
-        fig.savefig(f'figures/{plt_name}.png',
-                    bbox_inches='tight')
-        fig.savefig(f'figures/{plt_name}.pdf',
-                    bbox_inches='tight')
+#     # Save resulting figure in two formats.
+#     if save:
+#         fig.savefig(f'figures/{plt_name}.png',
+#                     bbox_inches='tight')
+#         fig.savefig(f'figures/{plt_name}.pdf',
+#                     bbox_inches='tight')
 
 
 def listdir_fullpath(directory):
