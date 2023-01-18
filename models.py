@@ -9,6 +9,7 @@ from lightly.models.modules import BarlowTwinsProjectionHead
 from lightly.loss import BarlowTwinsLoss
 
 from datetime import datetime
+import os
 
 
 class SimSiam(torch.nn.Module):
@@ -100,7 +101,7 @@ class SimSiam(torch.nn.Module):
         self.time = datetime.now()
 
         torch.save(self.backbone.state_dict(),
-                   output_dir_model + 'simsiam/' + self.__str__())
+                   os.path.join(output_dir_model, self.__str__()))
 
     def __str__(self):
         """Overwriting the string representation of the class."""
@@ -179,7 +180,7 @@ class SimCLRModel(torch.nn.Module):
 
         # Save weights and biases.
         torch.save(self.backbone.state_dict(),
-                   output_dir_model + 'simclr/' + self.__str__())
+                   os.path.join(output_dir_model, self.__str__()))
 
     def __str__(self):
         """Overwriting the string representation of the class."""
@@ -253,7 +254,7 @@ class BarlowTwins(torch.nn.Module):
 
         # Save weights and biases.
         torch.save(self.backbone.state_dict(),
-                   output_dir_model + 'barlowtwins/' + self.__str__())
+                   os.path.join(output_dir_model, self.__str__()))
 
     def __str__(self):
         """Overwriting the string representation of the class."""
