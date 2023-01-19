@@ -326,7 +326,7 @@ def pca_computation(embeddings, labels, seed):
     pca_results = pca.fit_transform(embeddings)
     print(f'\nPCA completed! Time elapsed (s): {time.time()-time_start}')
     print(f'Explained variation per principal component: '
-          f'{pca.explained_variance_ratio_}')
+          f'{pca.explained_variance_ratio_}\n')
 
     # Create dataframe with the resulting data.
     df = pd.DataFrame()
