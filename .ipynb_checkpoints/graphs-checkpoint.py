@@ -49,11 +49,12 @@ def simple_bar_plot(ax, data_x, label_x, data_y, label_y, **param_dict):
     # Set position of bar on X axis.
     x_pos = np.arange(len(data_y))
 
-    # out = ax.plot(data1, data2, **param_dict)
+    # Main plot.
     out = ax.bar(x_pos,
                  data_y,
                  **param_dict)
 
+    # Set y limits.
     ax.set_ylim(0, np.max(data_y) + np.max(data_y) * 0.1)
 
     # Add the numbers on top of each bar.
