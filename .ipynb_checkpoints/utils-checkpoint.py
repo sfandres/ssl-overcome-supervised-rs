@@ -324,7 +324,7 @@ def pca_computation(embeddings, labels, seed):
     pca = PCA(n_components=3,
               random_state=seed)
     pca_results = pca.fit_transform(embeddings)
-    print(f'PCA completed! Time elapsed (s): {time.time()-time_start}')
+    print(f'\nPCA completed! Time elapsed (s): {time.time()-time_start}')
     print(f'Explained variation per principal component: '
           f'{pca.explained_variance_ratio_}')
 
@@ -365,7 +365,7 @@ def tsne_computation(embeddings, labels, seed, n_components):
         random_state=seed
     )
     tsne_results = tsne.fit_transform(embeddings)
-    print(f't-SNE completed! Time elapsed (s): {time.time()-time_start}')
+    print(f'\nt-SNE completed! Time elapsed (s): {time.time()-time_start}')
 
     # Create dataframe with the resulting data.
     df = pd.DataFrame()
