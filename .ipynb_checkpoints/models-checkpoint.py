@@ -89,12 +89,13 @@ class SimSiam(torch.nn.Module):
 
         pass
 
-    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
+    def save(self, epoch, train_loss, val_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
         """Saving the model."""
         
         # Save parameters.
         self.epoch = epoch
         self.train_loss = train_loss
+        self.val_loss = val_loss
         self.handle_imb_classes = handle_imb_classes
         self.ratio = ratio
         self.collapse_level = collapse_level
@@ -110,6 +111,7 @@ class SimSiam(torch.nn.Module):
         filename = f'simsiam_bb_resnet18' \
                    f'-epoch={self.epoch:03}' \
                    f'-train_loss={self.train_loss:.4f}' \
+                   f'-val_loss={self.val_loss:.4f}' \
                    f'-coll={self.collapse_level:.4f}(0)' \
                    f'-balanced={self.handle_imb_classes}' \
                    f'-ratio={self.ratio}' \
@@ -168,12 +170,13 @@ class SimCLRModel(torch.nn.Module):
 
         pass
 
-    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
+    def save(self, epoch, train_loss, val_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
         """Saving the model."""
 
         # Save parameters.
         self.epoch = epoch
         self.train_loss = train_loss
+        self.val_loss = val_loss
         self.handle_imb_classes = handle_imb_classes
         self.ratio = ratio
         self.time = datetime.now()
@@ -189,6 +192,7 @@ class SimCLRModel(torch.nn.Module):
         filename = f'simclr_bb_resnet18' \
                    f'-epoch={self.epoch:03}' \
                    f'-train_loss={self.train_loss:.4f}' \
+                   f'-val_loss={self.val_loss:.4f}' \
                    f'-balanced={self.handle_imb_classes}' \
                    f'-ratio={self.ratio}' \
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
@@ -242,12 +246,13 @@ class BarlowTwins(torch.nn.Module):
 
         pass
 
-    def save(self, epoch, train_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
+    def save(self, epoch, train_loss, val_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
         """Saving the model."""
 
         # Save parameters.
         self.epoch = epoch
         self.train_loss = train_loss
+        self.val_loss = val_loss
         self.handle_imb_classes = handle_imb_classes
         self.ratio = ratio
         self.time = datetime.now()
@@ -263,6 +268,7 @@ class BarlowTwins(torch.nn.Module):
         filename = f'barlowtwins_bb_resnet18' \
                    f'-epoch={self.epoch:03}' \
                    f'-train_loss={self.train_loss:.4f}' \
+                   f'-val_loss={self.val_loss:.4f}' \
                    f'-balanced={self.handle_imb_classes}' \
                    f'-ratio={self.ratio}' \
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
