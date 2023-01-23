@@ -108,13 +108,14 @@ class SimSiam(torch.nn.Module):
         """Overwriting the string representation of the class."""
 
         # Filename with stats.
-        filename = f'simsiam_bb_resnet18' \
-                   f'-epoch={self.epoch:03}' \
-                   f'-train_loss={self.train_loss:.4f}' \
-                   f'-val_loss={self.val_loss:.4f}' \
-                   f'-coll={self.collapse_level:.4f}(0)' \
-                   f'-balanced={self.handle_imb_classes}' \
+        filename = f'simsiam' \
                    f'-ratio={self.ratio}' \
+                   f'-val_loss={self.val_loss:.3f}' \
+                   f'-coll={self.collapse_level:.3f}(0)' \
+                   f'-train_loss={self.train_loss:.3f}' \
+                   f'-epoch={self.epoch:03}' \
+                   f'-balanced={self.handle_imb_classes}' \
+                   f'-bb=resnet18' \
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
 
         return filename
@@ -187,14 +188,15 @@ class SimCLRModel(torch.nn.Module):
 
     def __str__(self):
         """Overwriting the string representation of the class."""
-
+    
         # Filename with stats (no avg_rep_collapse).
-        filename = f'simclr_bb_resnet18' \
-                   f'-epoch={self.epoch:03}' \
-                   f'-train_loss={self.train_loss:.4f}' \
-                   f'-val_loss={self.val_loss:.4f}' \
-                   f'-balanced={self.handle_imb_classes}' \
+        filename = f'simclr' \
                    f'-ratio={self.ratio}' \
+                   f'-val_loss={self.val_loss:.3f}' \
+                   f'-train_loss={self.train_loss:.3f}' \
+                   f'-epoch={self.epoch:03}' \
+                   f'-balanced={self.handle_imb_classes}' \
+                   f'-bb=resnet18' \
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
 
         return filename
@@ -265,12 +267,13 @@ class BarlowTwins(torch.nn.Module):
         """Overwriting the string representation of the class."""
 
         # Filename with stats (no avg_rep_collapse).
-        filename = f'barlowtwins_bb_resnet18' \
-                   f'-epoch={self.epoch:03}' \
-                   f'-train_loss={self.train_loss:.4f}' \
-                   f'-val_loss={self.val_loss:.4f}' \
-                   f'-balanced={self.handle_imb_classes}' \
+        filename = f'barlowtwins' \
                    f'-ratio={self.ratio}' \
+                   f'-val_loss={self.val_loss:.3f}' \
+                   f'-train_loss={self.train_loss:.3f}' \
+                   f'-epoch={self.epoch:03}' \
+                   f'-balanced={self.handle_imb_classes}' \
+                   f'-bb=resnet18' \
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
 
         return filename
