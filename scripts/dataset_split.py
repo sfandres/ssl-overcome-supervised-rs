@@ -33,7 +33,7 @@ def create_arg_parser():
     parser.add_argument(
         'output_dir',
         type=str,
-        help='Path to the output directory where the new datasets are stored.'
+        help='Path to the output directory where the new datasets will be stored.'
     )
 
     parser.add_argument(
