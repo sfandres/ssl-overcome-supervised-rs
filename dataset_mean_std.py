@@ -1,29 +1,65 @@
+"""Writes to a txt the mean and std of each dataset
+   so that the data can be normalized afterwards.
+
+Usage:
+    ./dataset_mean_std.py <input_dir>
+
+Author:
+    A.J. Sanchez-Fernandez - 24/01/2023
 """
-Script to write to a txt the mean and std of each 
-dataset so that the data can be normalized afterwards.
+"""
+Script to write 
 """
 
-import os
 import torch
 import torchvision
 import utils
+import argparse
+import sys
+import os
 
+def create_arg_parser():
+    """Creates and returns the ArgumentParser object."""
+
+    # Parser creation and description.
+    parser = argparse.ArgumentParser(
+        description=('Python script that writes to a txt the mean and std of each'
+                     'dataset so that the data can be normalized afterwards.')
+    )
+
+    parser.add_argument(
+        'input_dir',
+        type=str,
+        help='Path to the input directory where the datasets are stored.'
+    )
+
+    return parser
+
+
+# Parser (get arguments).
+if __name__ == "__main__":
+
+    # Create parser and get arguments.
+    parser = create_arg_parser()
+    args = parser.parse_args(sys.argv[1:])
+
+# Show info.
+datasets_dir = args.input_dir
+print(f'\nPath to the input datasets: {datasets_dir}')
 
 # Reproducibility.
 exp = utils.Experiment()
 exp.reproducibility()
 print(f'\nSeed used: {exp.seed}')
 
-# List of trained models.
-datasets_dir = 'datasets/'
-
 # Get the subsets with full path.
 data_dirs = utils.listdir_fullpath(datasets_dir)
 
 # Leave out unwanted subsets (0_Raw).
-data_dirs = data_dirs[1:]
+# data_dirs = data_dirs[1:]
+print('\nInput directories:')
 for dirs in data_dirs:
-    print(dirs)
+    print(f'- {dirs}')
 
 # Initialization.
 splits = ['train', 'val', 'test']
