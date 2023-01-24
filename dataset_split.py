@@ -1,7 +1,12 @@
+"""Creates the diferent datasets according to the target ratios.
+
+Usage:
+    ./stationinfo.py <input_dir> --output_dir <output_dir> --output_ini_name <output_ini_name>
+
+Author:
+    A.J. Sanchez-Fernandez - 24/01/2023
 """
-Main script to create the diferent datasets according
-to the target ratios.
-"""
+
 
 import utils
 import splitfolders
@@ -9,34 +14,54 @@ import argparse
 import sys
 import os
 
+
 def create_arg_parser():
     """Creates and returns the ArgumentParser object."""
 
-    parser = argparse.ArgumentParser(description='Split the target dataset into training, validation and test datasets according to custom splits.')
+    # Parser creation and description.
+    parser = argparse.ArgumentParser(
+        description=('Python script that divides the target dataset into training,'
+                     'validation, and test datasets according to custom splits.')
+    )
 
-    parser.add_argument('input_dir',
-                    help='Path to the input directory where the raw dataset is stored.')
+    parser.add_argument(
+        'input_dir',
+        type=str,
+        help='Path to the input directory where the raw dataset is stored.'
+    )
 
-    parser.add_argument('--out_folder_name',
-                    help='Beginning of each folder name.')
+    parser.add_argument(
+        'output_dir',
+        type=str,
+        help='Path to the output directory where the new datasets are stored.'
+    )
+
+    parser.add_argument(
+        '--output_ini_name',
+        type=str,
+        default='NewDataset',
+        help="Beginning of each folder's name (optional)."
+    )
 
     return parser
 
 
 # Parser (get arguments).
 if __name__ == "__main__":
-    arg_parser = create_arg_parser()
-    parsed_args = arg_parser.parse_args(sys.argv[1:])
 
-initial_dir_dataset = parsed_args.input_dir
-print(f'\nPath to the raw data: {initial_dir_dataset}')
+    # Create parser.
+    parser = create_arg_parser()
+    args = parser.parse_args(sys.argv[1:])
 
-if (parsed_args.out_folder_name):
-    target_dataset_name = parsed_args.out_folder_name    
-    print(f'Output folder name: {target_dataset_name}')
-else:
-    target_dataset_name = 'NewDataset'
-    print(f'Default name used for the output folders: {target_dataset_name}')
+# Show info.
+initial_dir_dataset = args.input_dir
+print(f'\nPath to the input raw data: {initial_dir_dataset}')
+
+output_dir_datasets = args.output_dir
+print(f'\nPath to the output split data: {output_dir_datasets}')
+
+target_dataset_name = args.output_ini_name
+print(f'\nOutput folder name: {target_dataset_name}')
 
 # Experiment class for reproducibility.
 exp = utils.Experiment()
@@ -73,9 +98,6 @@ print(f'{ratios}\n')
 # To only split into training and validation set,
 # set a tuple to `ratio`, i.e, `(.8, .2)`.
 # ratio = (.7, .1, .2)  # (.01, .01, .98)
-
-# Path to output dir.
-output_dir_datasets = 'datasets'
 
 # Iterate over the ratios.
 for ratio in ratios:
