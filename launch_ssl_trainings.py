@@ -1,26 +1,28 @@
-# import os
+import os
 
-# times = 2
-# queryIndex = 129
-# exp = [2, 29, 400]
-# exp = exp[0]
-# # cpuBatchSizes = range(1000,30000,1000)
-# cpuBatchSizes = [29257]
-# # gpuBatchSizes = range(100,1500,100)
-# gpuBatchSizes = [1200]
-# # num_threads = [1,2,4,6]
-# num_threads = [1]
+models = ['simsiam']  # , 'simclr', 'barlowtwins')
+datasets = ['Sentinel2GlobalLULC']
+balanced_dataset = (False, True)
+epochs = 25
+batch_size = 64
+ini_weights = 'random'
+show_fig = False
+cluster = True
 
-# # compile
-# # os.system("source Launch.sh" + " g++" + " O3" + " openmp")
-
-# print ("Experiments: %d " % times)
-# for s in range(0,times):
-#         for c in cpuBatchSizes:
-#                 print ("CPU batch: %d " % (c))
-#                 for g in gpuBatchSizes:
-#                         print ("GPU batch: %d " % (g))
-#                         for t in num_threads:
-#                                 print ("Threads: %d " % (t))
-#                                 os.system("./dmcCUDA {} {} {} {} {} {} {} {}".format("LI",t,c,g,queryIndex,"/home/ajsanchez/Documents/Fingerprints/RNew.txt",
-#                                 "/home/ajsanchez/Documents/Fingerprints/LatentNew.txt","/home/ajsanchez/Documents/Fingerprints/Impressions" + str(exp) + "kNew.txt"))
+# for s in range(0, times):
+# print (f'Experiments: {times}')
+for model in models:
+    print(model)
+    for dataset in datasets:
+        print(dataset)
+        for balanced in balanced_dataset:
+            print(balanced)
+            os.system(f'python3 03_1-PyTorch-Sentinel-2_SSL_SimSiam.py {model} '
+                      f'--dataset {dataset} '
+                      f'--balanced_dataset {balanced} '
+                      f'--epochs {epochs} '
+                      f'--batch_size {batch_size} '
+                      f'--ini_weights {ini_weights} '
+                      f'--show_fig {show_fig} '
+                      f'--cluster {cluster}'
+            )
