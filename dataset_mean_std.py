@@ -2,14 +2,12 @@
    so that the data can be normalized afterwards.
 
 Usage:
-    ./dataset_mean_std.py <input_dir>
+    ./dataset_mean_std.py <input_dir> --batch_size <batch_size>
 
 Author:
     A.J. Sanchez-Fernandez - 24/01/2023
 """
-"""
-Script to write 
-"""
+
 
 import torch
 import torchvision
@@ -18,12 +16,13 @@ import argparse
 import sys
 import os
 
+
 def create_arg_parser():
     """Creates and returns the ArgumentParser object."""
 
     # Parser creation and description.
     parser = argparse.ArgumentParser(
-        description=('Python script that writes to a txt the mean and std of each'
+        description=('Python script that writes to a txt the mean and std of each '
                      'dataset so that the data can be normalized afterwards.')
     )
 
@@ -31,6 +30,13 @@ def create_arg_parser():
         'input_dir',
         type=str,
         help='Path to the input directory where the datasets are stored.'
+    )
+
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=64,
+        help='Batch size (default = 64) for the PyTorch dataloader to compute the mean and std.'
     )
 
     return parser
@@ -46,6 +52,9 @@ if __name__ == "__main__":
 # Show info.
 datasets_dir = args.input_dir
 print(f'\nPath to the input datasets: {datasets_dir}')
+
+batch_size = args.batch_size
+print(f'\nPyTorch dataloader batch size: {batch_size}')
 
 # Reproducibility.
 exp = utils.Experiment()
@@ -72,12 +81,12 @@ for data_dir in data_dirs:
     filepath = os.path.join(data_dir, filename)
 
     # Removing the old txt file if exists.
+    print(f'\n{data_dir}:')
     if os.path.exists(filepath):
         os.remove(filepath)
-        print(f'\n{data_dir}: Existing txt file found and removed.')
-        print('New empty txt file created.')
+        print('Existing txt file found and removed. New empty txt file created.')
     else:
-        print(f'\n{data_dir}: New empty txt file created.')
+        print('New empty txt file created.')
 
     # Creating/opening the file.
     f = open(filepath, 'w')
@@ -91,7 +100,7 @@ for data_dir in data_dirs:
     # Creating the dataloaders into a dic.
     dataloaders = {x: torch.utils.data.DataLoader(
         datasets[x],
-        batch_size=128,
+        batch_size=batch_size,
         worker_init_fn=exp.seed_worker,
         generator=exp.g
     ) for x in splits}
@@ -112,6 +121,6 @@ for data_dir in data_dirs:
         f.write(f'{mean}\n')
         f.write(f'{std}\n')
 
-    # Close file and print a space.
+    # Close file and print an empty line.
     f.close()
     print('')

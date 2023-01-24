@@ -40,7 +40,7 @@ def create_arg_parser():
         '--output_ini_name',
         type=str,
         default='NewDataset',
-        help="Beginning of each folder's name (optional)."
+        help="Beginning of each folder's name (default = NewDataset)."
     )
 
     return parser
