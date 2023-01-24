@@ -20,7 +20,7 @@ def create_arg_parser():
 
     # Parser creation and description.
     parser = argparse.ArgumentParser(
-        description=('Python script that divides the target dataset into training,'
+        description=('Python script that divides the target dataset into training, '
                      'validation, and test datasets according to custom splits.')
     )
 
@@ -49,7 +49,7 @@ def create_arg_parser():
 # Parser (get arguments).
 if __name__ == "__main__":
 
-    # Create parser.
+    # Create parser and get arguments.
     parser = create_arg_parser()
     args = parser.parse_args(sys.argv[1:])
 
