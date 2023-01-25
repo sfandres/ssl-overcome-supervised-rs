@@ -27,7 +27,7 @@ class Experiment:
         seed: Seed for reproducibility purposes.
     """
     def __init__(self, batch_size=128, epochs=10,
-                 input_size=224, num_workers=8, seed=42):
+                 input_size=224, num_workers=0, seed=42):
         """Inits Experiment with default parameters."""
         self.batch_size = batch_size
         self.epochs = epochs
