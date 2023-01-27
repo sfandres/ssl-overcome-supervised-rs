@@ -16,7 +16,7 @@
 cat mail.txt | /usr/bin/mail -s "Sbatch job began" sfandres@unex.es
 
 ## Load the Python module.
-module load cuda/11.0.1
+## module load cuda/11.0.1
 
 ## Init virtual environment.
 source ~/lulc/lulc-venv/bin/activate
@@ -25,4 +25,4 @@ source ~/lulc/lulc-venv/bin/activate
 srun python3 script.py 10
 
 ## Send email when job ends.
-cat mail.txt | /usr/bin/mail -s "Sbatch job ended" sfandres@unex.es
+cat uexssl.out | /usr/bin/mail -s "Sbatch job ended" sfandres@unex.es
