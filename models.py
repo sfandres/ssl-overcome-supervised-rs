@@ -89,6 +89,38 @@ class SimSiam(torch.nn.Module):
 
         pass
 
+    def set_up_optimizer_and_scheduler(self, dataloader_train, batch_size=512,
+                                       lr=0.05, momentum=0.9, weight_decay=1e-4):
+        """Set up the optimizer and scheduler.
+        
+        From the original SimSiam paper:
+            Optimizer. We use SGD for pre-training. Our method
+            does not require a large-batch optimizer such as LARS
+            [36] (unlike [8, 15, 7]). We use a learning rate of
+            lr×BatchSize/256 (linear scaling [14]), with a base lr =
+            0.05. The learning rate has a cosine decay schedule
+            [26, 8]. The weight decay is 0.0001 and the SGD momentum is 0.9.
+            The batch size is 512 by default, [...]
+        """
+
+        # Infer learning rate.
+        self.init_lr = lr * batch_size / 256
+
+        # Optimizer.
+        self.optimizer = torch.optim.SGD(
+            self.parameters(),
+            self.init_lr,
+            momentum=momentum,
+            weight_decay=weight_decay
+        )
+
+        # Scheduler.
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer,
+            T_max=len(dataloader_train),
+            verbose=True
+        )
+
     def save(self, epoch, train_loss, val_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
         """Saving the model."""
         
