@@ -22,7 +22,16 @@ cat mail.txt | /usr/bin/mail -s "Sbatch job began" sfandres@unex.es
 source ~/lulc/lulc-venv/bin/activate
 
 ## Execute the Python script and pass the arguments.
-srun python3 script.py 10
+## srun python3 script.py 10
+srun python3 03_1-PyTorch-Sentinel-2_SSL_SimSiam.py \
+simsiam \
+--dataset Sentinel2GlobalLULC \
+--balanced_dataset False \
+--epochs 1 \
+--batch_size 128 \
+--ini_weights random \
+--show_fig False \
+--cluster True
 
 ## Send email when job ends.
 cat uexssl.out | /usr/bin/mail -s "Sbatch job ended" sfandres@unex.es
