@@ -11,6 +11,8 @@ from lightly.loss import BarlowTwinsLoss
 from datetime import datetime
 import os
 
+from flash.core.optimizers import LARS
+
 
 class SimSiam(torch.nn.Module):
     """
@@ -89,7 +91,7 @@ class SimSiam(torch.nn.Module):
 
         pass
 
-    def set_up_optimizer_and_scheduler(self, dataloader_train, batch_size=512,
+    def set_up_optimizer_and_scheduler(self, epochs, batch_size=512,
                                        lr=0.05, momentum=0.9, weight_decay=1e-4):
         """Set up the optimizer and scheduler.
         
@@ -117,7 +119,7 @@ class SimSiam(torch.nn.Module):
         # Scheduler.
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer,
-            T_max=len(dataloader_train),
+            T_max=epochs,
             verbose=True
         )
 
@@ -188,6 +190,46 @@ class SimCLRModel(torch.nn.Module):
         z = self.projection_head(h)
 
         return z
+
+    def set_up_optimizer_and_scheduler(self, epochs, batch_size=512,
+                                       lr=0.3, weight_decay=1e-6):
+        """Set up the optimizer and scheduler.
+        
+        From the original SimCLR paper:
+            Default setting. Unless otherwise specified, for data augmentation
+            we use random crop and resize (with random flip), color distortions,
+            and Gaussian blur (for details, see Appendix A). We use ResNet-50 as
+            the base encoder network, and a 2-layer MLP projection head to project
+            the representation to a 128-dimensional latent space. As the loss, we
+            use NT-Xent, optimized using LARS with learning rate of 4.8
+            (= 0.3 × BatchSize/256) and weight decay of 10−6. We train at batch size
+            4096 for 100 epochs.3 Furthermore, we use linear warmup for the first
+            10 epochs, and decay the learning rate with the cosine decay schedule
+            without restarts (Loshchilov & Hutter, 2016).
+            3 Although max performance is not reached in 100 epochs, reasonable
+            results are achieved, allowing fair and efficient ablations
+        """
+
+        # Infer learning rate.
+        self.init_lr = float(lr * batch_size / 256)
+
+        # Optimizer.
+        self.optimizer = LARS(self.parameters(),
+                              lr=self.init_lr)
+
+        # Linear warmup for the first 10 epochs.
+        self.warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+            self.optimizer,
+            lambda epoch: min(1, epoch / 10),
+            verbose=True
+        )
+
+        # Cosine decay starting from the 11th epoch.
+        self.main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer,
+            T_max=epochs,
+            verbose=True
+        )
 
     def training_step(self, x0, x1):
         """Calculate loss."""
