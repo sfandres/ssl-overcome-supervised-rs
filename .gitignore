@@ -3,3 +3,4 @@ lulc-venv/
 __pycache__/
 pytorch_models/
 figures/
+*.out
