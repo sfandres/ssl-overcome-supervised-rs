@@ -23,7 +23,7 @@ source ~/lulc/lulc-venv/bin/activate
 
 ## Execute the Python script and pass the arguments.
 ## srun python3 script.py 10
-srun python3 03_1-PyTorch-Sentinel-2_SSL_SimSiam.py \
+srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
 simsiam \
 --dataset Sentinel2GlobalLULC \
 --balanced_dataset False \
