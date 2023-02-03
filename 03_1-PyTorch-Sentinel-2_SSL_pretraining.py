@@ -169,7 +169,8 @@ if __name__ == '__main__':
     )
 
 if is_notebook():
-    args = parser.parse_args(args=['simsiam'])  # , '--ini_weights', 'imagenet'
+    args = parser.parse_args(args=['simclr', '--epochs', '15'])
+    # , '--ini_weights', 'imagenet'
 else:
     args = parser.parse_args(sys.argv[1:])
 
@@ -280,7 +281,7 @@ exp.reproducibility()
 
 # ***
 
-# # Loading dataset
+# # Loading dataset (WARNING)
 
 # In[ ]:
 
@@ -727,28 +728,44 @@ summary(
 # In[ ]:
 
 
-# Scale the learning rate.
-# lr = 0.05 * exp.batch_size / 256
-lr = 0.2
-
-# Use SGD with momentum and weight decay.
-optimizer = torch.optim.SGD(
-    model.parameters(),
-    lr=lr,
-    momentum=0.9,
-    weight_decay=1e-4
-)
-
 if model_name == 'simsiam':
-    model.set_up_optimizer_and_scheduler(dataloader_train_lightly,
+    model.set_up_optimizer_and_scheduler(exp.epochs,
                                          exp.batch_size)
     print(model.optimizer)
     print(model.scheduler)
+
+elif model_name == 'simclr':
+    model.set_up_optimizer_and_scheduler(exp.epochs,
+                                         exp.batch_size)
+    print(model.optimizer)
+    print(model.warmup_scheduler)
+    print(model.main_scheduler)
+
+else:
+    # Scale the learning rate.
+    # lr = 0.05 * exp.batch_size / 256
+    lr = 0.2
+
+    # Use SGD with momentum and weight decay.
+    optimizer = torch.optim.SGD(
+        model.parameters(),
+        lr=lr,
+        momentum=0.9,
+        weight_decay=1e-4
+    )
 
 
 # ## Training
 
 # ### Loop
+
+# In[ ]:
+
+
+# def get_lr(optimizer):
+#     for param_group in optimizer.param_groups:
+#         return param_group['lr']
+
 
 # In[ ]:
 
@@ -803,8 +820,8 @@ for e in range(exp.epochs):
 
         # Run backpropagation.
         loss.backward()
-
-        if model_name == 'simsiam':
+        
+        if model_name == 'simsiam' or model_name == 'simclr':
             model.optimizer.step()
             model.optimizer.zero_grad()
         else:
@@ -896,8 +913,16 @@ for e in range(exp.epochs):
 
     # ======================
     # UPDATE LEARNING RATE.
+    # print(f'lr: {model.optimizer.param_groups[0]["lr"]}')
     if model_name == 'simsiam':
         model.scheduler.step()
+    elif model_name == 'simclr':
+        # Linear warmup.
+        if e < 10:
+            model.warmup_scheduler.step()
+        # Cosine decay.
+        elif e >=10:
+            model.main_scheduler.step()
 
     # ======================
     # EPOCH STATISTICS.
