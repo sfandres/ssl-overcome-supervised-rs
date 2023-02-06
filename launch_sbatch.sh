@@ -6,10 +6,10 @@
 #SBATCH --partition=volta                           ## Request specific partition.
 #SBATCH --wait-all-nodes=1                          ## Controls when the execution begins.
 #SBATCH --time=24:00:00                             ## Job duration (Sergio: 24:00:00).
-#SBATCH --gpus-per-node=4                           ## Number of GPUs on each node (Sergio: 4).
+#SBATCH --gpus-per-node=2                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --job-name=uexssl_%A_%a                     ## Name of the job.
 #SBATCH --output=uexssl_%A_%a.out                   ## Output file.
-#SBATCH --mail-type=ALL				    ## (not working) Type of notification via email.
+#SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
 #SBATCH --array=0-2:1                               ## Run job arrays.
 
