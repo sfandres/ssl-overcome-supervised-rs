@@ -1,1 +1,0 @@
-The submitted job has come out of the queue and started processing.
