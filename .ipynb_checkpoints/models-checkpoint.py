@@ -11,7 +11,7 @@ from lightly.loss import BarlowTwinsLoss
 from datetime import datetime
 import os
 
-from flash.core.optimizers import LARS
+from flash.core.optimizers import LARS as FLASH_LARS
 
 
 class SimSiam(torch.nn.Module):
@@ -24,6 +24,15 @@ class SimSiam(torch.nn.Module):
         proj_hidden_dim: Dimension of the output of the prediction and projection heads.
         pred_hidden_dim: Dimension of the prediction head.
         out_dim: Dimension of the output of the prediction and projection heads.
+        
+    From the original SimSiam paper:
+        Optimizer. We use SGD for pre-training. Our method
+        does not require a large-batch optimizer such as LARS
+        [36] (unlike [8, 15, 7]). We use a learning rate of
+        lr×BatchSize/256 (linear scaling [14]), with a base lr =
+        0.05. The learning rate has a cosine decay schedule
+        [26, 8]. The weight decay is 0.0001 and the SGD momentum is 0.9.
+        The batch size is 512 by default, [...]
     """
 
     def __init__(self, backbone, num_ftrs, proj_hidden_dim,
@@ -93,17 +102,7 @@ class SimSiam(torch.nn.Module):
 
     def set_up_optimizer_and_scheduler(self, epochs, batch_size=512,
                                        lr=0.05, momentum=0.9, weight_decay=1e-4):
-        """Set up the optimizer and scheduler.
-        
-        From the original SimSiam paper:
-            Optimizer. We use SGD for pre-training. Our method
-            does not require a large-batch optimizer such as LARS
-            [36] (unlike [8, 15, 7]). We use a learning rate of
-            lr×BatchSize/256 (linear scaling [14]), with a base lr =
-            0.05. The learning rate has a cosine decay schedule
-            [26, 8]. The weight decay is 0.0001 and the SGD momentum is 0.9.
-            The batch size is 512 by default, [...]
-        """
+        """Set up the optimizer and scheduler."""
 
         # Infer learning rate.
         self.init_lr = lr * batch_size / 256
@@ -163,6 +162,20 @@ class SimCLRModel(torch.nn.Module):
     Attributes:
         backbone: Architecture of the CNN model.
         hidden_dim: Dimension of the output of the projection head.
+
+    From the original SimCLR paper:
+        Default setting. Unless otherwise specified, for data augmentation
+        we use random crop and resize (with random flip), color distortions,
+        and Gaussian blur (for details, see Appendix A). We use ResNet-50 as
+        the base encoder network, and a 2-layer MLP projection head to project
+        the representation to a 128-dimensional latent space. As the loss, we
+        use NT-Xent, optimized using LARS with learning rate of 4.8
+        (= 0.3 × BatchSize/256) and weight decay of 10−6. We train at batch size
+        4096 for 100 epochs.3 Furthermore, we use linear warmup for the first
+        10 epochs, and decay the learning rate with the cosine decay schedule
+        without restarts (Loshchilov & Hutter, 2016).
+        3 Although max performance is not reached in 100 epochs, reasonable
+        results are achieved, allowing fair and efficient ablations [...]
     """
 
     def __init__(self, backbone, hidden_dim):
@@ -193,29 +206,14 @@ class SimCLRModel(torch.nn.Module):
 
     def set_up_optimizer_and_scheduler(self, epochs, batch_size=512,
                                        lr=0.3, weight_decay=1e-6):
-        """Set up the optimizer and scheduler.
-        
-        From the original SimCLR paper:
-            Default setting. Unless otherwise specified, for data augmentation
-            we use random crop and resize (with random flip), color distortions,
-            and Gaussian blur (for details, see Appendix A). We use ResNet-50 as
-            the base encoder network, and a 2-layer MLP projection head to project
-            the representation to a 128-dimensional latent space. As the loss, we
-            use NT-Xent, optimized using LARS with learning rate of 4.8
-            (= 0.3 × BatchSize/256) and weight decay of 10−6. We train at batch size
-            4096 for 100 epochs.3 Furthermore, we use linear warmup for the first
-            10 epochs, and decay the learning rate with the cosine decay schedule
-            without restarts (Loshchilov & Hutter, 2016).
-            3 Although max performance is not reached in 100 epochs, reasonable
-            results are achieved, allowing fair and efficient ablations
-        """
+        """Set up the optimizer and scheduler."""
 
         # Infer learning rate.
         self.init_lr = float(lr * batch_size / 256)
 
         # Optimizer.
-        self.optimizer = LARS(self.parameters(),
-                              lr=self.init_lr)
+        self.optimizer = FLASH_LARS(self.parameters(),
+                                    lr=self.init_lr)
 
         # Linear warmup for the first 10 epochs.
         self.warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -282,6 +280,19 @@ class BarlowTwins(torch.nn.Module):
 
     Attributes:
         backbone: Architecture of the CNN model.
+            
+    From the original BarlowTwins paper:
+        We use the LARS optimizer (You et al., 2017) and train for 1000 epochs with
+        a batch size of 2048. We however emphasize that our model works well with
+        batches as small as 256 (see Ablations). We use a learning rate of 0.2 for
+        the weights and 0.0048 for the biases and batch normalization parameters. We
+        multiply the learning rate by the batch size and divide it by 256. We use a
+        learning rate warm-up period of 10 epochs, after which we reduce the learning
+        rate by a factor of 1000 using a cosine decay schedule (Loshchilov & Hutter,
+        2016). We ran a search for the trade-off parameter λ of the loss function and
+        found the best results for λ = 5 · 10−3. We use a weight decay parameter of
+        1.5 · 10−6. The biases and batch normalization parameters are excluded from
+        LARS adaptation and weight decay. [...]
     """
 
     def __init__(self, backbone):
@@ -297,7 +308,7 @@ class BarlowTwins(torch.nn.Module):
         self.projection_head = BarlowTwinsProjectionHead(512, 2048, 2048)
 
         # Loss criterion.
-        self.criterion = BarlowTwinsLoss()
+        self.criterion = BarlowTwinsLoss(lambda_param=0.005)
 
     def forward(self, x):
         """How your model runs from input to output."""
@@ -307,6 +318,49 @@ class BarlowTwins(torch.nn.Module):
         z = self.projection_head(x)
 
         return z
+    
+    def configure_optimizer(self, batch_size, weight_decay=1.5e-6):
+        """Configures the optimizer."""
+
+        # Creates two groups of params.
+        param_weights = []
+        param_biases = []
+        for param in self.parameters():
+            if param.ndim == 1:
+                param_biases.append(param)
+            else:
+                param_weights.append(param)
+        # parameters = [{'params': param_weights}, {'params': param_biases}]
+        self.parameters = [{'params': param_weights, 'lr': 0.2}, {'params': param_biases, 'lr': 0.0048}]
+
+        # Infer learning rate.
+        base_lr = float(batch_size / 256)
+        print(f'Base lr: {base_lr}')
+
+        # Optimizer.
+        self.optimizer = LARS(self.parameters,
+                              lr=base_lr,
+                              weight_decay=weight_decay,
+                              weight_decay_filter=True,
+                              lars_adaptation_filter=True)
+
+    def configure_scheduler(self, epochs, batch_size=512,
+                            lr=0.2, weight_decay=1e-6):
+        """Set up the optimizer and scheduler."""
+
+        # Linear warmup for the first 10 epochs.
+        self.warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+            self.optimizer,
+            lambda epoch: min(1, epoch / 10),
+            verbose=True
+        )
+
+        # Cosine decay starting from the 11th epoch.
+        self.main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer,
+            T_max=epochs,
+            verbose=True
+        )
 
     def training_step(self, x0, x1):
         """Calculate loss."""
@@ -351,3 +405,52 @@ class BarlowTwins(torch.nn.Module):
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
 
         return filename
+
+
+class LARS(torch.optim.Optimizer):
+    """
+    LARS (Layer-wise Adaptive Rate Scaling) is an optimization algorithm designed
+    for large-batch training published by You, Gitman, and Ginsburg, which calculates
+    the local learning rate per layer at each optimization step.
+
+    From Barlow Twins: Self-Supervised Learning via Redundancy Reduction.
+    https://github.com/facebookresearch/barlowtwins -> main.py
+    """
+    def __init__(self, params, lr, weight_decay=0, momentum=0.9, eta=0.001,
+                 weight_decay_filter=False, lars_adaptation_filter=False):
+        defaults = dict(lr=lr, weight_decay=weight_decay, momentum=momentum,
+                        eta=eta, weight_decay_filter=weight_decay_filter,
+                        lars_adaptation_filter=lars_adaptation_filter)
+        super().__init__(params, defaults)
+
+    def exclude_bias_and_norm(self, p):
+        return p.ndim == 1
+
+    @torch.no_grad()
+    def step(self):
+        for g in self.param_groups:
+            for p in g['params']:
+                dp = p.grad
+
+                if dp is None:
+                    continue
+
+                if not g['weight_decay_filter'] or not self.exclude_bias_and_norm(p):
+                    dp = dp.add(p, alpha=g['weight_decay'])
+
+                if not g['lars_adaptation_filter'] or not self.exclude_bias_and_norm(p):
+                    param_norm = torch.norm(p)
+                    update_norm = torch.norm(dp)
+                    one = torch.ones_like(param_norm)
+                    q = torch.where(param_norm > 0.,
+                                    torch.where(update_norm > 0,
+                                                (g['eta'] * param_norm / update_norm), one), one)
+                    dp = dp.mul(q)
+
+                param_state = self.state[p]
+                if 'mu' not in param_state:
+                    param_state['mu'] = torch.zeros_like(p)
+                mu = param_state['mu']
+                mu.mul_(g['momentum']).add_(dp)
+
+                p.add_(mu, alpha=-g['lr'])
