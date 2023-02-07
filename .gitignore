@@ -1,5 +1,6 @@
 datasets/
 lulc-venv/
+lulc-conda/
 __pycache__/
 pytorch_models/
 figures/
