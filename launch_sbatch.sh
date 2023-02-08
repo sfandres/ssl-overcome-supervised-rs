@@ -32,18 +32,21 @@ echo " " | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 ## module load cuda/11.0.1
 
 ## Load virtual environment.
-source ~/lulc/lulc-venv/bin/activate
+## source ~/lulc/lulc-venv/bin/activate
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate lulc-conda
 
 ## Execute the Python script and pass the arguments.
-srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
-${model} \
---dataset Sentinel2GlobalLULC \
---balanced_dataset False \
---epochs 1 \
---batch_size 128 \
---ini_weights random \
---show_fig False \
---cluster True
+## srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
+## ${model} \
+## --dataset Sentinel2GlobalLULC \
+## --balanced_dataset False \
+## --epochs 1 \
+## --batch_size 128 \
+## --ini_weights random \
+## --show_fig False \
+## --cluster True
+srun python3 testing_GPU_PyTorch.py
 
 ## Send email when job ends.
 cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
