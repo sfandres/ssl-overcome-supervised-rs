@@ -11,7 +11,7 @@ from lightly.loss import BarlowTwinsLoss
 from datetime import datetime
 import os
 
-from flash.core.optimizers import LARS as FLASH_LARS
+# from flash.core.optimizers import LARS as FLASH_LARS
 
 
 class SimSiam(torch.nn.Module):
@@ -212,8 +212,12 @@ class SimCLRModel(torch.nn.Module):
         self.init_lr = float(lr * batch_size / 256)
 
         # Optimizer.
-        self.optimizer = FLASH_LARS(self.parameters(),
-                                    lr=self.init_lr)
+        self.optimizer = LARS(self.parameters,
+                              lr=base_lr)
+
+        # # Optimizer.
+        # self.optimizer = FLASH_LARS(self.parameters(),
+        #                             lr=self.init_lr)
 
         # Linear warmup for the first 10 epochs.
         self.warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
