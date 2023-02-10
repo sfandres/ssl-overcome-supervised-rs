@@ -212,8 +212,8 @@ class SimCLRModel(torch.nn.Module):
         self.init_lr = float(lr * batch_size / 256)
 
         # Optimizer.
-        self.optimizer = LARS(self.parameters,
-                              lr=base_lr)
+        self.optimizer = LARS(self.parameters(),
+                              lr=self.init_lr)
 
         # # Optimizer.
         # self.optimizer = FLASH_LARS(self.parameters(),
