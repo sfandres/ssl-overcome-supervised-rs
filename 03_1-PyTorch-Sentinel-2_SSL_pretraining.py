@@ -26,15 +26,15 @@ def is_notebook() -> bool:
 # In[ ]:
 
 
-if is_notebook():
-    get_ipython().run_line_magic('load_ext', 'pycodestyle_magic')
+# if is_notebook():
+#     %load_ext pycodestyle_magic
 
 
 # In[ ]:
 
 
-if is_notebook():
-    get_ipython().run_line_magic('pycodestyle_on', '')
+# if is_notebook():
+#     %pycodestyle_on
 
 
 # In[ ]:
@@ -104,6 +104,12 @@ from utils import pca_computation, tsne_computation
 import plotly.express as px
 
 
+# In[ ]:
+
+
+import matplotlib.font_manager
+
+
 # ## Parser
 
 # In[ ]:
@@ -169,7 +175,7 @@ if __name__ == '__main__':
     )
 
 if is_notebook():
-    args = parser.parse_args(args=['barlowtwins', '--epochs', '15'])
+    args = parser.parse_args(args=['barlowtwins', '--epochs', '25'])
     # , '--ini_weights', 'imagenet'
 else:
     args = parser.parse_args(sys.argv[1:])
@@ -295,7 +301,7 @@ for dirs in data_dirs:
     print(dirs)
 
 # Select the target dataset.
-data_dir_target = data_dirs[5]
+data_dir_target = data_dirs[4]
 print('\nSelected: ' + data_dir_target)
 
 # Ratio.
