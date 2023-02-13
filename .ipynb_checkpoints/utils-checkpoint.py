@@ -153,88 +153,88 @@ class Experiment:
 #                     bbox_inches='tight')
 
 
-def listdir_fullpath(directory):
-    """
-    Takes the "directory" and creates a list of
-    the subdirectories with the root path included.
+# def listdir_fullpath(directory):
+#     """
+#     Takes the "directory" and creates a list of
+#     the subdirectories with the root path included.
 
-    Args:
-        directory: the target directory.
+#     Args:
+#         directory: the target directory.
 
-    Returns:
-        A list of the subdirectories with the full path. 
-    """
+#     Returns:
+#         A list of the subdirectories with the full path. 
+#     """
 
-    return sorted([os.path.join(directory, x)
-                   for x in os.listdir(directory)])
-
-
-def get_mean_std_dataloader(dataloader):
-    """
-    Takes the "dataloader" and computes
-    the mean and std of the entire dataset.
-
-    Args:
-        dataloader: PyTorch DataLoader.
-
-    Returns:
-        mean: mean of the samples per dimension.
-        std: standard deviation of the samples per dimension.
-    """
-
-    # Initialization.
-    channels_sum, channels_squares_sum, num_batches = 0, 0, 0
-
-    # Loop over the batches.
-    for data, _ in dataloader:
-
-        # Compute the mean in the given dimensions (not channel).
-        channels_sum += torch.mean(data, dim=[0, 2, 3])
-        channels_squares_sum += torch.mean(data**2, dim=[0, 2, 3])
-        num_batches +=1
-
-    # Final computation.
-    mean = channels_sum / num_batches
-    std = (channels_squares_sum / num_batches - mean**2)**0.5
-
-    return mean, std
+#     return sorted([os.path.join(directory, x)
+#                    for x in os.listdir(directory)])
 
 
-def load_mean_std_values(data_dir):
-    """
-    Takes the "data_dir" and loads the mean
-    and std values from the txt file.
+# def get_mean_std_dataloader(dataloader):
+#     """
+#     Takes the "dataloader" and computes
+#     the mean and std of the entire dataset.
 
-    Args:
-        data_dir: path to the directory where the dataset is saved.
+#     Args:
+#         dataloader: PyTorch DataLoader.
 
-    Returns:
-        mean: dictionary holding the mean of the samples
-            per dimension and split.
-        std: dictionary holding the standard deviation of
-            the samples per dimension and split.
-    """
+#     Returns:
+#         mean: mean of the samples per dimension.
+#         std: standard deviation of the samples per dimension.
+#     """
 
-    # Initialization.
-    splits = ['train', 'val', 'test']
-    filename = 'dataset_mean_std.txt'
-    mean, std = {}, {}
+#     # Initialization.
+#     channels_sum, channels_squares_sum, num_batches = 0, 0, 0
 
-    # Create path to the txt file.
-    filepath = os.path.join(data_dir, filename)
+#     # Loop over the batches.
+#     for data, _ in dataloader:
 
-    # Read the values by transforming from str to list
-    # and reading only the target characters.
-    with open(filepath) as f:
-        lines = f.readlines()
-        mean['train'] = ast.literal_eval(lines[1][7:-2])
-        std['train'] = ast.literal_eval(lines[2][7:-2])
-        mean['val'] = ast.literal_eval(lines[4][7:-2])
-        std['val'] = ast.literal_eval(lines[5][7:-2])
-        mean['test'] = ast.literal_eval(lines[7][7:-2])
-        std['test'] = ast.literal_eval(lines[8][7:-2])
+#         # Compute the mean in the given dimensions (not channel).
+#         channels_sum += torch.mean(data, dim=[0, 2, 3])
+#         channels_squares_sum += torch.mean(data**2, dim=[0, 2, 3])
+#         num_batches +=1
 
-    return mean, std
+#     # Final computation.
+#     mean = channels_sum / num_batches
+#     std = (channels_squares_sum / num_batches - mean**2)**0.5
+
+#     return mean, std
+
+
+# def load_mean_std_values(data_dir):
+#     """
+#     Takes the "data_dir" and loads the mean
+#     and std values from the txt file.
+
+#     Args:
+#         data_dir: path to the directory where the dataset is saved.
+
+#     Returns:
+#         mean: dictionary holding the mean of the samples
+#             per dimension and split.
+#         std: dictionary holding the standard deviation of
+#             the samples per dimension and split.
+#     """
+
+#     # Initialization.
+#     splits = ['train', 'val', 'test']
+#     filename = 'dataset_mean_std.txt'
+#     mean, std = {}, {}
+
+#     # Create path to the txt file.
+#     filepath = os.path.join(data_dir, filename)
+
+#     # Read the values by transforming from str to list
+#     # and reading only the target characters.
+#     with open(filepath) as f:
+#         lines = f.readlines()
+#         mean['train'] = ast.literal_eval(lines[1][7:-2])
+#         std['train'] = ast.literal_eval(lines[2][7:-2])
+#         mean['val'] = ast.literal_eval(lines[4][7:-2])
+#         std['val'] = ast.literal_eval(lines[5][7:-2])
+#         mean['test'] = ast.literal_eval(lines[7][7:-2])
+#         std['test'] = ast.literal_eval(lines[8][7:-2])
+
+#     return mean, std
 
 
 def create_confusion_matrix(model, dataloader, device, class_names):
