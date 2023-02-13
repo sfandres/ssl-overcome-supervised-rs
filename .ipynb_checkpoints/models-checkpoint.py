@@ -8,6 +8,10 @@ from lightly.loss import NTXentLoss
 from lightly.models.modules import BarlowTwinsProjectionHead
 from lightly.loss import BarlowTwinsLoss
 
+from lightly.models.modules import MoCoProjectionHead
+from lightly.models.utils import deactivate_requires_grad
+from lightly.models.utils import update_momentum
+
 from datetime import datetime
 import os
 
@@ -409,6 +413,152 @@ class BarlowTwins(torch.nn.Module):
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
 
         return filename
+
+
+class Mocov2(torch.nn.Module):
+    """
+    MoCo v2: Improved Baselines with Momentum Contrastive Learning, 2020
+
+    Attributes:
+        backbone: Architecture of the CNN model.
+            
+    From the original BarlowTwins paper:
+        We use the LARS optimizer (You et al., 2017) and train for 1000 epochs with
+        a batch size of 2048. We however emphasize that our model works well with
+        batches as small as 256 (see Ablations). We use a learning rate of 0.2 for
+        the weights and 0.0048 for the biases and batch normalization parameters. We
+        multiply the learning rate by the batch size and divide it by 256. We use a
+        learning rate warm-up period of 10 epochs, after which we reduce the learning
+        rate by a factor of 1000 using a cosine decay schedule (Loshchilov & Hutter,
+        2016). We ran a search for the trade-off parameter λ of the loss function and
+        found the best results for λ = 5 · 10−3. We use a weight decay parameter of
+        1.5 · 10−6. The biases and batch normalization parameters are excluded from
+        LARS adaptation and weight decay. [...]
+    """
+
+    def __init__(self, backbone):
+        """Constructor of the class."""
+
+        # Inheritance.
+        super().__init__()
+
+        self.backbone = backbone
+        self.projection_head = MoCoProjectionHead(512, 512, 128)
+
+        self.backbone_momentum = copy.deepcopy(self.backbone)
+        self.projection_head_momentum = copy.deepcopy(self.projection_head)
+
+        deactivate_requires_grad(self.backbone_momentum)
+        deactivate_requires_grad(self.projection_head_momentum)
+
+        # Loss criterion.
+        self.criterion = NTXentLoss()
+
+    def forward(self, x):
+        """How your model runs from input to output."""
+
+        # Get representations and projections.
+        query = self.backbone(x).flatten(start_dim=1)
+        query = self.projection_head(query)
+
+        return query
+
+    def forward_momentum(self, x):
+        """How momentum runs from input to output."""
+
+        key = self.backbone_momentum(x).flatten(start_dim=1)
+        key = self.projection_head_momentum(key).detach()
+
+        return key
+
+    """"UP TO HERE"""
+    
+#     def configure_optimizer(self, batch_size, weight_decay=1.5e-6):
+#         """Configures the optimizer."""
+
+#         # Creates two groups of params.
+#         param_weights = []
+#         param_biases = []
+#         for param in self.parameters():
+#             if param.ndim == 1:
+#                 param_biases.append(param)
+#             else:
+#                 param_weights.append(param)
+#         # parameters = [{'params': param_weights}, {'params': param_biases}]
+#         self.parameters = [{'params': param_weights, 'lr': 0.2}, {'params': param_biases, 'lr': 0.0048}]
+
+#         # Infer learning rate.
+#         base_lr = float(batch_size / 256)
+#         print(f'Base lr: {base_lr}')
+
+#         # Optimizer.
+#         self.optimizer = LARS(self.parameters,
+#                               lr=base_lr,
+#                               weight_decay=weight_decay,
+#                               weight_decay_filter=True,
+#                               lars_adaptation_filter=True)
+
+#     def configure_scheduler(self, epochs, batch_size=512,
+#                             lr=0.2, weight_decay=1e-6):
+#         """Set up the optimizer and scheduler."""
+
+#         # Linear warmup for the first 10 epochs.
+#         self.warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+#             self.optimizer,
+#             lambda epoch: min(1, epoch / 10),
+#             verbose=True
+#         )
+
+#         # Cosine decay starting from the 11th epoch.
+#         self.main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+#             self.optimizer,
+#             T_max=epochs,
+#             verbose=True
+#         )
+
+#     def training_step(self, x0, x1):
+#         """Calculate loss."""
+
+#         z0 = self.forward(x0)
+#         z1 = self.forward(x1)
+#         loss = self.criterion(z0, z1)
+
+#         return loss
+
+#     def evaluation(self, dataloader_val):
+#         """Evaluation process, returns the loss."""
+
+#         pass
+
+#     def save(self, epoch, train_loss, val_loss, handle_imb_classes, ratio, output_dir_model, collapse_level=None):
+#         """Saving the model."""
+
+#         # Save parameters.
+#         self.epoch = epoch
+#         self.train_loss = train_loss
+#         self.val_loss = val_loss
+#         self.handle_imb_classes = handle_imb_classes
+#         self.ratio = ratio
+#         self.time = datetime.now()
+
+#         # Save weights and biases.
+#         torch.save(self.backbone.state_dict(),
+#                    os.path.join(output_dir_model, self.__str__()))
+
+#     def __str__(self):
+#         """Overwriting the string representation of the class."""
+
+#         # Filename with stats (no avg_rep_collapse).
+#         filename = f'barlowtwins' \
+#                    f'-ratio={self.ratio}' \
+#                    f'-val_loss={self.val_loss:.3f}' \
+#                    f'-train_loss={self.train_loss:.3f}' \
+#                    f'-epoch={self.epoch:03}' \
+#                    f'-balanced={self.handle_imb_classes}' \
+#                    f'-bb=resnet18' \
+#                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
+
+#         return filename
 
 
 class LARS(torch.optim.Optimizer):
