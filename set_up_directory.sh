@@ -3,6 +3,7 @@ mkdir output
 cd output/
 mkdir figures
 cd figures/
+mkdir 0_history_log
 mkdir simsiam
 mkdir simclr
 mkdir barlowtwins
