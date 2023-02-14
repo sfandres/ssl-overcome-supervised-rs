@@ -1,9 +1,12 @@
 echo "Creating a folder to store the resulting images..."
+mkdir output
+cd output/
 mkdir figures
 cd figures/
 mkdir simsiam
 mkdir simclr
 mkdir barlowtwins
+mkdir finetuning
 echo "Completed!"
 
 cd ..
@@ -15,4 +18,5 @@ mkdir 0_history_log
 mkdir simsiam
 mkdir simclr
 mkdir barlowtwins
+mkdir finetuning
 echo "Completed!"
