@@ -4,11 +4,13 @@ Usage:
     ./stationinfo.py <input_dir> --output_dir <output_dir> --output_ini_name <output_ini_name>
 
 Author:
-    A.J. Sanchez-Fernandez - 24/01/2023
+    A.J. Sanchez-Fernandez - 14/02/2023
 """
 
 
-import utils
+import sys
+sys.path.append("../")
+from utils.computation import Experiment
 import splitfolders
 import argparse
 import sys
@@ -64,7 +66,7 @@ target_dataset_name = args.output_ini_name
 print(f'\nOutput folder name: {target_dataset_name}')
 
 # Experiment class for reproducibility.
-exp = utils.Experiment()
+exp = Experiment()
 exp.reproducibility()
 print(f'\nSeed used: {exp.seed}')
 

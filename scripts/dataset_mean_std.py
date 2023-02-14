@@ -5,15 +5,16 @@ Usage:
     ./dataset_mean_std.py <input_dir> --batch_size <batch_size>
 
 Author:
-    A.J. Sanchez-Fernandez - 24/01/2023
+    A.J. Sanchez-Fernandez - 14/02/2023
 """
 
 
+import sys
+sys.path.append("../")
+from utils.computation import Experiment
 import torch
 import torchvision
-import utils
 import argparse
-import sys
 import os
 
 
