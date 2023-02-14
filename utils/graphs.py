@@ -1,3 +1,14 @@
+"""Useful functions for graphs.
+
+Usage:
+    -
+
+Author:
+    A.J. Sanchez-Fernandez - 14/02/2023
+"""
+
+
+
 import matplotlib as plt
 import numpy as np
 
@@ -13,24 +24,24 @@ def simple_bar_plot(ax, data_x, label_x, data_y, label_y, **param_dict):
         The axes to draw to
 
     data_x : array
-       The x data
+        The x data
 
     label_x : string
-       The x axis label
+        The x axis label
 
     data_y : array
-       The y data
+        The y data
 
     label_y : string
-       The y axis label
+        The y axis label
 
     param_dict : dict
-       Dictionary of keyword arguments to pass to ax.plot
+        Dictionary of keyword arguments to pass to ax.plot
 
     Returns
     -------
     out : list
-        list of artists added
+        List of artists added
     """
     
     # Global options;

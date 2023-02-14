@@ -1,10 +1,10 @@
-"""Useful functions used to manage the datasets.
+"""Useful functions to manage the datasets.
 
 Usage:
     -
 
 Author:
-    A.J. Sanchez-Fernandez - 13/02/2023
+    A.J. Sanchez-Fernandez - 14/02/2023
 """
 
 
