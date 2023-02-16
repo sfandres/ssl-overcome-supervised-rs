@@ -86,7 +86,7 @@ def simple_bar_plot(ax, data_x, label_x, data_y, label_y, **param_dict):
     return out
 
 
-def plot_one_random_sample_dataloader(ax, dataloaders, mean, std, class_names, split, **param_dict):
+def plot_one_sample_dataloader(ax, dataloaders, mean, std, class_names, split, **param_dict):
     """
     Function that shows a random sample from the dataloader.
 
