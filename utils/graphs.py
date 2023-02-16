@@ -4,7 +4,7 @@ Usage:
     -
 
 Author:
-    A.J. Sanchez-Fernandez - 14/02/2023
+    A.J. Sanchez-Fernandez - 16/02/2023
 """
 
 
@@ -82,5 +82,58 @@ def simple_bar_plot(ax, data_x, label_x, data_y, label_y, **param_dict):
     # Remaining options.
     ax.set_xlabel(label_x, labelpad=15)
     ax.set_ylabel(label_y, labelpad=15)
+
+    return out
+
+
+def plot_one_random_sample_dataloader(ax, dataloaders, mean, std, class_names, split, **param_dict):
+    """
+    Function that shows a random sample from the dataloader.
+
+    Parameters
+    ----------
+    ax : Axes
+        The axes to draw to
+
+    dataloader : PyTorch dataloader
+        Dataloader
+
+    mean : dict
+        Mean values of the normalization of the samples
+
+    std : dict
+        Std values of the normalization of the samples
+
+    class_names : list
+        Map the idx into labels
+
+    split : str
+        Train, val, or test
+
+    param_dict : dict
+        Dictionary of keyword arguments to pass to ax.plot
+
+    Returns
+    -------
+    out : list
+        List of artists added
+    """
+
+    # Accessing Data and Targets in a PyTorch DataLoader.
+    for i, (images, labels) in enumerate(dataloaders[split]):
+        print(f'Batch-->images: {images.shape}')
+        print(f'Batch-->labels: {labels.shape}')
+        label = labels[0]
+        img = images[0].numpy().transpose((1, 2, 0))
+        img = std[split] * img + mean[split]
+        img = np.clip(img, 0, 1)
+        break
+
+    # Set title.
+    ax.set_title(f'Label: {int(label)} ({class_names[label]})')
+    ax.set_aspect('auto')
+
+    # Main plot.
+    out = ax.imshow(img)
 
     return out
