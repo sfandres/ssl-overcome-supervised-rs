@@ -4,12 +4,13 @@ Usage:
     -
 
 Author:
-    A.J. Sanchez-Fernandez - 14/02/2023
+    A.J. Sanchez-Fernandez - 02/03/2023
 """
 
 
 import os
 import ast
+import torch
 
 
 def list_subdirs_fullpath(input_path):
@@ -120,3 +121,57 @@ def load_dataset_based_on_ratio(input_path, name, ratio):
                         'Please check the files.')
 
     return split_path, mean, std
+
+
+def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0, param_dict={}):
+    """
+    Takes the "dataloader" and creates a figure using "axes",
+    "num_cols", and "param_dict" displaying all the images in
+    the "batch_id" batch. Each subplot shows the class name with
+    the greatest abundance using the "idx_to_class" dict.
+
+    Example:
+        show_one_batch(axes, dataloader, dataset.idx_to_class,
+                       batch_id=0, param_dict={'alpha':0.25})
+
+    Args:
+        axes (matplotlib.axes): An Axes object encapsulates all
+        the elements of an individual (sub-)plot in the figure.
+        num_cols (int): Number of columns in the figure.
+        dataloader (PyTorch dataloader): The dataloader.
+        idx_to_class (dict): Dictionary that maps ids to class' names. 
+        batch_id (int, optional): Item (batch) to be displayed.
+        param_dict (dict, optional): Dictionary of kwargs to
+        pass to ax.plot.
+
+    Returns:
+        out (list): List of artists added.
+    """
+    
+    # Iterate over batches.
+    for i, batch in enumerate(dataloader):
+
+        # Batch is a tuple of inputs and targets.
+        inputs, labels = batch
+
+        # Display images (only target batch).
+        if i == batch_id:
+            for j in range(dataloader.batch_size):
+
+                # Get image and label from batch.
+                image = inputs[j]
+                label = labels[j]
+
+                # Get class name with the greatest abundance (multi-label for now).
+                class_name = idx_to_class[int(torch.argmax(label))]
+
+                # Convert image from tensor to numpy array.
+                image = torch.permute(image, (1, 2, 0))  # [C, H, W] -> [H, W, C]
+
+                # Display image in subplot.
+                ax = axes[j // num_cols, j % num_cols]
+                ax.set_title(f'Max: {class_name}')
+                ax.axis('off')
+                out = ax.imshow(image, **param_dict)
+
+            return out
