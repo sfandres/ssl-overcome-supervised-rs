@@ -151,6 +151,35 @@ def list_subdirs_fullpath(input_path):
                    for x in os.listdir(input_path)])
 
 
+def get_mean_std_dataloader(dataloader):
+    """
+    Takes the "dataloader" and computes
+    the mean and std of the entire dataset.
+    Args:
+        dataloader: PyTorch DataLoader.
+    Returns:
+        mean: mean of the samples per dimension.
+        std: standard deviation of the samples per dimension.
+    """
+
+    # Initialization.
+    channels_sum, channels_squares_sum, num_batches = 0, 0, 0
+
+    # Loop over the batches.
+    for data, _ in dataloader:
+
+        # Compute the mean in the given dimensions (not channel).
+        channels_sum += torch.mean(data, dim=[0, 2, 3])
+        channels_squares_sum += torch.mean(data**2, dim=[0, 2, 3])
+        num_batches +=1
+
+    # Final computation.
+    mean = channels_sum / num_batches
+    std = (channels_squares_sum / num_batches - mean**2)**0.5
+
+    return mean, std
+
+
 def load_mean_std_values(input_path):
     """
     Takes the "input_path" and loads the mean
