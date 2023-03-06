@@ -12,6 +12,7 @@ Author:
 import sys
 sys.path.append("../")
 from utils.computation import Experiment
+from utils.dataset import get_mean_std_dataloader
 import torch
 import torchvision
 import argparse
@@ -113,7 +114,7 @@ for data_dir in data_dirs:
         print(f'{x}/')
         print(f'Samples to be processed: '
               f'{len(dataloaders[x].dataset)}')
-        mean, std = utils.get_mean_std_dataloader(dataloaders[x])
+        mean, std = get_mean_std_dataloader(dataloaders[x])
         print(mean)
         print(std)
 
