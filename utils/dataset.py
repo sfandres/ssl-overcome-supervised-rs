@@ -276,16 +276,46 @@ def load_dataset_based_on_ratio(input_path, name, ratio):
     return split_path, mean, std
 
 
-def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0, param_dict={}):
+def inv_norm_tensor(tensor, mean, std):
+    """
+    Takes the "tensor" and does the inverse transform to
+    return the tensor to its original state using "mean"
+    and "std" values.
+
+    Example:
+        inv_norm_tensor(tensor, mean, std)
+
+    Args:
+        tensor (torch.tensor): Image in PyTorch tensor format.
+        mean (torch.tensor): Mean values.
+        std (torch.tensor): Std values.
+
+    Returns:
+        tensor (torch.tensor): Transformed image in PyTorch
+        tensor format.
+    """
+
+    for t, m, s in zip(tensor, mean, std):
+        t.mul_(s).add_(m)
+
+    return tensor
+
+
+def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0,
+                   inv_norm=False, mean=None, std=None, param_dict={}):
     """
     Takes the "dataloader" and creates a figure using "axes",
     "num_cols", and "param_dict" displaying all the images in
     the "batch_id" batch. Each subplot shows the class name with
-    the greatest abundance using the "idx_to_class" dict.
+    the greatest abundance using the "idx_to_class" dict. Images
+    can be returned transformed if "inv_norm" is set and "mean"
+    and "std" values are provided.
 
     Example:
-        show_one_batch(axes, dataloader, dataset.idx_to_class,
-                       batch_id=0, param_dict={'alpha':0.25})
+        show_one_batch(axes, num_cols, dataloader['train'],
+               andalucia_dataset_norm['train'].idx_to_class,
+               batch_id=0, inv_norm=True, mean=mean_std_dict['train'][0],
+               std=mean_std_dict['train'][1], param_dict={'alpha':0.25})
 
     Args:
         axes (matplotlib.axes): An Axes object encapsulates all
@@ -294,6 +324,9 @@ def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0, param_d
         dataloader (PyTorch dataloader): The dataloader.
         idx_to_class (dict): Dictionary that maps ids to class' names. 
         batch_id (int, optional): Item (batch) to be displayed.
+        inv_norm (bool, optional): Apply inverse transform to images.
+        mean (torch.tensor): Mean values.
+        std (torch.tensor): Std values.
         param_dict (dict, optional): Dictionary of kwargs to
         pass to ax.plot.
 
@@ -319,6 +352,8 @@ def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0, param_d
                 class_name = idx_to_class[int(torch.argmax(label))]
 
                 # Convert image from tensor to numpy array.
+                if inv_norm:
+                    image = inv_norm_tensor(image, mean, std)
                 image = torch.permute(image, (1, 2, 0))  # [C, H, W] -> [H, W, C]
 
                 # Display image in subplot.
