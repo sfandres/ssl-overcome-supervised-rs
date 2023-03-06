@@ -11,7 +11,129 @@ Author:
 import os
 import ast
 import torch
+from torch.utils.data import Dataset
+import pandas as pd
+from PIL import Image
 
+#--------------------------
+# LOADING DATASETS
+#--------------------------
+
+class AndaluciaDataset(Dataset):
+    """Sentinel2AndaluciaLULC dataset."""
+
+    def __init__(self, root_dir, level, split, transform=None, target_transform=None):
+        """
+        Args:
+            root_dir (str): Root (parent) directory.
+            level (str): Level of the dataset (N1 or N2).
+            split (str): Train, validation or test splits.
+            transform (callable, optional): Optional transform to be
+            applied on an image.
+            target_transform (callable, optional): Optional transform to be
+            applied on a label.
+        """
+        # Build paths.
+        self.root_dir = root_dir
+        self.level_dir = os.path.join(self.root_dir, level)
+        self.images_dir = os.path.join(self.level_dir,
+                                       os.path.join('RGB Images', split))
+
+        # Get csv file.
+        self.csv_file_path = os.path.join(self.level_dir,
+                                          os.path.join('CSV',
+                                                       f'csv_{split}.csv'))
+        self.csv_dataset_info = pd.read_csv(self.csv_file_path)
+
+        # Get transforms if applicable.
+        self.transform = transform
+        self.target_transform = target_transform
+
+        # Get classes and mapping.
+        classes = self._find_classes(level)
+        self.classes, self.class_to_idx, self.idx_to_class = classes
+
+        # Print info.
+        self._show_info()
+
+    def _show_info(self):
+        """ Shows data regarding the dataset. """
+        print('-----------Andalucia dataset info-----------')
+        print(f'Root/Parent folder: {self.root_dir}')
+        print(f'Level folder:       {self.level_dir}')
+        print(f'Images folder:      {self.images_dir}')
+        print(f'Path to csv file:   {self.csv_file_path}')
+        print('Instance variables: .classes, .class_to_idx, .idx_to_class')
+        print(f'Number of samples:  {self.__len__()}')
+        print(f'Number of classes:  {len(self.classes)}')
+        print('Labels:')
+        print(self.classes)
+        print(f'--------------------------------------------\n')
+
+    def _find_classes(self, level):
+        """
+        Finds the class folders in a dataset.
+        Args:
+            level (str): Level of the dataset (N1 or N2).
+        Returns:
+            tuple: (classes, class_to_idx, idx_to_class) where classes are
+            relative to (dir), and class_to_idx and idx_to_class are dictionaries.
+        """
+        # Get csv with class names.
+        path_to_csv_dict = os.path.join(self.root_dir,
+                                        'N1_and_N2_Dictionnary.xlsx')
+        csv_dict = pd.read_excel(path_to_csv_dict, header=None)
+
+        # Get the classes.
+        if level == 'Level_N1':
+            classes = csv_dict.iloc[2:6, 1].to_numpy()
+        elif level == 'Level_N2':
+            classes = csv_dict.iloc[10:21, 1].to_numpy()
+
+        # Create the dictionaries.
+        class_to_idx = {classes[i]: i for i in range(len(classes))}
+        idx_to_class = {v: k for k, v in class_to_idx.items()}
+
+        return classes, class_to_idx, idx_to_class
+
+    def __len__(self):
+        """ Returns the number of samples. """
+        return len(self.csv_dataset_info)
+
+    def __getitem__(self, idx):
+        """
+        Supports the indexing of samples.
+        Args:
+            idx (int): index of the sample.
+        Returns:
+            sample (dict): sample returned.
+        """
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        # Get image name (with idx and column 'filename').
+        img_name = os.path.join(self.images_dir,
+                                self.csv_dataset_info.iloc[idx, 3])
+
+        # Load image.
+        img = Image.open(img_name)
+
+        # Get ground-truth abundances (multi-label).
+        abundances = self.csv_dataset_info.iloc[idx, 5:15]
+        abundances = torch.FloatTensor(abundances)
+
+        # Apply transforms if requested.
+        if self.transform:
+            img = self.transform(img)
+        if self.target_transform:
+            abundances = self.target_transform(abundances)
+
+        return img, abundances
+
+
+#--------------------------
+# OTHER USEFUL FUNCTIONS
+#--------------------------
 
 def list_subdirs_fullpath(input_path):
     """
