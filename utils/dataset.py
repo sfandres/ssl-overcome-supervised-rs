@@ -22,7 +22,7 @@ from PIL import Image
 class AndaluciaDataset(Dataset):
     """Sentinel2AndaluciaLULC dataset."""
 
-    def __init__(self, root_dir, level, split, transform=None, target_transform=None):
+    def __init__(self, root_dir, level, split, transform=None, target_transform=None, verbose=True):
         """
         Args:
             root_dir (str): Root (parent) directory.
@@ -32,6 +32,7 @@ class AndaluciaDataset(Dataset):
             applied on an image.
             target_transform (callable, optional): Optional transform to be
             applied on a label.
+            verbose (callable, optional): Enables show info.
         """
         # Build paths.
         self.root_dir = root_dir
@@ -54,7 +55,8 @@ class AndaluciaDataset(Dataset):
         self.classes, self.class_to_idx, self.idx_to_class = classes
 
         # Print info.
-        self._show_info()
+        if verbose:
+            self._show_info()
 
     def _show_info(self):
         """ Shows data regarding the dataset. """
