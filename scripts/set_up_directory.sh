@@ -1,3 +1,5 @@
+cd ..
+
 echo "Creating a folder to store the resulting images..."
 mkdir output
 cd output/
