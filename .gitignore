@@ -1,8 +1,15 @@
-.ipynb_checkpoints/
-utils/.ipynb_checkpoints/
-datasets/
-lulc-venv/
-lulc-conda/
-__pycache__/
-output/
+# Byte-compiled / optimized / DLL files
+.ipynb_checkpoints
+utils/.ipynb_checkpoints
+__pycache__
+
+# Conda environments
+lulc-conda
+
+# Custom folders
+datasets
+output
+runs
+
+# Specific file extensions
 *.out
