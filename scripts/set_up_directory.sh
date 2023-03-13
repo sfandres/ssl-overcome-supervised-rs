@@ -1,6 +1,10 @@
 cd ..
 
-echo "Creating a folder to store the resulting images..."
+echo "Creating a folder to store the datasets..."
+mkdir datasets
+echo "Completed!"
+
+echo "Creating a folder to store the resulting figures..."
 mkdir output
 cd output/
 mkdir figures
