@@ -7,8 +7,8 @@
 #SBATCH --wait-all-nodes=1                          ## Controls when the execution begins.
 #SBATCH --time=24:00:00                             ## Job duration (Sergio: 24:00:00).
 #SBATCH --gpus-per-node=2                           ## Number of GPUs on each node (Sergio: 4).
-#SBATCH --job-name=uexssl_%A_%a                     ## Name of the job.
-#SBATCH --output=uexssl_%A_%a.out                   ## Output file.
+#SBATCH --job-name=uexsslfn_%A_%a                   ## Name of the job.
+#SBATCH --output=uexsslfn_%A_%a.out                 ## Output file.
 #SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
 #SBATCH --array=0-2:1                               ## Run job arrays.
@@ -18,7 +18,7 @@ job_id=${SLURM_ARRAY_JOB_ID}
 task_id=${SLURM_ARRAY_TASK_ID}
 
 ## Array of models.
-array_models=("simsiam" "simclr" "barlowtwins")
+array_models=("scratch" "imagenet" "ssl")
 model=${array_models[${task_id}]}
 
 ## Create a string for email subject.
@@ -37,17 +37,15 @@ source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc-conda
 
 ## Execute the Python script and pass the arguments.
-srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
+srun python3 03_2-PyTorch-Backbone_classifier.py \
 ${model} \
---dataset Sentinel2GlobalLULC \
---balanced_dataset False \
+--dataset Sentinel2AndaluciaLULC \
 --epochs 25 \
 --batch_size 128 \
---ini_weights random \
 --show_fig False \
 --cluster True
 ## srun python3 testing_GPU_PyTorch.py
 
 ## Send email when job ends.
-## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
-/usr/bin/mail -a uexssl_${job_id}_${task_id}.out -s "Sbatch ${email_info} ended" sfandres@unex.es
+## cat uexsslfn_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
+/usr/bin/mail -a uexsslfn_${job_id}_${task_id}.out -s "Sbatch ${email_info} ended" sfandres@unex.es
