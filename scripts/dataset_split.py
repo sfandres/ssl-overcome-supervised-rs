@@ -1,10 +1,27 @@
 """Creates the diferent datasets according to the target ratios.
 
-Usage:
-    ./stationinfo.py <input_dir> --output_dir <output_dir> --output_ini_name <output_ini_name>
+Usage: dataset_split.py [-h] [--output_ini_name OUTPUT_INI_NAME] [--train_ratios TRAIN_RATIOS [TRAIN_RATIOS ...]]
+                        [--val_ratio VAL_RATIO]
+                        input_path output_path
+
+Python script that divides the target dataset into training, validation, and test datasets according to custom
+splits.
+
+positional arguments:
+  input_path            path to the input directory where the raw dataset is stored (one class per folder).
+  output_path           path to the output directory where the new datasets will be stored.
+
+options:
+  -h, --help            show this help message and exit
+  --output_ini_name OUTPUT_INI_NAME, -n OUTPUT_INI_NAME
+                        beginning of each folder's name (default = 'NewDataset').
+  --train_ratios TRAIN_RATIOS [TRAIN_RATIOS ...], -trs TRAIN_RATIOS [TRAIN_RATIOS ...]
+                        train ratios of the splits per unit separated by spaces (example: .9 .8 .7).
+  --val_ratio VAL_RATIO, -vr VAL_RATIO
+                        val ratio of the splits per unit (default = 0.25).
 
 Author:
-    A.J. Sanchez-Fernandez - 14/02/2023
+    A.J. Sanchez-Fernandez - 15/03/2023
 """
 
 
