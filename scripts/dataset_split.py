@@ -137,7 +137,7 @@ def main():
                     test_s))
 
     # Print the list of ratios to be used.
-    print(f'{ratios}')
+    print(f'{ratios}\n')
 
     # Split with a ratio.
     # To only split into training and validation set,
@@ -155,7 +155,7 @@ def main():
                         f'-ratio={str_ratio}'
                         f'-seed={exp.seed}')
 
-        print(f'\nBuilding dataset: {dataset_name}...')
+        print(f'Building dataset: {dataset_name}...')
 
         # Split the dataset (default values).
         splitfolders.ratio(initial_dir_dataset,
@@ -166,7 +166,7 @@ def main():
                         group_prefix=None,
                         move=False)
 
-        print('Successfully created!')
+        print('Successfully created!\n')
 
     return 0
 
