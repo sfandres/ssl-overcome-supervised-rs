@@ -39,13 +39,11 @@ conda activate lulc-conda
 ## Execute the Python script and pass the arguments.
 srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
 ${model} \
---dataset Sentinel2GlobalLULC \
---balanced_dataset False \
---epochs 25 \
+--dataset Sentinel2GlobalLULC_SSL \
+--epochs 50 \
 --batch_size 128 \
 --ini_weights random \
---show_fig False \
---cluster True
+--cluster
 ## srun python3 testing_GPU_PyTorch.py
 
 ## Send email when job ends.
