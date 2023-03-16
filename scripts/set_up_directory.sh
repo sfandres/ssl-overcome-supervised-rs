@@ -19,8 +19,8 @@ echo "Completed!"
 cd ..
 
 echo "Creating a folder to store the model checkpoints..."
-mkdir pytorch_models
-cd pytorch_models/
+mkdir checkpoints
+cd checkpoints/
 mkdir 0_history_log
 mkdir simsiam
 mkdir simclr
