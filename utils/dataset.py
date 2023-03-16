@@ -268,7 +268,7 @@ def load_dataset_based_on_ratio(input_path, name, ratio):
     try:
         mean, std = load_mean_std_values(split_path)
         print(f'Mean loaded from .txt: {mean}')
-        print(f'Std loaded from .txt: {std}')
+        print(f'Std loaded from .txt:  {std}')
     except:
         raise Exception('Error loading the mean and std files for the target dataset. '
                         'Please check the files.')
