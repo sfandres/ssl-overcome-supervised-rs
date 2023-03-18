@@ -114,6 +114,16 @@ import argparse
 import matplotlib.font_manager
 
 
+# In[ ]:
+
+
+print(f'\ntorch.cuda.is_available():\t{torch.cuda.is_available()}')
+print(f'torch.cuda.device_count():\t{torch.cuda.device_count()}')
+print(f'torch.cuda.current_device():\t{torch.cuda.current_device()}')
+print(f'torch.cuda.device(0):\t{torch.cuda.device(0)}')
+print(f'torch.cuda.get_device_name(0):\t{torch.cuda.get_device_name(0)}')
+
+
 # ## Parser
 
 # In[ ]:
