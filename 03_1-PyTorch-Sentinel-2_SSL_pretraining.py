@@ -895,7 +895,7 @@ for e in range(exp.epochs):
 
         # Move the model to CPU before saving
         # it and then back to the GPU.
-        model.to('cpu')
+        # model.to('cpu')
         model.save(e,
                    epoch_train_loss,
                    epoch_val_loss,
@@ -903,7 +903,7 @@ for e in range(exp.epochs):
                    dataset_ratio,
                    output_path_models,
                    collapse_level=collapse_level)
-        model.to(exp.device)
+        # model.to(exp.device)
 
     # ======================
     # UPDATE LEARNING RATE.
@@ -971,36 +971,36 @@ print(model.backbone[0].weight[63])
 # In[ ]:
 
 
-# Empty lists.
-embeddings = []
-labels = []
+# # Empty lists.
+# embeddings = []
+# labels = []
 
-# Disable gradients for faster calculations.
-# Put the model in evaluation mode.
-model.eval()
-with torch.no_grad():
-    # for i, (x, y, fnames) in enumerate(dataloader_val):
-    # Now taking only the first transformed batch.
-    for i, ((x, _), y, fnames) in enumerate(dataloader_val_lightly):
+# # Disable gradients for faster calculations.
+# # Put the model in evaluation mode.
+# model.eval()
+# with torch.no_grad():
+#     # for i, (x, y, fnames) in enumerate(dataloader_val):
+#     # Now taking only the first transformed batch.
+#     for i, ((x, _), y, fnames) in enumerate(dataloader_val_lightly):
 
-        # Move the images to the GPU.
-        x = x.to(exp.device)
-        y = y.to(exp.device)
+#         # Move the images to the GPU.
+#         x = x.to(exp.device)
+#         y = y.to(exp.device)
 
-        # Embed the images with the pre-trained backbone.
-        emb = model.backbone(x).flatten(start_dim=1)
+#         # Embed the images with the pre-trained backbone.
+#         emb = model.backbone(x).flatten(start_dim=1)
 
-        # Store the embeddings and filenames in lists.
-        embeddings.append(emb)
-        labels.append(y)
+#         # Store the embeddings and filenames in lists.
+#         embeddings.append(emb)
+#         labels.append(y)
 
-# Concatenate the embeddings and convert to numpy.
-embeddings = torch.cat(embeddings, dim=0).to('cpu').numpy()
-labels = torch.cat(labels, dim=0).to('cpu').numpy()
+# # Concatenate the embeddings and convert to numpy.
+# embeddings = torch.cat(embeddings, dim=0).to('cpu').numpy()
+# labels = torch.cat(labels, dim=0).to('cpu').numpy()
 
-# Show shapes.
-print(np.shape(embeddings))
-print(np.shape(labels))
+# # Show shapes.
+# print(np.shape(embeddings))
+# print(np.shape(labels))
 
 
 # # PCA
@@ -1008,7 +1008,7 @@ print(np.shape(labels))
 # In[ ]:
 
 
-plot = 'all'
+# plot = 'all'
 
 
 # https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html
@@ -1016,66 +1016,66 @@ plot = 'all'
 # In[ ]:
 
 
-# PCA computation.
-df = pca_computation(embeddings, labels, exp.seed)
+# # PCA computation.
+# df = pca_computation(embeddings, labels, exp.seed)
 
-# 2-D plot.
-if plot == '2d' or plot == "23d" or plot == 'all':
-    fig = plt.figure(figsize=(10, 10))
-    sns.scatterplot(
-        x='pca_x',
-        y='pca_y',
-        hue='labels',
-        palette=sns.color_palette('hls', 29),
-        data=df,
-        legend='full',
-        alpha=0.9
-    )
-    fig_name_save = (f'pca_2d-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
-                bbox_inches='tight')
-    if show:
-        plt.show()
-    else:
-        plt.close()
+# # 2-D plot.
+# if plot == '2d' or plot == "23d" or plot == 'all':
+#     fig = plt.figure(figsize=(10, 10))
+#     sns.scatterplot(
+#         x='pca_x',
+#         y='pca_y',
+#         hue='labels',
+#         palette=sns.color_palette('hls', 29),
+#         data=df,
+#         legend='full',
+#         alpha=0.9
+#     )
+#     fig_name_save = (f'pca_2d-{model}')
+#     fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     if show:
+#         plt.show()
+#     else:
+#         plt.close()
 
-# 3-D plot with matplotlib.
-if plot == '3d' or plot == "23d" or plot == 'all':
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(
-        xs=df['pca_x'],
-        ys=df['pca_y'],
-        zs=df['pca_z'],
-        c=df['labels'],
-        cmap='tab10'
-    )
-    ax.set_xlabel('pca_x')
-    ax.set_ylabel('pca_y')
-    ax.set_zlabel('pca_z')
-    fig_name_save = (f'pca_3d-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
-                bbox_inches='tight')
-    if show:
-        plt.show()
-    else:
-        plt.close()
+# # 3-D plot with matplotlib.
+# if plot == '3d' or plot == "23d" or plot == 'all':
+#     fig = plt.figure(figsize=(10, 10))
+#     ax = fig.add_subplot(projection='3d')
+#     ax.scatter(
+#         xs=df['pca_x'],
+#         ys=df['pca_y'],
+#         zs=df['pca_z'],
+#         c=df['labels'],
+#         cmap='tab10'
+#     )
+#     ax.set_xlabel('pca_x')
+#     ax.set_ylabel('pca_y')
+#     ax.set_zlabel('pca_z')
+#     fig_name_save = (f'pca_3d-{model}')
+#     fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     if show:
+#         plt.show()
+#     else:
+#         plt.close()
 
-# 3-D plot with pyplot.
-if (plot == '3d-plotly' or plot == 'all') and show:
-    fig = px.scatter_3d(df, x='pca_x',
-                        y='pca_y', z='pca_z',
-                        color='labels',
-                        width=1000, height=800)  # symbol='labels'
+# # 3-D plot with pyplot.
+# if (plot == '3d-plotly' or plot == 'all') and show:
+#     fig = px.scatter_3d(df, x='pca_x',
+#                         y='pca_y', z='pca_z',
+#                         color='labels',
+#                         width=1000, height=800)  # symbol='labels'
 
-    fig.update_traces(marker=dict(size=3))
+#     fig.update_traces(marker=dict(size=3))
 
-    # Move colorbar.
-    # fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=1, x=0,
-    #                                           ticks="outside",
-    #                                           ticksuffix=""))
+#     # Move colorbar.
+#     # fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=1, x=0,
+#     #                                           ticks="outside",
+#     #                                           ticksuffix=""))
 
-    fig.show()
+#     fig.show()
 
 
 # # t-SNE
@@ -1085,69 +1085,69 @@ if (plot == '3d-plotly' or plot == 'all') and show:
 # In[ ]:
 
 
-# t-SNE computation for 2-D.
-df = tsne_computation(embeddings, labels, exp.seed, n_components=2)
+# # t-SNE computation for 2-D.
+# df = tsne_computation(embeddings, labels, exp.seed, n_components=2)
 
-# 2-D plot.
-if plot == '2d' or plot == "23d" or plot == 'all':
-    fig = plt.figure(figsize=(10, 10))
-    sns.scatterplot(
-        x='tsne_x',
-        y='tsne_y',
-        hue='labels',
-        palette=sns.color_palette('hls', 29),
-        data=df,
-        legend='full',
-        alpha=0.9
-    )
-    fig_name_save = (f'tsne_2d-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
-                bbox_inches='tight')
-    if show:
-        plt.show()
-    else:
-        plt.close()
+# # 2-D plot.
+# if plot == '2d' or plot == "23d" or plot == 'all':
+#     fig = plt.figure(figsize=(10, 10))
+#     sns.scatterplot(
+#         x='tsne_x',
+#         y='tsne_y',
+#         hue='labels',
+#         palette=sns.color_palette('hls', 29),
+#         data=df,
+#         legend='full',
+#         alpha=0.9
+#     )
+#     fig_name_save = (f'tsne_2d-{model}')
+#     fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     if show:
+#         plt.show()
+#     else:
+#         plt.close()
 
-# t-SNE computation for 3-D.
-df = tsne_computation(embeddings, labels, exp.seed, n_components=3)
+# # t-SNE computation for 3-D.
+# df = tsne_computation(embeddings, labels, exp.seed, n_components=3)
 
-# 3-D plot with matplotlib.
-if plot == '3d' or plot == "23d" or plot == 'all':
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(
-        xs=df['tsne_x'],
-        ys=df['tsne_y'],
-        zs=df['tsne_z'],
-        c=df['labels'],
-        cmap='tab10'
-    )
-    ax.set_xlabel('tsne_x')
-    ax.set_ylabel('tsne_y')
-    ax.set_zlabel('tsne_z')
-    fig_name_save = (f'tsne_3d-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
-                bbox_inches='tight')
-    if show:
-        plt.show()
-    else:
-        plt.close()
+# # 3-D plot with matplotlib.
+# if plot == '3d' or plot == "23d" or plot == 'all':
+#     fig = plt.figure(figsize=(10, 10))
+#     ax = fig.add_subplot(projection='3d')
+#     ax.scatter(
+#         xs=df['tsne_x'],
+#         ys=df['tsne_y'],
+#         zs=df['tsne_z'],
+#         c=df['labels'],
+#         cmap='tab10'
+#     )
+#     ax.set_xlabel('tsne_x')
+#     ax.set_ylabel('tsne_y')
+#     ax.set_zlabel('tsne_z')
+#     fig_name_save = (f'tsne_3d-{model}')
+#     fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     if show:
+#         plt.show()
+#     else:
+#         plt.close()
 
-# 3-D plot with pyplot.
-if (plot == '3d-plotly' or plot == 'all') and show:
-    fig = px.scatter_3d(df, x='tsne_x',
-                        y='tsne_y', z='tsne_z',
-                        color='labels',
-                        width=1000, height=800)  # symbol='labels'
+# # 3-D plot with pyplot.
+# if (plot == '3d-plotly' or plot == 'all') and show:
+#     fig = px.scatter_3d(df, x='tsne_x',
+#                         y='tsne_y', z='tsne_z',
+#                         color='labels',
+#                         width=1000, height=800)  # symbol='labels'
 
-    fig.update_traces(marker=dict(size=3))
+#     fig.update_traces(marker=dict(size=3))
 
-    # Move colorbar.
-    # fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=1, x=0,
-    #                                           ticks="outside",
-    #                                           ticksuffix=""))
+#     # Move colorbar.
+#     # fig.update_layout(coloraxis_colorbar=dict(yanchor="top", y=1, x=0,
+#     #                                           ticks="outside",
+#     #                                           ticksuffix=""))
 
-    fig.show()
+#     fig.show()
 
 
 # ***
@@ -1159,140 +1159,140 @@ if (plot == '3d-plotly' or plot == 'all') and show:
 # In[ ]:
 
 
-def get_scatter_plot_with_thumbnails_axes(ax, title=''):
-    """
-    Creates a scatter plot with image overlays
-    that are plotted in a particular ax position.
+# def get_scatter_plot_with_thumbnails_axes(ax, title=''):
+#     """
+#     Creates a scatter plot with image overlays
+#     that are plotted in a particular ax position.
 
-    """
+#     """
 
-    # Shuffle images and find out which images to show.
-    shown_images_idx = []
-    shown_images = np.array([[1., 1.]])
-    iterator = [i for i in range(embeddings_2d.shape[0])]
-    np.random.shuffle(iterator)
-    for i in iterator:
+#     # Shuffle images and find out which images to show.
+#     shown_images_idx = []
+#     shown_images = np.array([[1., 1.]])
+#     iterator = [i for i in range(embeddings_2d.shape[0])]
+#     np.random.shuffle(iterator)
+#     for i in iterator:
 
-        # Only show image if it is sufficiently far away from the others.
-        dist = np.sum((embeddings_2d[i] - shown_images) ** 2, 1)
-        if np.min(dist) < 2e-3:
-            continue
-        shown_images = np.r_[shown_images, [embeddings_2d[i]]]
-        shown_images_idx.append(i)
+#         # Only show image if it is sufficiently far away from the others.
+#         dist = np.sum((embeddings_2d[i] - shown_images) ** 2, 1)
+#         if np.min(dist) < 2e-3:
+#             continue
+#         shown_images = np.r_[shown_images, [embeddings_2d[i]]]
+#         shown_images_idx.append(i)
 
-    # Plot image overlays.
-    for idx in shown_images_idx:
-        thumbnail_size = int(rcp['figure.figsize'][0] * 2.5)  # 2.
-        path = os.path.join(data_path_test, filenames[idx])
-        img = Image.open(path)
-        img = functional.resize(img, thumbnail_size)
-        img = np.array(img)
-        img_box = osb.AnnotationBbox(
-            osb.OffsetImage(img, cmap=plt.cm.gray_r),
-            embeddings_2d[idx],
-            pad=0.2,
-        )
-        ax.add_artist(img_box)
+#     # Plot image overlays.
+#     for idx in shown_images_idx:
+#         thumbnail_size = int(rcp['figure.figsize'][0] * 2.5)  # 2.
+#         path = os.path.join(data_path_test, filenames[idx])
+#         img = Image.open(path)
+#         img = functional.resize(img, thumbnail_size)
+#         img = np.array(img)
+#         img_box = osb.AnnotationBbox(
+#             osb.OffsetImage(img, cmap=plt.cm.gray_r),
+#             embeddings_2d[idx],
+#             pad=0.2,
+#         )
+#         ax.add_artist(img_box)
 
-    # Set aspect ratio.
-    ratio = 1. / ax.get_data_ratio()
-    ax.set_aspect(ratio, adjustable='box')
-    ax.title.set_text(title)
+#     # Set aspect ratio.
+#     ratio = 1. / ax.get_data_ratio()
+#     ax.set_aspect(ratio, adjustable='box')
+#     ax.title.set_text(title)
 
 
 # In[ ]:
 
 
-# Validation dataset.
-print(f'\nValidating...')
-data_path_test = os.path.join(data_path_target, 'val')
-print(f'Path to dataset: {data_path_test}')
+# # Validation dataset.
+# print(f'\nValidating...')
+# data_path_test = os.path.join(data_path_target, 'val')
+# print(f'Path to dataset: {data_path_test}')
 
-# List of trained models.
-print('List of model checkpoints:')
-model_list = []
-for root, dirs, files in os.walk(output_path_models):
-    for i, filename in enumerate(sorted(files, reverse=False)):
-        model_list.append(os.path.join(root, filename))
-        print(f'{i:02}: {filename}')
+# # List of trained models.
+# print('List of model checkpoints:')
+# model_list = []
+# for root, dirs, files in os.walk(output_path_models):
+#     for i, filename in enumerate(sorted(files, reverse=False)):
+#         model_list.append(os.path.join(root, filename))
+#         print(f'{i:02}: {filename}')
 
-# Plot setup.
-ncols = 5
-nrows = int(math.ceil(len(model_list) / ncols))
+# # Plot setup.
+# ncols = 5
+# nrows = int(math.ceil(len(model_list) / ncols))
 
-fig, axes = plt.subplots(nrows=nrows,
-                         ncols=ncols,
-                         figsize=(12*ncols, 12*nrows))
+# fig, axes = plt.subplots(nrows=nrows,
+#                          ncols=ncols,
+#                          figsize=(12*ncols, 12*nrows))
 
-# Convert the array to 1 dimension.
-axes = axes.ravel()
+# # Convert the array to 1 dimension.
+# axes = axes.ravel()
 
-# Main loop over the models.
-for model_id, model_name_local in enumerate(model_list):
+# # Main loop over the models.
+# for model_id, model_name_local in enumerate(model_list):
 
-    # Load model weights.
-    model.backbone.load_state_dict(torch.load(model_name_local))
+#     # Load model weights.
+#     model.backbone.load_state_dict(torch.load(model_name_local))
 
-    # Empty lists.
-    embeddings = []
-    filenames = []
+#     # Empty lists.
+#     embeddings = []
+#     filenames = []
 
-    # Disable gradients for faster calculations.
-    # Put the model in evaluation mode.
-    model.eval()
-    with torch.no_grad():
-        # for i, (x, _, fnames) in enumerate(dataloader_val):
-        for i, ((x, _), _, fnames) in enumerate(dataloader_val_lightly):
+#     # Disable gradients for faster calculations.
+#     # Put the model in evaluation mode.
+#     model.eval()
+#     with torch.no_grad():
+#         # for i, (x, _, fnames) in enumerate(dataloader_val):
+#         for i, ((x, _), _, fnames) in enumerate(dataloader_val_lightly):
 
-            # Move the images to the GPU.
-            x = x.to(exp.device)
+#             # Move the images to the GPU.
+#             x = x.to(exp.device)
 
-            # Embed the images with the pre-trained backbone.
-            y = model.backbone(x).flatten(start_dim=1)
+#             # Embed the images with the pre-trained backbone.
+#             y = model.backbone(x).flatten(start_dim=1)
 
-            # Store the embeddings and filenames in lists.
-            embeddings.append(y)
-            filenames = filenames + list(fnames)
+#             # Store the embeddings and filenames in lists.
+#             embeddings.append(y)
+#             filenames = filenames + list(fnames)
 
-    # Concatenate the embeddings and convert to numpy.
-    embeddings = torch.cat(embeddings, dim=0)
-    embeddings = embeddings.cpu().numpy()
+#     # Concatenate the embeddings and convert to numpy.
+#     embeddings = torch.cat(embeddings, dim=0)
+#     embeddings = embeddings.cpu().numpy()
 
-    # For the scatter plot we want to transform the images to a
-    # 2-D vector space using a random Gaussian projection.
-    projection = random_projection.GaussianRandomProjection(
-        n_components=2,
-        random_state=exp.seed
-    )
-    embeddings_2d = projection.fit_transform(embeddings)
+#     # For the scatter plot we want to transform the images to a
+#     # 2-D vector space using a random Gaussian projection.
+#     projection = random_projection.GaussianRandomProjection(
+#         n_components=2,
+#         random_state=exp.seed
+#     )
+#     embeddings_2d = projection.fit_transform(embeddings)
 
-    # Normalize the embeddings to fit in the [0, 1] square.
-    M = np.max(embeddings_2d, axis=0)
-    m = np.min(embeddings_2d, axis=0)
-    embeddings_2d = (embeddings_2d - m) / (M - m)
+#     # Normalize the embeddings to fit in the [0, 1] square.
+#     M = np.max(embeddings_2d, axis=0)
+#     m = np.min(embeddings_2d, axis=0)
+#     embeddings_2d = (embeddings_2d - m) / (M - m)
 
-    # Get a scatter plot with thumbnail overlays.
-    start_chr_epoch = model_name_local.find('-epoch') + 1
-    start_chr_time = model_name_local.find('-time')
-    get_scatter_plot_with_thumbnails_axes(
-        axes[model_id],
-        title=model_name_local[start_chr_epoch:start_chr_time]
-    )
+#     # Get a scatter plot with thumbnail overlays.
+#     start_chr_epoch = model_name_local.find('-epoch') + 1
+#     start_chr_time = model_name_local.find('-time')
+#     get_scatter_plot_with_thumbnails_axes(
+#         axes[model_id],
+#         title=model_name_local[start_chr_epoch:start_chr_time]
+#     )
 
-    # Show progress.
-    print(f'Subplot of model-{model_id} done!',
-          end='\r',
-          flush=True)
+#     # Show progress.
+#     print(f'Subplot of model-{model_id} done!',
+#           end='\r',
+#           flush=True)
 
-# Save figure.
-fig.suptitle(f'{model_name}')
-fig_name_save = (f'knn-{model}')
-fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
-            bbox_inches='tight')
-if show:
-    plt.show()
-else:
-    plt.close()
+# # Save figure.
+# fig.suptitle(f'{model_name}')
+# fig_name_save = (f'knn-{model}')
+# fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+#             bbox_inches='tight')
+# if show:
+#     plt.show()
+# else:
+#     plt.close()
 
 
 # ***
@@ -1306,17 +1306,17 @@ else:
 # In[ ]:
 
 
-# Test dataset.
-print('\nTesting...')
-data_path_test = os.path.join(data_path_target, 'test')
-print(f'Path to dataset: {data_path_test}')
+# # Test dataset.
+# print('\nTesting...')
+# data_path_test = os.path.join(data_path_target, 'test')
+# print(f'Path to dataset: {data_path_test}')
 
-# Load best model weights.
-idx = -1
+# # Load best model weights.
+# idx = -1
 
-# Print model.
-print(f'Target model checkpoint: {model_list[idx]}')
-model.backbone.load_state_dict(torch.load(model_list[idx]))
+# # Print model.
+# print(f'Target model checkpoint: {model_list[idx]}')
+# model.backbone.load_state_dict(torch.load(model_list[idx]))
 
 
 # ## Compute embeddings
@@ -1324,29 +1324,29 @@ model.backbone.load_state_dict(torch.load(model_list[idx]))
 # In[ ]:
 
 
-# Empty lists.
-embeddings = []
-filenames = []
+# # Empty lists.
+# embeddings = []
+# filenames = []
 
-# Disable gradients for faster calculations.
-# Put the model in evaluation mode.
-model.eval()
-with torch.no_grad():
-    for i, (x, _, fnames) in enumerate(dataloader_test):
+# # Disable gradients for faster calculations.
+# # Put the model in evaluation mode.
+# model.eval()
+# with torch.no_grad():
+#     for i, (x, _, fnames) in enumerate(dataloader_test):
 
-        # Move the images to the GPU.
-        x = x.to(exp.device)
+#         # Move the images to the GPU.
+#         x = x.to(exp.device)
 
-        # Embed the images with the pre-trained backbone.
-        y = model.backbone(x).flatten(start_dim=1)
+#         # Embed the images with the pre-trained backbone.
+#         y = model.backbone(x).flatten(start_dim=1)
 
-        # Store the embeddings and filenames in lists.
-        embeddings.append(y)
-        filenames = filenames + list(fnames)
+#         # Store the embeddings and filenames in lists.
+#         embeddings.append(y)
+#         filenames = filenames + list(fnames)
 
-# Concatenate the embeddings and convert to numpy.
-embeddings = torch.cat(embeddings, dim=0)
-embeddings = embeddings.cpu().numpy()
+# # Concatenate the embeddings and convert to numpy.
+# embeddings = torch.cat(embeddings, dim=0)
+# embeddings = embeddings.cpu().numpy()
 
 
 # ## Projection to 2D space
@@ -1354,18 +1354,18 @@ embeddings = embeddings.cpu().numpy()
 # In[ ]:
 
 
-# For the scatter plot we want to transform the images to a two-dimensional
-# vector space using a random Gaussian projection.
-projection = random_projection.GaussianRandomProjection(
-    n_components=2,
-    random_state=exp.seed
-)
-embeddings_2d = projection.fit_transform(embeddings)
+# # For the scatter plot we want to transform the images to a two-dimensional
+# # vector space using a random Gaussian projection.
+# projection = random_projection.GaussianRandomProjection(
+#     n_components=2,
+#     random_state=exp.seed
+# )
+# embeddings_2d = projection.fit_transform(embeddings)
 
-# Normalize the embeddings to fit in the [0, 1] square.
-M = np.max(embeddings_2d, axis=0)
-m = np.min(embeddings_2d, axis=0)
-embeddings_2d = (embeddings_2d - m) / (M - m)
+# # Normalize the embeddings to fit in the [0, 1] square.
+# M = np.max(embeddings_2d, axis=0)
+# m = np.min(embeddings_2d, axis=0)
+# embeddings_2d = (embeddings_2d - m) / (M - m)
 
 
 # ## Scatter plots
@@ -1373,24 +1373,24 @@ embeddings_2d = (embeddings_2d - m) / (M - m)
 # In[ ]:
 
 
-# Initialize empty figure and add subplot.
-fig = plt.figure(figsize=(15, 15))
-ax = fig.add_subplot(1, 1, 1)
+# # Initialize empty figure and add subplot.
+# fig = plt.figure(figsize=(15, 15))
+# ax = fig.add_subplot(1, 1, 1)
 
-# Get a scatter plot with thumbnail overlays.
-get_scatter_plot_with_thumbnails_axes(
-    ax,
-    title='Scatter plot with samples'
-)
+# # Get a scatter plot with thumbnail overlays.
+# get_scatter_plot_with_thumbnails_axes(
+#     ax,
+#     title='Scatter plot with samples'
+# )
 
-# Save figure.
-fig_name_save = (f'scatter_samples-{model}')
-fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
-            bbox_inches='tight')
-if show:
-    plt.show()
-else:
-    plt.close()
+# # Save figure.
+# fig_name_save = (f'scatter_samples-{model}')
+# fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+#             bbox_inches='tight')
+# if show:
+#     plt.show()
+# else:
+#     plt.close()
 
 
 # ## Nearest Neighbors
@@ -1400,31 +1400,31 @@ else:
 # In[ ]:
 
 
-# List of subdirectories (classes).
-directory_list = []
-for root, dirs, files in os.walk(data_path_test):
-    for dirname in sorted(dirs):
-        directory_list.append(os.path.join(root, dirname))
-        # print(dirname)
+# # List of subdirectories (classes).
+# directory_list = []
+# for root, dirs, files in os.walk(data_path_test):
+#     for dirname in sorted(dirs):
+#         directory_list.append(os.path.join(root, dirname))
+#         # print(dirname)
 
 
 # In[ ]:
 
 
-# List of files (samples).
-example_images = []
-for classes in directory_list:
+# # List of files (samples).
+# example_images = []
+# for classes in directory_list:
 
-    # Random samples.
-    random_file = np.random.choice(os.listdir(classes))
-    path_to_random_file = classes + '/' + random_file
+#     # Random samples.
+#     random_file = np.random.choice(os.listdir(classes))
+#     path_to_random_file = classes + '/' + random_file
 
-    # Only class and filename.
-    start_chr = path_to_random_file.index('test/') + 5
+#     # Only class and filename.
+#     start_chr = path_to_random_file.index('test/') + 5
 
-    # Append filename.
-    example_images.append(path_to_random_file[start_chr:])
-    # print(example_images)
+#     # Append filename.
+#     example_images.append(path_to_random_file[start_chr:])
+#     # print(example_images)
 
 
 # ### Look for similar images
@@ -1432,84 +1432,84 @@ for classes in directory_list:
 # In[ ]:
 
 
-def get_image_as_np_array(filename: str):
-    """
-    Loads the image with filename and returns it as a numpy array.
+# def get_image_as_np_array(filename: str):
+#     """
+#     Loads the image with filename and returns it as a numpy array.
 
-    """
-    img = Image.open(filename)
-    return np.asarray(img)
-
-
-def get_image_as_np_array_with_frame(filename: str, w: int = 5):
-    """
-    Returns an image as a numpy array with a black frame of width w.
-
-    """
-    img = get_image_as_np_array(filename)
-    ny, nx, _ = img.shape
-
-    # Create an empty image with padding for the frame.
-    framed_img = np.zeros((w + ny + w, w + nx + w, 3))
-    framed_img = framed_img.astype(np.uint8)
-
-    # Put the original image in the middle of the new one.
-    framed_img[w:-w, w:-w] = img
-    return framed_img
+#     """
+#     img = Image.open(filename)
+#     return np.asarray(img)
 
 
-def plot_nearest_neighbors_nxn(example_image: str, i: int):
-    """
-    Plots the example image and its eight nearest neighbors.
+# def get_image_as_np_array_with_frame(filename: str, w: int = 5):
+#     """
+#     Returns an image as a numpy array with a black frame of width w.
 
-    """
-    n_subplots = 6
+#     """
+#     img = get_image_as_np_array(filename)
+#     ny, nx, _ = img.shape
 
-    # Initialize empty figure.
-    fig = plt.figure(figsize=(10, 10))
-    fig.suptitle(f"Nearest Neighbor Plot Class {i}")
+#     # Create an empty image with padding for the frame.
+#     framed_img = np.zeros((w + ny + w, w + nx + w, 3))
+#     framed_img = framed_img.astype(np.uint8)
 
-    # Get indexes.
-    example_idx = filenames.index(example_image)
+#     # Put the original image in the middle of the new one.
+#     framed_img[w:-w, w:-w] = img
+#     return framed_img
 
-    # Get distances to the cluster center.
-    distances = embeddings - embeddings[example_idx]
-    distances = np.power(distances, 2).sum(-1).squeeze()
 
-    # Sort indices by distance to the center.
-    nearest_neighbors = np.argsort(distances)[:n_subplots]
+# def plot_nearest_neighbors_nxn(example_image: str, i: int):
+#     """
+#     Plots the example image and its eight nearest neighbors.
 
-    # Show images.
-    for plot_offset, plot_idx in enumerate(nearest_neighbors):
-        ax = fig.add_subplot(3, 3, plot_offset + 1)
+#     """
+#     n_subplots = 6
 
-        # Get the corresponding filename.
-        fname = os.path.join(data_path_test, filenames[plot_idx])
-        if plot_offset == 0:
-            ax.set_title(f"Example Image")
-            plt.imshow(get_image_as_np_array_with_frame(fname))
-        else:
-            plt.imshow(get_image_as_np_array(fname))
+#     # Initialize empty figure.
+#     fig = plt.figure(figsize=(10, 10))
+#     fig.suptitle(f"Nearest Neighbor Plot Class {i}")
 
-        # Let's disable the axis.
-        plt.axis("off")
+#     # Get indexes.
+#     example_idx = filenames.index(example_image)
 
-    # Save figure.
-    fig_name_save = (f'knn_per_class-c={i:02}-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
-                bbox_inches='tight')
-    if show:
-        pass  # plt.show()
-    else:
-        plt.close()
+#     # Get distances to the cluster center.
+#     distances = embeddings - embeddings[example_idx]
+#     distances = np.power(distances, 2).sum(-1).squeeze()
+
+#     # Sort indices by distance to the center.
+#     nearest_neighbors = np.argsort(distances)[:n_subplots]
+
+#     # Show images.
+#     for plot_offset, plot_idx in enumerate(nearest_neighbors):
+#         ax = fig.add_subplot(3, 3, plot_offset + 1)
+
+#         # Get the corresponding filename.
+#         fname = os.path.join(data_path_test, filenames[plot_idx])
+#         if plot_offset == 0:
+#             ax.set_title(f"Example Image")
+#             plt.imshow(get_image_as_np_array_with_frame(fname))
+#         else:
+#             plt.imshow(get_image_as_np_array(fname))
+
+#         # Let's disable the axis.
+#         plt.axis("off")
+
+#     # Save figure.
+#     fig_name_save = (f'knn_per_class-c={i:02}-{model}')
+#     fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     if show:
+#         pass  # plt.show()
+#     else:
+#         plt.close()
 
 
 # In[ ]:
 
 
-# Show example images for each cluster.
-for i, example_image in enumerate(example_images):
-    plot_nearest_neighbors_nxn(example_image, i)
+# # Show example images for each cluster.
+# for i, example_image in enumerate(example_images):
+#     plot_nearest_neighbors_nxn(example_image, i)
 
 
 # In[ ]:
