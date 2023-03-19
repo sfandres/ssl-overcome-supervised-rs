@@ -5,7 +5,7 @@
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --partition=volta                           ## Request specific partition.
 #SBATCH --wait-all-nodes=1                          ## Controls when the execution begins.
-#SBATCH --time=24:00                                ## Job duration (Sergio: 24:00:00).
+#SBATCH --time=24:00:00                             ## Job duration (Sergio: 24:00:00).
 #SBATCH --gpus-per-node=2                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --job-name=uexssl_%A_%a                     ## Name of the job.
 #SBATCH --output=uexssl_%A_%a.out                   ## Output file.
