@@ -194,6 +194,7 @@ if is_notebook():
         args=['simclr',
               # '--balanced_dataset',
               '--show_fig',
+              # '--cluster',
               '--dataset', 'Sentinel2GlobalLULC_SSL',
               '--epochs', '5',
               '--ratio', '(0.900,0.0250,0.0750)'])
@@ -570,19 +571,17 @@ for d in dataset:
 
 
 # Accessing Data and Targets in a PyTorch DataLoader.
-for i, (images, labels, names) in enumerate(dataloader['train']):
-    img = images[0][0]
-    label = labels[0]
-    print(images[0].shape)
-    print(labels.shape)
-    plt.title("Label: " + str(int(label)))
-    plt.imshow(torch.permute(img, (1, 2, 0)))
-    if show:
-        plt.show()
-    else:
-        plt.close()
-    if i == 0:
-        break  # Only a few batches.
+if show:
+    for i, (images, labels, names) in enumerate(dataloader['train']):
+        img = images[0][0]
+        label = labels[0]
+        print(images[0].shape)
+        print(labels.shape)
+        plt.title("Label: " + str(int(label)))
+        plt.imshow(torch.permute(img, (1, 2, 0)))
+        plt.show() if show else plt.close()
+        if i == 0:
+            break  # Only a few batches.
 
 
 # ### Two batches (almost)
@@ -618,12 +617,13 @@ def show_batch(batch, batch_id):
 
 
 # Train loop.
-for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
+if show:
+    for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
 
-    # Show the images within the first batch.
-    show_batch(x0, 0)
-    show_batch(x1, 1)
-    break
+        # Show the images within the first batch.
+        show_batch(x0, 0)
+        show_batch(x1, 1)
+        break
 
 
 # Each image is augmented differently in the two batches that are loaded at the same time during training. The dataloader from lightly is capable of providing two batches in one iteration.
