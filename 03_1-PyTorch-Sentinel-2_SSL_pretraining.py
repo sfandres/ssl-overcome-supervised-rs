@@ -660,10 +660,10 @@ elif model_name == 'barlowtwins':
     model = BarlowTwins(backbone)
 
 # Model's backbone structure.
-summary(
+print(summary(
     model.backbone,
     input_size=(exp.batch_size, 3, exp.input_size, exp.input_size),
-    device=exp.device
+    device=exp.device)
 )
 
 
@@ -688,6 +688,9 @@ optimizer = torch.optim.SGD(
     momentum=0.9,
     weight_decay=1e-4
 )
+
+print(f'lr: {lr}')
+print(f'optimizer: {optimizer}')
 
 # Linear warmup for the first 10 epochs.
 warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
