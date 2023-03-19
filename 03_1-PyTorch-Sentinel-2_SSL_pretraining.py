@@ -660,11 +660,11 @@ elif model_name == 'barlowtwins':
     model = BarlowTwins(backbone)
 
 # Model's backbone structure.
-print(summary(
-    model.backbone,
-    input_size=(exp.batch_size, 3, exp.input_size, exp.input_size),
-    device=exp.device)
-)
+# print(summary(
+#     model.backbone,
+#     input_size=(exp.batch_size, 3, exp.input_size, exp.input_size),
+#     device=exp.device)
+# )
 
 
 # ## Training
@@ -678,8 +678,10 @@ print(summary(
 # In[ ]:
 
 
+# Learning rate.
 # lr = 0.05 * exp.batch_size / 256
 lr = 0.2
+print(f'\nlr: {lr}')
 
 # Use SGD with momentum and weight decay.
 optimizer = torch.optim.SGD(
@@ -688,8 +690,6 @@ optimizer = torch.optim.SGD(
     momentum=0.9,
     weight_decay=1e-4
 )
-
-print(f'lr: {lr}')
 print(f'optimizer: {optimizer}')
 
 # Linear warmup for the first 10 epochs.
