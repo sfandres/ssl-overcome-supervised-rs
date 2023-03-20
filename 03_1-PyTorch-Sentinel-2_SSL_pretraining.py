@@ -58,7 +58,8 @@ def is_notebook() -> bool:
 
 
 # Custom modules.
-from utils.computation import Experiment, pca_computation, tsne_computation
+# from utils.computation import Experiment
+from utils.computation import pca_computation, tsne_computation
 from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
 from utils.graphs import simple_bar_plot
 from utils.models import SimSiam, SimCLRModel, BarlowTwins
@@ -194,7 +195,7 @@ if is_notebook():
         args=['simclr',
               # '--balanced_dataset',
               '--show_fig',
-              # '--cluster',
+              '--cluster',
               '--dataset', 'Sentinel2GlobalLULC_SSL',
               '--epochs', '5',
               '--ratio', '(0.900,0.0250,0.0750)'])
@@ -249,7 +250,7 @@ print(f'Execution on cluster:\t\t{cluster}')
 # Avoiding the runtimeError: Too many open files.
 # Communication with the workers is no longer possible.
 if is_notebook() or cluster:
-    print('  - Torch sharing strategy set to file_system (default)')
+    print('  - Torch sharing strategy set to file_descriptor (default)')
     torch.multiprocessing.set_sharing_strategy('file_descriptor')
 else:
     print('  - Torch sharing strategy set to file_system (less memory)')
@@ -260,9 +261,10 @@ else:
 
 
 # Hyperparamenters.
-exp = Experiment(epochs=epochs,
-                 batch_size=batch_size)
-print(f'\nDevice: {exp.device}')
+# exp = Experiment(epochs=epochs,
+#                  batch_size=batch_size)
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+print(f'\nDevice: {device}')
 
 # Get current directory.
 cwd = os.getcwd()
@@ -299,13 +301,16 @@ out_dim = proj_hidden_dim = 512
 # The prediction head uses a bottleneck architecture.
 pred_hidden_dim = 128
 
+# Size of the images.
+input_size = 224
+
 
 # ## Reproducibility
 
 # In[ ]:
 
 
-exp.reproducibility()
+# exp.reproducibility()
 
 
 # ***
@@ -339,7 +344,7 @@ splits = ['train', 'val', 'test']
 
 # Normalization transform (val and test).
 transform = {x: transforms.Compose([
-    transforms.Resize((exp.input_size, exp.input_size)),
+    transforms.Resize((input_size, input_size)),
     transforms.ToTensor(),
     transforms.Normalize(mean=mean[x],
                          std=std[x])
@@ -349,7 +354,7 @@ transform = {x: transforms.Compose([
 # from https://github.com/facebookresearch/simsiam/blob/main/main_simsiam.py
 # MoCo v2's aug: similar to SimCLR https://arxiv.org/abs/2002.05709
 transform['train'] = transforms.Compose([
-    transforms.Resize((exp.input_size, exp.input_size)),
+    transforms.Resize((input_size, input_size)),
     transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
     transforms.RandomApply([
         transforms.ColorJitter(.4, .4, .4, .1)  # not strengthened
@@ -463,40 +468,29 @@ for c in collate_fn:
 # In[ ]:
 
 
-# # Dataloader for embedding (test).
-# dataloader_test = torch.utils.data.DataLoader(
-#     test_data_lightly,
-#     batch_size=exp.batch_size,
-#     shuffle=False,
-#     drop_last=False,
-#     num_workers=exp.num_workers,
-#     worker_init_fn=exp.seed_worker,
-#     generator=exp.g
-# )
-
 # Dataloader for validating and testing.
 dataloader = {x: torch.utils.data.DataLoader(
     lightly_dataset[x],
-    batch_size=exp.batch_size,
+    batch_size=batch_size,
     shuffle=False,
-    num_workers=exp.num_workers,
+    num_workers=0,
     collate_fn=collate_fn[x],
     drop_last=False,
-    worker_init_fn=exp.seed_worker,
-    generator=exp.g
+    # worker_init_fn=exp.seed_worker,
+    # generator=exp.g
 ) for x in splits[1:]}
 
 # Dataloader for training.
 dataloader['train'] = torch.utils.data.DataLoader(
     lightly_dataset['train'],
-    batch_size=exp.batch_size,
+    batch_size=batch_size,
     shuffle=shuffle,
     sampler=sampler,
-    num_workers=exp.num_workers,
+    num_workers=0,
     collate_fn=collate_fn['train'],
     drop_last=False,
-    worker_init_fn=exp.seed_worker,
-    generator=exp.g
+    # worker_init_fn=exp.seed_worker,
+    # generator=exp.g
 )
 
 # Check if shuffle is enabled.
@@ -608,7 +602,7 @@ def show_batch(batch, batch_id):
     fig = plt.figure(figsize=(width, height))
     fig.suptitle(f'Batch {batch_id}')
     for i in range(1, columns * rows + 1):
-        if i < exp.batch_size:
+        if i < batch_size:
             img = batch[i]
             fig.add_subplot(rows, columns, i)
             plt.imshow(torch.permute(img, (1, 2, 0)))
@@ -662,8 +656,8 @@ elif model_name == 'barlowtwins':
 # Model's backbone structure.
 # print(summary(
 #     model.backbone,
-#     input_size=(exp.batch_size, 3, exp.input_size, exp.input_size),
-#     device=exp.device)
+#     input_size=(batch_size, 3, input_size, input_size),
+#     device=device)
 # )
 
 
@@ -679,7 +673,7 @@ elif model_name == 'barlowtwins':
 
 
 # Learning rate.
-# lr = 0.05 * exp.batch_size / 256
+# lr = 0.05 * batch_size / 256
 lr = 0.2
 print(f'\nlr: {lr}')
 
@@ -711,29 +705,29 @@ main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 
 
 # if model_name == 'simsiam':
-#     model.set_up_optimizer_and_scheduler(exp.epochs,
-#                                          exp.batch_size)
+#     model.set_up_optimizer_and_scheduler(epochs,
+#                                          batch_size)
 #     print(model.optimizer)
 #     print(model.scheduler)
 
 # elif model_name == 'simclr':
-#     model.set_up_optimizer_and_scheduler(exp.epochs,
-#                                          exp.batch_size)
+#     model.set_up_optimizer_and_scheduler(epochs,
+#                                          batch_size)
 #     print(model.optimizer)
 #     print(model.warmup_scheduler)
 #     print(model.main_scheduler)
 
 # elif model_name == 'barlowtwins':
-#     model.configure_optimizer(exp.batch_size)
-#     model.configure_scheduler(exp.epochs,
-#                               exp.batch_size)
+#     model.configure_optimizer(batch_size)
+#     model.configure_scheduler(epochs,
+#                               batch_size)
 #     print(model.optimizer)
 #     print(model.warmup_scheduler)
 #     print(model.main_scheduler)
 
 # else:
 #     # Scale the learning rate.
-#     # lr = 0.05 * exp.batch_size / 256
+#     # lr = 0.05 * batch_size / 256
 #     lr = 0.2
 
 #     # Use SGD with momentum and weight decay.
@@ -761,8 +755,8 @@ main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 
 
 # Device used for training.
-print(f'\nUsing {exp.device} device')
-model.to(exp.device)
+print(f'\nUsing {device} device')
+model.to(device)
 
 # Saving best model's weights.
 # best_model_wts = copy.deepcopy(model.state_dict())
@@ -777,7 +771,7 @@ print(f'\nBatches in (train, val) datasets: ({total_train_batches}, '
 # ======================
 # TRAINING LOOP.
 # Iterating over the epochs.
-for e in range(exp.epochs):
+for e in range(epochs):
 
     # Timer added.
     t0 = time.time()
@@ -792,8 +786,8 @@ for e in range(exp.epochs):
     for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
 
         # Move images to the GPU (same batch two transformations).
-        x0 = x0.to(exp.device)
-        x1 = x1.to(exp.device)
+        x0 = x0.to(device)
+        x1 = x1.to(device)
 
         # Run the model on both transforms of the images:
         # We get projections (z0 and z1) and
@@ -806,7 +800,7 @@ for e in range(exp.epochs):
             loss = model.training_step(x0, x1)
 
         # Averaged loss across all training examples * batch_size.
-        running_train_loss += loss.item() * exp.batch_size
+        running_train_loss += loss.item() * batch_size
 
         # Run backpropagation.
         loss.backward()
@@ -829,7 +823,7 @@ for e in range(exp.epochs):
         if b % (total_train_batches//4) == (total_train_batches//4-1):
             print(f'T[{e}, {b + 1:5d}] | '
                   f'Running train loss: '
-                  f'{running_train_loss/(b*exp.batch_size):.4f}')
+                  f'{running_train_loss/(b*batch_size):.4f}')
 
     # The level of collapse is large if the standard deviation of
     # the l2 normalized output is much smaller than 1 / sqrt(dim).
@@ -851,8 +845,8 @@ for e in range(exp.epochs):
         for vb, ((x0, x1), y, _) in enumerate(dataloader['val']):
 
             # Move images to the GPU (same batch two transformations).
-            x0 = x0.to(exp.device)
-            x1 = x1.to(exp.device)
+            x0 = x0.to(device)
+            x1 = x1.to(device)
 
             # Compute loss
             if model_name == 'simsiam':
@@ -863,13 +857,13 @@ for e in range(exp.epochs):
                 loss = model.training_step(x0, x1)
 
             # Averaged loss across all validation examples * batch_size.
-            running_val_loss += loss.item() * exp.batch_size
+            running_val_loss += loss.item() * batch_size
 
             # Show partial stats.
             if vb % (total_val_batches//4) == (total_val_batches//4-1):
                 print(f'V[{e}, {vb + 1:5d}] | '
                       f'Running val loss: '
-                      f'{running_val_loss/(vb*exp.batch_size):.4f}')
+                      f'{running_val_loss/(vb*batch_size):.4f}')
 
     model.train()
 
@@ -884,7 +878,7 @@ for e in range(exp.epochs):
     # Save model.
     save_model = ((epoch_train_loss < lowest_train_loss)
                   or (epoch_val_loss < lowest_val_loss)
-                  or (e == exp.epochs - 1))
+                  or (e == epochs - 1))
     if save_model:
 
         # Update new lowest losses
@@ -903,7 +897,7 @@ for e in range(exp.epochs):
                    dataset_ratio,
                    output_path_models,
                    collapse_level=collapse_level)
-        # model.to(exp.device)
+        # model.to(device)
 
     # ======================
     # UPDATE LEARNING RATE.
@@ -984,8 +978,8 @@ print(model.backbone[0].weight[63])
 #     for i, ((x, _), y, fnames) in enumerate(dataloader_val_lightly):
 
 #         # Move the images to the GPU.
-#         x = x.to(exp.device)
-#         y = y.to(exp.device)
+#         x = x.to(device)
+#         y = y.to(device)
 
 #         # Embed the images with the pre-trained backbone.
 #         emb = model.backbone(x).flatten(start_dim=1)
@@ -1017,7 +1011,7 @@ print(model.backbone[0].weight[63])
 
 
 # # PCA computation.
-# df = pca_computation(embeddings, labels, exp.seed)
+# df = pca_computation(embeddings, labels, seed)
 
 # # 2-D plot.
 # if plot == '2d' or plot == "23d" or plot == 'all':
@@ -1086,7 +1080,7 @@ print(model.backbone[0].weight[63])
 
 
 # # t-SNE computation for 2-D.
-# df = tsne_computation(embeddings, labels, exp.seed, n_components=2)
+# df = tsne_computation(embeddings, labels, seed, n_components=2)
 
 # # 2-D plot.
 # if plot == '2d' or plot == "23d" or plot == 'all':
@@ -1109,7 +1103,7 @@ print(model.backbone[0].weight[63])
 #         plt.close()
 
 # # t-SNE computation for 3-D.
-# df = tsne_computation(embeddings, labels, exp.seed, n_components=3)
+# df = tsne_computation(embeddings, labels, seed, n_components=3)
 
 # # 3-D plot with matplotlib.
 # if plot == '3d' or plot == "23d" or plot == 'all':
@@ -1245,7 +1239,7 @@ print(model.backbone[0].weight[63])
 #         for i, ((x, _), _, fnames) in enumerate(dataloader_val_lightly):
 
 #             # Move the images to the GPU.
-#             x = x.to(exp.device)
+#             x = x.to(device)
 
 #             # Embed the images with the pre-trained backbone.
 #             y = model.backbone(x).flatten(start_dim=1)
@@ -1262,7 +1256,7 @@ print(model.backbone[0].weight[63])
 #     # 2-D vector space using a random Gaussian projection.
 #     projection = random_projection.GaussianRandomProjection(
 #         n_components=2,
-#         random_state=exp.seed
+#         random_state=seed
 #     )
 #     embeddings_2d = projection.fit_transform(embeddings)
 
@@ -1335,7 +1329,7 @@ print(model.backbone[0].weight[63])
 #     for i, (x, _, fnames) in enumerate(dataloader_test):
 
 #         # Move the images to the GPU.
-#         x = x.to(exp.device)
+#         x = x.to(device)
 
 #         # Embed the images with the pre-trained backbone.
 #         y = model.backbone(x).flatten(start_dim=1)
@@ -1358,7 +1352,7 @@ print(model.backbone[0].weight[63])
 # # vector space using a random Gaussian projection.
 # projection = random_projection.GaussianRandomProjection(
 #     n_components=2,
-#     random_state=exp.seed
+#     random_state=seed
 # )
 # embeddings_2d = projection.fit_transform(embeddings)
 
