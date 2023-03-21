@@ -72,6 +72,7 @@ import torch
 import torchvision
 from torchvision import transforms
 from torchinfo import summary
+torch.backends.cudnn.benchmark = True
 
 # Data management.
 import numpy as np
