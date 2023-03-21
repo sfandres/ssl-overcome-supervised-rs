@@ -4,6 +4,7 @@
 ## Resource request.
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --partition=volta                           ## Request specific partition.
+#SBATCH --mem=128				    ## Real memory required per node.
 #SBATCH --wait-all-nodes=1                          ## Controls when the execution begins.
 #SBATCH --time=24:00:00                             ## Job duration (Sergio: 24:00:00).
 #SBATCH --gpus-per-node=2                           ## Number of GPUs on each node (Sergio: 4).
@@ -40,8 +41,8 @@ conda activate lulc-conda
 srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
 ${model} \
 --dataset Sentinel2GlobalLULC_SSL \
---epochs 25 \
---batch_size 128 \
+--epochs 3 \
+--batch_size 64 \
 --ini_weights random \
 --cluster
 ## srun python3 testing_GPU_PyTorch.py
