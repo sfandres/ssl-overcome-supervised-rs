@@ -4,7 +4,7 @@
 ## Resource request.
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --partition=volta                           ## Request specific partition.
-#SBATCH --mem=128				    ## Real memory required per node.
+#SBATCH --mem=128GB				    ## Real memory required per node.
 #SBATCH --wait-all-nodes=1                          ## Controls when the execution begins.
 #SBATCH --time=24:00:00                             ## Job duration (Sergio: 24:00:00).
 #SBATCH --gpus-per-node=2                           ## Number of GPUs on each node (Sergio: 4).
