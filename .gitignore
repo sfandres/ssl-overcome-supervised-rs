@@ -1,13 +1,12 @@
 # Byte-compiled / optimized / DLL files
 .ipynb_checkpoints
-utils/.ipynb_checkpoints
 __pycache__
 
 # Conda environments
 lulc-conda
 
 # Custom folders
-datasets
+input
 output
 
 # Specific file extensions
