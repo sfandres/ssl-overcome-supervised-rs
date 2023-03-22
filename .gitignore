@@ -9,7 +9,6 @@ lulc-conda
 # Custom folders
 datasets
 output
-runs
 
 # Specific file extensions
 *.out
