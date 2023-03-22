@@ -56,6 +56,7 @@ def set_seed(seed: int) -> torch._C.Generator:
 
     return g
 
+
 def seed_worker(worker_id: int):
     """
     Seeds the workers of the PyTorch DataLoaders.
