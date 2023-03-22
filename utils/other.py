@@ -64,8 +64,10 @@ def build_paths(cwd: str, model_name: str):
     # Create directories if they don't exist.
     if not os.path.exists(input_path):
         os.makedirs(input_path)
+        print(f'Dir created: {input_path}')
     if not os.path.exists(output_path):
         os.makedirs(output_path)
+        print(f'Dir created: {output_path}')
 
     # Second level paths within input.
     datasets_path = os.path.join(input_path, 'datasets')
@@ -73,6 +75,7 @@ def build_paths(cwd: str, model_name: str):
     # Create directories if they don't exist.
     if not os.path.exists(datasets_path):
         os.makedirs(datasets_path)
+        print(f'Dir created: {datasets_path}')
 
     # Second level paths within output.
     checkpoints_path = os.path.join(output_path, 'checkpoints')
@@ -82,26 +85,35 @@ def build_paths(cwd: str, model_name: str):
     # Create directories if they don't exist.
     if not os.path.exists(checkpoints_path):
         os.makedirs(checkpoints_path)
+        print(f'Dir created: {checkpoints_path}')
     if not os.path.exists(images_path):
         os.makedirs(images_path)
+        print(f'Dir created: {images_path}')
     if not os.path.exists(runs_path):
         os.makedirs(runs_path)
+        print(f'Dir created: {runs_path}')
 
     # Third level paths within checkpoints.
     checkpoints_logs_path = os.path.join(checkpoints_path, '0_history_logs')
-    checkpoints_model_path = os.path.join(checkpoints_path, model_name)
     if not os.path.exists(checkpoints_logs_path):
         os.makedirs(checkpoints_logs_path)
+        print(f'Dir created: {checkpoints_logs_path}')
+
+    checkpoints_model_path = os.path.join(checkpoints_path, model_name)
     if not os.path.exists(checkpoints_model_path):
         os.makedirs(checkpoints_model_path)
+        print(f'Dir created: {checkpoints_model_path}')
 
     # Third level paths within images.
     images_logs_path = os.path.join(images_path, '0_history_logs')
-    images_model_path = os.path.join(images_path, model_name)
     if not os.path.exists(images_logs_path):
         os.makedirs(images_logs_path)
+        print(f'Dir created: {images_logs_path}')
+
+    images_model_path = os.path.join(images_path, model_name)
     if not os.path.exists(images_model_path):
         os.makedirs(images_model_path)
+        print(f'Dir created: {images_model_path}')
 
     # Create dictionary.
     paths_dict = {
