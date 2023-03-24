@@ -1,50 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# **FIRST ATTEMP TO APPLY SSL TO THE SENTINEL-2 DATASET**
+# **TRAINING SSL MODELS USING THE ENTIRE SENTINEL-2 DATASET**
 
 # Reference tutorial: https://docs.lightly.ai/tutorials/package/tutorial_simsiam_esa.html
-
-# In[ ]:
-
-
-def is_notebook() -> bool:
-    try:
-        shell = get_ipython().__class__.__name__
-
-        if shell == 'ZMQInteractiveShell':
-            return True   # Jupyter notebook or qtconsole
-        elif shell == 'TerminalInteractiveShell':
-            return False  # Terminal running IPython
-        else:
-            return False  # Other type (?)
-
-    except NameError:
-        return False      # Probably standard Python interpreter
-
-
-# In[ ]:
-
-
-# if is_notebook():
-#     %load_ext pycodestyle_magic
-
-
-# In[ ]:
-
-
-# if is_notebook():
-#     %pycodestyle_on
-
-
-# In[ ]:
-
-
-# def create_arg_parser():
-#     """Creates and returns the ArgumentParser object."""
-#     ...
-#     return parser
-
 
 # ***
 
@@ -58,38 +17,39 @@ def is_notebook() -> bool:
 
 
 # Custom modules.
-# from utils.computation import Experiment
 from utils.computation import pca_computation, tsne_computation
 from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
 from utils.graphs import simple_bar_plot
 from utils.models import SimSiam, SimCLRModel, BarlowTwins
+from utils.other import is_notebook, build_paths
+from utils.reproducibility import set_seed, seed_worker
 
-# OS module.
+# Arguments and paths.
 import os
+import sys
+import argparse
 
 # PyTorch.
 import torch
 import torchvision
 from torchvision import transforms
 from torchinfo import summary
-torch.backends.cudnn.benchmark = True
+
+# For resizing images to thumbnails.
+import torchvision.transforms.functional as functional
 
 # Data management.
 import numpy as np
+import random
 import pandas as pd
 
-# Lightly.
+# SSL library.
 import lightly
 
 # Training checks.
 from datetime import datetime
 import time
-import copy
 import math
-from lightly.utils.debug import std_of_l2_normalized
-
-# Showing images in the notebook.
-import IPython
 
 # For plotting.
 from PIL import Image
@@ -99,197 +59,170 @@ from matplotlib import rcParams as rcp
 import seaborn as sns
 import plotly.express as px
 
-# For resizing images to thumbnails.
-import torchvision.transforms.functional as functional
-
 # For clustering and 2d representations.
 from sklearn import random_projection
 
-# Argparse
-import sys
-import argparse
+# Showing images in the notebook.
+# import IPython
+
+# Other imports.
+# import copy
+# from lightly.utils.debug import std_of_l2_normalized
+# import matplotlib.font_manager
 
 
 # In[ ]:
 
 
-import matplotlib.font_manager
+# Load notebook extensions.
+if is_notebook():
+    get_ipython().run_line_magic('load_ext', 'tensorboard')
+    get_ipython().run_line_magic('load_ext', 'pycodestyle_magic')
+    get_ipython().run_line_magic('pycodestyle_on', '')
 
 
-# In[ ]:
+# ## Enable reproducibility
 
-
-print(f'\ntorch.cuda.is_available():\t{torch.cuda.is_available()}')
-print(f'torch.cuda.device_count():\t{torch.cuda.device_count()}')
-print(f'torch.cuda.current_device():\t{torch.cuda.current_device()}')
-print(f'torch.cuda.device(0):\t\t{torch.cuda.device(0)}')
-print(f'torch.cuda.get_device_name(0):\t{torch.cuda.get_device_name(0)}')
-print(f'torch.backends.cudnn.benchmark:\t{torch.backends.cudnn.benchmark}')
-
-
-# ## Parser
+# Reference: https://pytorch.org/docs/stable/notes/randomness.html
 
 # In[ ]:
 
 
-# Parser (get arguments).
+print(f"\n{'torch initial seed:'.ljust(20)} {torch.initial_seed()}")
+g = set_seed(42)
+print(f"{'torch current seed:'.ljust(20)} {torch.initial_seed()}")
+
+
+# ## Check torch CUDA
+
+# In[ ]:
+
+
+print(f"\n{'torch.cuda.is_available():'.ljust(32)} {torch.cuda.is_available()}")
+print(f"{'torch.cuda.device_count():'.ljust(32)} {torch.cuda.device_count()}")
+print(f"{'torch.cuda.current_device():'.ljust(32)} {torch.cuda.current_device()}")
+print(f"{'torch.cuda.device(0):'.ljust(32)} {torch.cuda.device(0)}")
+print(f"{'torch.cuda.get_device_name(0):'.ljust(32)} {torch.cuda.get_device_name(0)}")
+print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)} {torch.backends.cudnn.benchmark}")
+
+
+# ## Command line arguments
+
+# In[ ]:
+
+
+# Get arguments.
 parser = argparse.ArgumentParser(
     description="Script for training the self-supervised learning models."
 )
 
-parser.add_argument(
-    'model',
-    type=str,
-    choices=['simsiam', 'simclr', 'barlowtwins'],
-    help=('SSL model for training. '
-          "Use 'simsiam', 'simclr' or 'barlowtwins'.")
-)
-parser.add_argument(
-    '--dataset',
-    type=str,
-    default='Sentinel2GlobalLULC_SSL',
-    help='dataset name for training.'
-)
-parser.add_argument(
-    '--ratio',
-    type=str,
-    default='(0.900,0.0250,0.0750)',
-    help='dataset ratio for evaluation.'
-)
-parser.add_argument(
-    '--epochs',
-    type=int,
-    default=25,
-    help='number of epochs for training.'
-)
-parser.add_argument(
-    '--batch_size',
-    type=int,
-    default=64,
-    help='number of images in a batch during training.'
-)
-parser.add_argument(
-    '--ini_weights',
-    type=str,
-    default='random',
-    choices=['random', 'imagenet'],
-    help="initial weights: use 'random' (default) or 'imagenet'."
-)
-parser.add_argument(
-    '--balanced_dataset',
-    action='store_true',
-    help='whether the dataset should be balanced.'
-)
-parser.add_argument(
-    '--show_fig',
-    action='store_true',
-    help='whether the images should appear.'
-)
-parser.add_argument(
-    '--cluster',
-    action='store_true',
-    help=('whether the script runs on a cluster '
-          '(large memory space available).')
-)
+parser.add_argument('model_name', type=str,
+                    choices=['simsiam', 'simclr', 'barlowtwins'],
+                    help="SSL model: 'simsiam', 'simclr' or 'barlowtwins.")
 
+parser.add_argument('--dataset_name', '-dn', type=str,
+                    default='Sentinel2GlobalLULC_SSL',
+                    help='dataset name for training.')
+
+parser.add_argument('--dataset_ratio', '-dr', type=str,
+                    default='(0.900,0.0250,0.0750)',
+                    help='dataset ratio for evaluation.')
+
+parser.add_argument('--epochs', '-e', type=int, default=25,
+                    help='number of epochs for training.')
+
+parser.add_argument('--batch_size', '-bs', type=int, default=64,
+                    help='number of images in a batch during training.')
+
+parser.add_argument('--ini_weights', type=str, default='random',
+                    choices=['random', 'imagenet'],
+                    help="initial weights: 'random' (default) or 'imagenet'.")
+
+parser.add_argument('--show', action='store_true',
+                    help='the images should appear.');
+
+
+parser.add_argument('--balanced_dataset', action='store_true',
+                    help='whether the dataset should be balanced.');
+
+parser.add_argument('--cluster', action='store_true',
+                    help='the script runs on a cluster (large mem. space).');
+
+
+# ## Simulate and get input arguments
+
+# In[ ]:
+
+
+# Input arguments.
 if is_notebook():
     args = parser.parse_args(
         args=['simclr',
-              # '--balanced_dataset',
-              '--show_fig',
+              '--show',
               '--cluster',
-              '--dataset', 'Sentinel2GlobalLULC_SSL',
-              '--epochs', '5',
-              '--ratio', '(0.900,0.0250,0.0750)'])
+              '--dataset_name', 'Sentinel2GlobalLULC_SSL',
+              '--dataset_ratio', '(0.900,0.0250,0.0750)',
+              '--epochs', '5']
+    )
 else:
     args = parser.parse_args(sys.argv[1:])
 
+# Convert the parsed arguments into a dictionary and declare
+# variables with the same name as the arguments.
+args_dict = vars(args)
+for arg_name in args_dict:
+    globals()[arg_name] = args_dict[arg_name]
 
-# ## Settings and options
+# Iterate over the keys of the dictionary and check whether
+# the corresponding variables have been declared.
+print()
+for arg_name in args_dict:
+    if arg_name in globals():
+        arg_name_col = f'{arg_name}:'
+        print(f'{arg_name_col.ljust(20)} {globals()[arg_name]}')
+    else:
+        print(f'{arg_name} has not been declared')
 
-# In[ ]:
-
-
-# Target SSL model.
-model_name = args.model
-print(f'\nTarget model for training:\t{model_name}')
-
-# Target dataset name.
-dataset_name = args.dataset
-print(f'Target dataset name:\t\t{dataset_name}')
-
-# Target dataset ratio.
-dataset_ratio = args.ratio
-print(f'Target dataset ratio:\t\t{dataset_ratio}')
-
-# Handling class imbalance.
-handle_imb_classes = args.balanced_dataset
-print(f'Balanced dataset:\t\t{handle_imb_classes}')
-
-# Setting number of epochs.
-epochs = args.epochs
-print(f'Number of epochs:\t\t{epochs}')
-
-# Setting batch size.
-batch_size = args.batch_size
-print(f'Batch size:\t\t\t{batch_size}')
-
-# Setting the initial weights.
-if args.ini_weights == 'imagenet':
-    weights = torchvision.models.ResNet18_Weights.DEFAULT
-else:
-    weights = None
-print(f'Initial weights:\t\t{weights}')
-
-# Show figures.
-show = args.show_fig
-print(f'Showing figures:\t\t{show}')
-
-# Supercomputer?
-cluster = args.cluster
-print(f'Execution on cluster:\t\t{cluster}')
-
-# Avoiding the runtimeError: Too many open files.
-# Communication with the workers is no longer possible.
+# Avoiding the runtimeError: "Too many open files.
+# Communication with the workers is no longer possible."
 if is_notebook() or cluster:
-    print('  - Torch sharing strategy set to file_descriptor (default)')
+    print(' - Torch sharing strategy set to file_descriptor (default)')
     torch.multiprocessing.set_sharing_strategy('file_descriptor')
 else:
-    print('  - Torch sharing strategy set to file_system (less memory)')
+    print(' - Torch sharing strategy set to file_system (less memory)')
     torch.multiprocessing.set_sharing_strategy('file_system')
 
+# Setting the initial weights.
+if ini_weights == 'imagenet':
+    weights = torchvision.models.ResNet18_Weights.DEFAULT
+elif ini_weights == 'random':
+    weights = None
+print(f"{'Initial weights:'.ljust(20)} {weights}")
+
+# Setting the device.
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+print(f"{'Device:'.ljust(20)} {device}")
+
+
+# ## Build paths
 
 # In[ ]:
 
-
-# Hyperparamenters.
-# exp = Experiment(epochs=epochs,
-#                  batch_size=batch_size)
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print(f'\nDevice: {device}')
 
 # Get current directory.
 cwd = os.getcwd()
-print(f'\nWorking directory:\t\t\t{cwd}')
 
-# Input path where the datasets are stored.
-input_path_datasets = os.path.join(cwd, 'datasets')
-print(f'Input path for datasets:\t\t{input_path_datasets}')
+# Build paths.
+paths = build_paths(cwd, model_name)
 
-# Output path.
-output_path = os.path.join(cwd, 'output')
+# Show built paths.
+print()
+for path in paths:
+    path_name_col = f'{path}:'
+    print(f'{path_name_col.ljust(25)} {paths[path]}')
 
-# Output path to save the model checkpoint.
-output_path_models = os.path.join(os.path.join(output_path, 'checkpoints'),
-                                 model_name)
-print(f'Output path for model checkpoints:\t{output_path_models}')
 
-# Folder to save the figures.
-output_path_figs = os.path.join(os.path.join(output_path, 'figures'),
-                               model_name)
-fig_format = '.png'  # .pdf
-print(f'Output path for figures ({fig_format}):\t\t{output_path_figs}')
-
+# ## Settings and options
 
 # In[ ]:
 
@@ -306,13 +239,66 @@ pred_hidden_dim = 128
 # Size of the images.
 input_size = 224
 
+# Format of the saved images.
+fig_format = '.png'
 
-# ## Reproducibility
+
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
+# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
+
+# ## Load two pretrained models (ignore)
 
 # In[ ]:
 
 
-# exp.reproducibility()
+# print('\nModel with pretrained weights using SSL')
+# resnet18 = torchvision.models.resnet18(weights=None)
+
+# # Only backbone.
+# pt_backbone = torch.nn.Sequential(*list(resnet18.children())[:-1])
+
+# # List of trained models.
+# model_list = []
+# print()
+# for root, dirs, files in os.walk(input_dir_models):
+#     for i, filename in enumerate(sorted(files, reverse=True)):
+#         model_list.append(os.path.join(root, filename))
+#         print(f'{i:02} --> {filename}')
+
+# # Loading model.
+# idx = 0
+# print(f'\nLoaded: {model_list[idx]}')
+# pt_backbone.load_state_dict(torch.load(model_list[idx]))
+
+# # Adding a linear layer on top of the model (linear classifier).
+# model = torch.nn.Sequential(
+#     pt_backbone,
+#     torch.nn.Flatten(),
+#     torch.nn.Linear(in_features=512, out_features=10, bias=True),
+#     # torch.nn.Softmax(dim=1)
+# )
+
+# print()
+# print(model[0][0])
+# print(model[0][0].weight[3])
+
+# # Loading model.
+# idx = 5
+# print(f'\nLoaded: {model_list[idx]}')
+# pt_backbone.load_state_dict(torch.load(model_list[idx]))
+
+# # Adding a linear layer on top of the model (linear classifier).
+# model = torch.nn.Sequential(
+#     pt_backbone,
+#     torch.nn.Flatten(),
+#     torch.nn.Linear(in_features=512, out_features=10, bias=True),
+#     # torch.nn.Softmax(dim=1)
+# )
+
+# print()
+# print(model[0][0])
+# print(model[0][0].weight[3])
 
 
 # ***
@@ -676,7 +662,7 @@ elif model_name == 'barlowtwins':
 
 # Learning rate.
 # lr = 0.05 * batch_size / 256
-lr = 0.2
+lr = 0.01
 print(f'\nlr: {lr}')
 
 # Use SGD with momentum and weight decay.
@@ -750,8 +736,6 @@ main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 
 
 # ### Loop
-
-# <p style="color:red"><b>----> REVISED UP TO THIS POINT!</b></p>
 
 # In[ ]:
 
