@@ -1,10 +1,16 @@
-"""Useful functions to manage the datasets.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-Usage:
-    -
+"""This module provides functions to manage the datasets.
 
-Author:
-    A.J. Sanchez-Fernandez - 02/03/2023
+The module contains two classes, the 'AndaluciaDataset' that is a custom dataset from
+PyTorch, and 'GaussianBlur' used in the data transformations. Also, there are several
+functions for data management: 'list_subdirs_fullpath', 'get_mean_std_dataloader',
+'load_mean_std_values', 'inv_norm_tensor', and 'show_one_batch'.
+
+Author: Andres J. Sanchez-Fernandez
+Email: sfandres@unex.es
+Date: 2023-03-24
 """
 
 
@@ -16,9 +22,18 @@ import pandas as pd
 from PIL import Image, ImageFilter
 import random
 
-#--------------------------
-# LOADING DATASETS
-#--------------------------
+
+class GaussianBlur(object):
+    """Gaussian blur augmentation in SimCLR https://arxiv.org/abs/2002.05709"""
+
+    def __init__(self, sigma=[.1, 2.]):
+        self.sigma = sigma
+
+    def __call__(self, x):
+        sigma = random.uniform(self.sigma[0], self.sigma[1])
+        x = x.filter(ImageFilter.GaussianBlur(radius=sigma))
+        return x
+
 
 class AndaluciaDataset(Dataset):
     """Sentinel2AndaluciaLULC dataset."""
@@ -35,6 +50,7 @@ class AndaluciaDataset(Dataset):
             applied on a label.
             verbose (callable, optional): Enables show info.
         """
+
         # Build paths.
         self.root_dir = root_dir
         self.level_dir = os.path.join(self.root_dir, level)
@@ -61,6 +77,7 @@ class AndaluciaDataset(Dataset):
 
     def _show_info(self):
         """ Shows data regarding the dataset. """
+
         print('-----------Andalucia dataset info-----------')
         print(f'Root/Parent folder: {self.root_dir}')
         print(f'Level folder:       {self.level_dir}')
@@ -82,6 +99,7 @@ class AndaluciaDataset(Dataset):
             tuple: (classes, class_to_idx, idx_to_class) where classes are
             relative to (dir), and class_to_idx and idx_to_class are dictionaries.
         """
+
         # Get csv with class names.
         path_to_csv_dict = os.path.join(self.root_dir,
                                         'N1_and_N2_Dictionnary.xlsx')
@@ -101,6 +119,7 @@ class AndaluciaDataset(Dataset):
 
     def __len__(self):
         """ Returns the number of samples. """
+
         return len(self.csv_dataset_info)
 
     def __getitem__(self, idx):
@@ -111,6 +130,7 @@ class AndaluciaDataset(Dataset):
         Returns:
             sample (dict): sample returned.
         """
+
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
@@ -133,10 +153,6 @@ class AndaluciaDataset(Dataset):
 
         return img, abundances
 
-
-#--------------------------
-# OTHER USEFUL FUNCTIONS
-#--------------------------
 
 def list_subdirs_fullpath(input_path):
     """
@@ -227,14 +243,14 @@ def load_dataset_based_on_ratio(input_path, name, ratio):
     mean and std values.
 
     Args:
-        input_path: directory where the datasets are stored.
-        name: name of the target dataset (directory's name as well).
-        ratio: ratio of the target dataset according to train, val, and test.
+        input_path (str): directory where the datasets are stored.
+        name (str): name of the target dataset (directory's name as well).
+        ratio (str): ratio of the target dataset according to train, val, and test.
 
     Returns:
-        split_path: full path to the target split.
-        mean: dictionary holding the mean of the samples.
-        std: dictionary holding the standard deviation of the samples.
+        split_path (str): full path to the target split.
+        mean (dict): dictionary holding the mean of the samples.
+        std (dict): dictionary holding the standard deviation of the samples.
     """
 
     # Get target dataset directory.
@@ -364,15 +380,3 @@ def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0,
                 out = ax.imshow(image, **param_dict)
 
             return out
-
-
-class GaussianBlur(object):
-    """Gaussian blur augmentation in SimCLR https://arxiv.org/abs/2002.05709"""
-
-    def __init__(self, sigma=[.1, 2.]):
-        self.sigma = sigma
-
-    def __call__(self, x):
-        sigma = random.uniform(self.sigma[0], self.sigma[1])
-        x = x.filter(ImageFilter.GaussianBlur(radius=sigma))
-        return x
