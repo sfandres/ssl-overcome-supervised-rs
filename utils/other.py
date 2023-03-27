@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""This module provides functions different objectives.
+"""This module provides functions with different objectives.
 
 The module contains two functions: 'is_notebook' to check whether
 the Python environment runs inside a notebook and 'build_paths' to
@@ -45,7 +45,7 @@ def is_notebook() -> bool:
         return False
 
 
-def build_paths(cwd: str, model_name: str):
+def build_paths(cwd: str, model_name: str) -> dict:
     """
     Buils all the necessary paths into a dictionary.
 
