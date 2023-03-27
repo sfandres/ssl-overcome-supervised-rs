@@ -6,7 +6,7 @@
 #SBATCH --partition=volta                           ## Request specific partition.
 #SBATCH --mem=128GB                                 ## Real memory required per node.
 #SBATCH --wait-all-nodes=1                          ## Controls when the execution begins.
-#SBATCH --time=3-24:00                              ## Job duration (Sergio: 24:00:00).
+#SBATCH --time=3-24:00                              ## Job duration.
 #SBATCH --gpus-per-node=2                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --job-name=uexsslfn_%A_%a                   ## Name of the job.
 #SBATCH --output=uexsslfn_%A_%a.out                 ## Output file.
@@ -29,10 +29,8 @@ email_info="job_id=${job_id} task_id=${task_id} ssl_model=${model}"
 ## cat email_body.txt | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 echo " " | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 
-## Load the Python module (not necessary).
+## Load virtual environment or module (not necessary).
 ## module load cuda/11.0.1
-
-## Load virtual environment.
 ## source ~/lulc/lulc-venv/bin/activate
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc-conda
@@ -40,12 +38,10 @@ conda activate lulc-conda
 ## Execute the Python script and pass the arguments.
 srun python3 03_2-PyTorch-Backbone_classifier.py \
 ${model} \
---dataset Sentinel2AndaluciaLULC \
---epochs 25 \
---batch_size 128 \
---show_fig False \
---cluster True
-## srun python3 testing_GPU_PyTorch.py
+--dataset_name "Sentinel2AndaluciaLULC" \
+--epochs "100" \
+--batch_size "256" \
+--cluster
 
 ## Send email when job ends.
 ## cat uexsslfn_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
