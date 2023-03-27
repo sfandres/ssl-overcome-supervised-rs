@@ -54,7 +54,7 @@ def build_paths(cwd: str, model_name: str) -> dict:
         model_name (str): name of the target SSL model.
 
     Returns:
-        All the generated paths in a dictionary.
+        paths (dict): all the generated paths in a dictionary.
     """
 
     # Create main paths.
@@ -116,13 +116,13 @@ def build_paths(cwd: str, model_name: str) -> dict:
         print(f'Dir created: {images_model_path}')
 
     # Create dictionary.
-    paths_dict = {
-        'input_path': input_path,
-        'datasets_path': datasets_path,
-        'output_path': output_path,
-        'runs_path': runs_path,
-        'checkpoints_model_path': checkpoints_model_path,
-        'images_model_path': images_model_path        
+    paths = {
+        'input': input_path,
+        'datasets': datasets_path,
+        'output': output_path,
+        'runs': runs_path,
+        'checkpoints': checkpoints_model_path,
+        'images': images_model_path        
     }
-            
-    return paths_dict
+
+    return paths
