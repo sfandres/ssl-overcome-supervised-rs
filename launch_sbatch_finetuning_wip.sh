@@ -38,9 +38,9 @@ conda activate lulc-conda
 ## Execute the Python script and pass the arguments.
 srun python3 03_2-PyTorch-Backbone_classifier.py \
 ${model} \
---dataset_name "Sentinel2AndaluciaLULC" \
---epochs "100" \
---batch_size "256" \
+--dataset_name=Sentinel2AndaluciaLULC \
+--epochs=100 \
+--batch_size=256 \
 --cluster
 
 ## Send email when job ends.
