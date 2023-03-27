@@ -649,11 +649,12 @@ elif model_name == 'barlowtwins':
     model = BarlowTwins(backbone)
 
 # Model's backbone structure.
-summary(
-    model.backbone,
-    input_size=(batch_size, 3, input_size, input_size),
-    device=device
-)
+if not cluster:
+    summary(
+        model.backbone,
+        input_size=(batch_size, 3, input_size, input_size),
+        device=device
+    )
 
 
 # ## Training
