@@ -17,12 +17,13 @@
 
 
 # Custom modules.
-from utils.computation import pca_computation, tsne_computation
-from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
-from utils.graphs import simple_bar_plot
-from utils.models import SimSiam, SimCLRModel, BarlowTwins
 from utils.other import is_notebook, build_paths
 from utils.reproducibility import set_seed, seed_worker
+from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
+from utils.models import SimSiam, SimCLRModel, BarlowTwins
+from utils.computation import pca_computation, tsne_computation
+
+# from utils.graphs import simple_bar_plot
 
 # Arguments and paths.
 import os
@@ -31,6 +32,7 @@ import argparse
 
 # PyTorch.
 import torch
+import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
 from torchvision import transforms
 from torchinfo import summary
@@ -81,6 +83,12 @@ if is_notebook():
     get_ipython().run_line_magic('pycodestyle_on', '')
 
 
+# In[ ]:
+
+
+SEED = 42
+
+
 # ## Enable reproducibility
 
 # Reference: https://pytorch.org/docs/stable/notes/randomness.html
@@ -89,7 +97,7 @@ if is_notebook():
 
 
 print(f"\n{'torch initial seed:'.ljust(20)} {torch.initial_seed()}")
-g = set_seed(42)
+g = set_seed(SEED)
 print(f"{'torch current seed:'.ljust(20)} {torch.initial_seed()}")
 
 
@@ -158,11 +166,14 @@ parser.add_argument('--cluster', action='store_true',
 if is_notebook():
     args = parser.parse_args(
         args=['simclr',
+              # '--balanced_dataset',
               '--show',
               '--cluster',
               '--dataset_name', 'Sentinel2GlobalLULC_SSL',
-              '--dataset_ratio', '(0.900,0.0250,0.0750)',
-              '--epochs', '5']
+              # '--dataset_ratio', '(0.900,0.0250,0.0750)',
+              # '--dataset_ratio', '(0.400,0.1500,0.4500)',
+              '--dataset_ratio', '(0.020,0.0196,0.9604)',
+              '--epochs', '25']
     )
 else:
     args = parser.parse_args(sys.argv[1:])
@@ -219,7 +230,7 @@ paths = build_paths(cwd, model_name)
 print()
 for path in paths:
     path_name_col = f'{path}:'
-    print(f'{path_name_col.ljust(25)} {paths[path]}')
+    print(f'{path_name_col.ljust(15)} {paths[path]}')
 
 
 # ## Settings and options
@@ -242,10 +253,6 @@ input_size = 224
 # Format of the saved images.
 fig_format = '.png'
 
-
-# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
-# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
-# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
 
 # ## Load two pretrained models (ignore)
 
@@ -312,10 +319,10 @@ fig_format = '.png'
 # In[ ]:
 
 
-# Retrieve the mean and std values of each split from
+# Retrieve the path, mean and std values of each split from
 # a .txt file previously generated using a custom script.
-data_path_target, mean, std = load_dataset_based_on_ratio(
-    input_path_datasets,
+paths[dataset_name], mean, std = load_dataset_based_on_ratio(
+    paths['datasets'],
     dataset_name,
     dataset_ratio
 )
@@ -366,7 +373,7 @@ for t in transform:
 
 # Loading the three datasets with ImageFolder.
 dataset = {x: torchvision.datasets.ImageFolder(
-    os.path.join(data_path_target, x)) for x in splits}
+    os.path.join(paths[dataset_name], x)) for x in splits}
 
 for d in dataset:
     print(f'\n{d}: {dataset[d]}')
@@ -377,7 +384,7 @@ for d in dataset:
 # In[ ]:
 
 
-if handle_imb_classes:
+if balanced_dataset:
 
     # Creating a list of labels of samples.
     train_sample_labels = dataset['train'].targets
@@ -406,8 +413,8 @@ else:
     sampler = None
     shuffle = True
 
-print(f'\nSampler:\t{sampler}')
-print(f'Shuffle:\t{shuffle}')
+print(f'\nSampler:  {sampler}')
+print(f'Shuffle:  {shuffle}')
 
 
 # ## Cast to Lightly dataset
@@ -464,8 +471,8 @@ dataloader = {x: torch.utils.data.DataLoader(
     num_workers=0,
     collate_fn=collate_fn[x],
     drop_last=False,
-    # worker_init_fn=exp.seed_worker,
-    # generator=exp.g
+    worker_init_fn=seed_worker,
+    generator=g
 ) for x in splits[1:]}
 
 # Dataloader for training.
@@ -477,15 +484,15 @@ dataloader['train'] = torch.utils.data.DataLoader(
     num_workers=0,
     collate_fn=collate_fn['train'],
     drop_last=False,
-    # worker_init_fn=exp.seed_worker,
-    # generator=exp.g
+    worker_init_fn=seed_worker,
+    generator=g
 )
 
 # Check if shuffle is enabled.
 if isinstance(dataloader['train'].sampler, torch.utils.data.RandomSampler):
-    print('\nShuffle is enabled in training')
+    print('\nShuffle enabled in training!')
 else:
-    print('\nShuffle is disabled in training')
+    print('\nShuffle disabled in training!')
 
 for d in dataloader:
     print(f"\n{d}:\t{vars(dataloader[d])}")
@@ -500,7 +507,7 @@ for d in dataloader:
 for d in dataset:
     samples = np.unique(dataset[d].targets, return_counts=True)[1]
     print(f'\n{d}:')
-    print(f'  - #Samples/class: {samples}')
+    print(f'  - #Samples/class:\n{samples}')
     print(f'  - #Samples: {len(dataset[d].targets)}')
     print(f'  - #Batches: {len(dataloader[d])}')
 
@@ -539,7 +546,7 @@ for d in dataset:
 # fig_name_save = (f'sample_distribution'
 #                  f'-ratio={dataset_ratio}'
 #                  f'-balanced={handle_imb_classes}')
-# fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+# fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
 #             bbox_inches='tight')
 
 # plt.show() if show else plt.close()
@@ -642,14 +649,18 @@ elif model_name == 'barlowtwins':
     model = BarlowTwins(backbone)
 
 # Model's backbone structure.
-# print(summary(
-#     model.backbone,
-#     input_size=(batch_size, 3, input_size, input_size),
-#     device=device)
-# )
+summary(
+    model.backbone,
+    input_size=(batch_size, 3, input_size, input_size),
+    device=device
+)
 
 
 # ## Training
+
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
+# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
 
 # SimSiam uses a symmetric negative cosine similarity loss and does therefore not require any negative samples. We build a criterion and an optimizer.
 # 
@@ -657,34 +668,75 @@ elif model_name == 'barlowtwins':
 
 # ### Hyperparameters
 
+# <b>Based on the values given in <i>Focus on the Positives: Self-Supervised Learning for Biodiversity Monitoring</i>.</b>
+
 # In[ ]:
 
 
-# Learning rate.
-# lr = 0.05 * batch_size / 256
-lr = 0.01
-print(f'\nlr: {lr}')
+# Set the initial learning rate.
+lr_init = 0.03
 
 # Use SGD with momentum and weight decay.
 optimizer = torch.optim.SGD(
     model.parameters(),
-    lr=lr,
+    lr=lr_init,
     momentum=0.9,
-    weight_decay=1e-4
+    weight_decay=5e-4
 )
 print(f'optimizer: {optimizer}')
+print(optimizer.param_groups[0]['lr'])
+
+
+# In[ ]:
+
+
+# # Define the total number of steps.
+# def lr_lambda(epoch):
+#     if epoch < warmup_epochs:
+#         return (epoch + 1) / warmup_epochs
+#     else:
+#         return 0.5 * (1 + math.cos(math.pi * (epoch - warmup_epochs)
+#                                    / (epochs - warmup_epochs)))
+
+
+# Define the warmup duration.
+warmup_epochs = 25
+
+# # Define the learning rate scheduler
+# scheduler = lr_scheduler.LambdaLR(optimizer,
+#                                   lr_lambda=lr_lambda,
+#                                   verbose=True)
+# print(scheduler)
+# print(optimizer.param_groups[0]['lr'])
+
+
+# In[ ]:
+
+
+# # Learning rate.
+# lr = 0.03
+# print(f'\nlr: {lr}')
+
+# # Use SGD with momentum and weight decay.
+# optimizer = torch.optim.SGD(
+#     model.parameters(),
+#     lr=lr,
+#     momentum=0.9,
+#     weight_decay=5e-4
+# )
+# print(f'optimizer: {optimizer}')
 
 # Linear warmup for the first 10 epochs.
 warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
     optimizer,
-    lambda epoch: min(1, epoch / 10),
+    lambda epoch: min(1, epoch / warmup_epochs),
     verbose=True
 )
 
 # Cosine decay starting from the 11th epoch.
 main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
     optimizer,
-    T_max=epochs,
+    T_max=epochs-warmup_epochs,
     verbose=True
 )
 
@@ -745,7 +797,6 @@ print(f'\nUsing {device} device')
 model.to(device)
 
 # Saving best model's weights.
-# best_model_wts = copy.deepcopy(model.state_dict())
 collapse_level = 0.
 lowest_train_loss = 10000
 lowest_val_loss = 10000
@@ -862,9 +913,10 @@ for e in range(epochs):
     # ======================
     # SAVING CHECKPOINT.
     # Save model.
-    save_model = ((epoch_train_loss < lowest_train_loss)
-                  or (epoch_val_loss < lowest_val_loss)
-                  or (e == epochs - 1))
+    # save_model = ((epoch_train_loss < lowest_train_loss)
+    #               or (epoch_val_loss < lowest_val_loss)
+    #               or (e == epochs - 1))
+    save_model = True
     if save_model:
 
         # Update new lowest losses
@@ -879,20 +931,23 @@ for e in range(epochs):
         model.save(e,
                    epoch_train_loss,
                    epoch_val_loss,
-                   handle_imb_classes,
+                   balanced_dataset,
                    dataset_ratio,
-                   output_path_models,
+                   paths['checkpoints'],
                    collapse_level=collapse_level)
         # model.to(device)
 
     # ======================
-    # UPDATE LEARNING RATE.
-    # Linear warmup.
-    if e < 10:
-        warmup_scheduler.step()
-    # Cosine decay.
-    elif e >=10:
-        main_scheduler.step()
+    # UPDATE LEARNING RATE SCHEDULER.
+    # scheduler.step()
+    warmup_scheduler.step() if (e < warmup_epochs) else main_scheduler.step()
+    print(optimizer.param_groups[0]['lr'])
+    # # Linear warmup.
+    # if e < 10:
+    #     warmup_scheduler.step()
+    # # Cosine decay.
+    # elif e >=10:
+    #     main_scheduler.step()
     # print(f'lr: {model.optimizer.param_groups[0]["lr"]}')
     # if model_name == 'simsiam':
     #     model.scheduler.step()
@@ -961,7 +1016,7 @@ model.eval()
 with torch.no_grad():
     # for i, (x, y, fnames) in enumerate(dataloader_val):
     # Now taking only the first transformed batch.
-    for i, ((x, _), y, fnames) in enumerate(dataloader_val_lightly):
+    for i, ((x, _), y, fnames) in enumerate(dataloader['val']):
 
         # Move the images to the GPU.
         x = x.to(device)
@@ -997,7 +1052,7 @@ plot = 'all'
 
 
 # PCA computation.
-df = pca_computation(embeddings, labels, seed)
+df = pca_computation(embeddings, labels, SEED)
 
 # 2-D plot.
 if plot == '2d' or plot == "23d" or plot == 'all':
@@ -1012,7 +1067,7 @@ if plot == '2d' or plot == "23d" or plot == 'all':
         alpha=0.9
     )
     fig_name_save = (f'pca_2d-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+    fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
                 bbox_inches='tight')
     plt.show() if show else plt.close()
 
@@ -1031,7 +1086,7 @@ if plot == '3d' or plot == "23d" or plot == 'all':
     ax.set_ylabel('pca_y')
     ax.set_zlabel('pca_z')
     fig_name_save = (f'pca_3d-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+    fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
                 bbox_inches='tight')
     plt.show() if show else plt.close()
 
@@ -1060,7 +1115,7 @@ if plot == '3d' or plot == "23d" or plot == 'all':
 
 
 # t-SNE computation for 2-D.
-df = tsne_computation(embeddings, labels, seed, n_components=2)
+df = tsne_computation(embeddings, labels, SEED, n_components=2)
 
 # 2-D plot.
 if plot == '2d' or plot == "23d" or plot == 'all':
@@ -1075,12 +1130,12 @@ if plot == '2d' or plot == "23d" or plot == 'all':
         alpha=0.9
     )
     fig_name_save = (f'tsne_2d-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+    fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
                 bbox_inches='tight')
     plt.show() if show else plt.close()
 
 # t-SNE computation for 3-D.
-df = tsne_computation(embeddings, labels, seed, n_components=3)
+df = tsne_computation(embeddings, labels, SEED, n_components=3)
 
 # 3-D plot with matplotlib.
 if plot == '3d' or plot == "23d" or plot == 'all':
@@ -1097,7 +1152,7 @@ if plot == '3d' or plot == "23d" or plot == 'all':
     ax.set_ylabel('tsne_y')
     ax.set_zlabel('tsne_z')
     fig_name_save = (f'tsne_3d-{model}')
-    fig.savefig(os.path.join(output_path_figs, fig_name_save+fig_format),
+    fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
                 bbox_inches='tight')
     plt.show() if show else plt.close()
 
