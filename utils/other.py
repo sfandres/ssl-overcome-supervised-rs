@@ -78,7 +78,7 @@ def build_paths(cwd: str, model_name: str) -> dict:
         print(f'Dir created: {datasets_path}')
 
     # Second level paths within output.
-    checkpoints_path = os.path.join(output_path, 'checkpoints')
+    checkpoints_path = os.path.join(output_path, 'model_checkpoints')
     images_path = os.path.join(output_path, 'images')
     runs_path = os.path.join(output_path, 'runs')
 
@@ -121,7 +121,7 @@ def build_paths(cwd: str, model_name: str) -> dict:
         'datasets': datasets_path,
         'output': output_path,
         'runs': runs_path,
-        'checkpoints': checkpoints_model_path,
+        'model_checkpoints': checkpoints_model_path,
         'images': images_model_path        
     }
 
