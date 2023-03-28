@@ -20,8 +20,9 @@
 from utils.other import is_notebook, build_paths
 from utils.reproducibility import set_seed, seed_worker
 from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
-from utils.models import SimSiam, SimCLRModel, BarlowTwins
+from utils.models import SimSiam, BarlowTwins #, SimCLRModel
 from utils.computation import pca_computation, tsne_computation
+from utils.simclrv2 import SimCLRv2
 
 # from utils.graphs import simple_bar_plot
 
@@ -125,8 +126,8 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument('model_name', type=str,
-                    choices=['simsiam', 'simclr', 'barlowtwins'],
-                    help="SSL model: 'simsiam', 'simclr' or 'barlowtwins.")
+                    choices=['simsiam', 'simclr', 'simclrv2', 'barlowtwins'],
+                    help="SSL model: 'simsiam', 'simclr(v2)', or 'barlowtwins.")
 
 parser.add_argument('--dataset_name', '-dn', type=str,
                     default='Sentinel2GlobalLULC_SSL',
@@ -165,15 +166,12 @@ parser.add_argument('--cluster', action='store_true',
 # Input arguments.
 if is_notebook():
     args = parser.parse_args(
-        args=['simclr',
-              # '--balanced_dataset',
+        args=['simclrv2',
               '--show',
               '--cluster',
-              '--dataset_name', 'Sentinel2GlobalLULC_SSL',
-              # '--dataset_ratio', '(0.900,0.0250,0.0750)',
-              # '--dataset_ratio', '(0.400,0.1500,0.4500)',
-              '--dataset_ratio', '(0.020,0.0196,0.9604)',
-              '--epochs', '25']
+              '--dataset_name=Sentinel2GlobalLULC_SSL',
+              '--dataset_ratio=(0.020,0.0196,0.9604)',
+              '--epochs=25']
     )
 else:
     args = parser.parse_args(sys.argv[1:])
@@ -601,7 +599,7 @@ def show_batch(batch, batch_id):
             img = batch[i]
             fig.add_subplot(rows, columns, i)
             plt.imshow(torch.permute(img, (1, 2, 0)))
-    
+
     plt.show() if show else plt.close()
 
 
@@ -645,15 +643,19 @@ if model_name == 'simsiam':
 elif model_name == 'simclr':
     hidden_dim = resnet.fc.in_features
     model = SimCLRModel(backbone, hidden_dim)
+elif model_name == 'simclrv2':
+    model = SimCLRv2(backbone='resnet18',
+                     weights=None,
+                     feature_dim=128)
 elif model_name == 'barlowtwins':
     model = BarlowTwins(backbone)
 
 # Model's backbone structure.
-if not cluster:
-    summary(
+if show:
+    print(summary(
         model.backbone,
         input_size=(batch_size, 3, input_size, input_size),
-        device=device
+        device=device)
     )
 
 
@@ -674,6 +676,14 @@ if not cluster:
 # In[ ]:
 
 
+# def get_lr(optimizer):
+#     for param_group in optimizer.param_groups:
+#         return param_group['lr']
+
+
+# In[ ]:
+
+
 # Set the initial learning rate.
 lr_init = 0.03
 
@@ -684,62 +694,26 @@ optimizer = torch.optim.SGD(
     momentum=0.9,
     weight_decay=5e-4
 )
-print(f'optimizer: {optimizer}')
-print(optimizer.param_groups[0]['lr'])
-
-
-# In[ ]:
-
-
-# # Define the total number of steps.
-# def lr_lambda(epoch):
-#     if epoch < warmup_epochs:
-#         return (epoch + 1) / warmup_epochs
-#     else:
-#         return 0.5 * (1 + math.cos(math.pi * (epoch - warmup_epochs)
-#                                    / (epochs - warmup_epochs)))
-
+print(f'optimizer:\n{optimizer}')
 
 # Define the warmup duration.
 warmup_epochs = 25
 
-# # Define the learning rate scheduler
-# scheduler = lr_scheduler.LambdaLR(optimizer,
-#                                   lr_lambda=lr_lambda,
-#                                   verbose=True)
-# print(scheduler)
-# print(optimizer.param_groups[0]['lr'])
-
-
-# In[ ]:
-
-
-# # Learning rate.
-# lr = 0.03
-# print(f'\nlr: {lr}')
-
-# # Use SGD with momentum and weight decay.
-# optimizer = torch.optim.SGD(
-#     model.parameters(),
-#     lr=lr,
-#     momentum=0.9,
-#     weight_decay=5e-4
-# )
-# print(f'optimizer: {optimizer}')
-
-# Linear warmup for the first 10 epochs.
+# Linear warmup for the first defined epochs.
 warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
     optimizer,
     lambda epoch: min(1, epoch / warmup_epochs),
     verbose=True
 )
 
-# Cosine decay starting from the 11th epoch.
+# Cosine decay afterwards.
 main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
     optimizer,
     T_max=epochs-warmup_epochs,
     verbose=True
 )
+
+# print(f"Initial lr: {optimizer.param_groups[0]['lr']}")
 
 
 # In[ ]:
@@ -780,14 +754,6 @@ main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 #     )
 
 
-# In[ ]:
-
-
-# def get_lr(optimizer):
-#     for param_group in optimizer.param_groups:
-#         return param_group['lr']
-
-
 # ### Loop
 
 # In[ ]:
@@ -803,8 +769,8 @@ lowest_train_loss = 10000
 lowest_val_loss = 10000
 total_train_batches = len(dataloader['train'])
 total_val_batches = len(dataloader['val'])
-print(f'\nBatches in (train, val) datasets: ({total_train_batches}, '
-      f'{total_val_batches})\n')
+print(f'Batches in (train, val) datasets: '
+      f'({total_train_batches}, {total_val_batches})\n')
 
 # ======================
 # TRAINING LOOP.
@@ -834,6 +800,8 @@ for e in range(epochs):
             z0, p0 = model(x0)
             z1, p1 = model(x1)
             loss = 0.5 * (model.criterion(z0, p1) + model.criterion(z1, p0))
+        elif model_name == 'simclrv2':
+            loss = model.training_step((x0, x1))
         else:
             loss = model.training_step(x0, x1)
 
@@ -891,6 +859,8 @@ for e in range(epochs):
                 z0, p0 = model(x0)
                 z1, p1 = model(x1)
                 loss = .5 * (model.criterion(z0, p1) + model.criterion(z1, p0))
+            elif model_name == 'simclrv2':
+                loss = model.training_step((x0, x1))
             else:
                 loss = model.training_step(x0, x1)
 
@@ -913,30 +883,18 @@ for e in range(epochs):
 
     # ======================
     # SAVING CHECKPOINT.
-    # Save model.
-    # save_model = ((epoch_train_loss < lowest_train_loss)
-    #               or (epoch_val_loss < lowest_val_loss)
-    #               or (e == epochs - 1))
-    save_model = True
-    if save_model:
-
-        # Update new lowest losses
-        if epoch_train_loss < lowest_train_loss:
-            lowest_train_loss = epoch_train_loss
-        elif epoch_val_loss < lowest_val_loss:
-            lowest_val_loss = epoch_val_loss
-
-        # Move the model to CPU before saving
-        # it and then back to the GPU.
-        # model.to('cpu')
-        model.save(e,
-                   epoch_train_loss,
-                   epoch_val_loss,
-                   balanced_dataset,
-                   dataset_ratio,
-                   paths['checkpoints'],
-                   collapse_level=collapse_level)
-        # model.to(device)
+    # Move the model to CPU before saving it
+    # to make it more platform-independent.
+    model.to('cpu')
+    model.save(e, epoch_train_loss, paths['model_checkpoints'])
+    model.to(device)
+    # model.save(e,
+    #            epoch_train_loss,
+    #            epoch_val_loss,
+    #            balanced_dataset,
+    #            dataset_ratio,
+    #            paths['checkpoints'],
+    #            collapse_level=collapse_level)
 
     # ======================
     # UPDATE LEARNING RATE SCHEDULER.
@@ -959,11 +917,10 @@ for e in range(epochs):
     #     # Cosine decay.
     #     elif e >=10:
     #         model.main_scheduler.step()
-
-        # if model_name == 'barlowtwins':
-        #     model.optimizer.param_groups[0]['lr'] = model.optimizer.param_groups[0]['lr'] * 0.2 # args.learning_rate_weights
-        #     model.optimizer.param_groups[1]['lr'] = model.optimizer.param_groups[0]['lr'] * 0.0048 # args.learning_rate_biases
-        #     print(model.optimizer.param_groups[0]['lr'], model.optimizer.param_groups[1]['lr'])
+    #     if model_name == 'barlowtwins':
+    #         model.optimizer.param_groups[0]['lr'] = model.optimizer.param_groups[0]['lr'] * 0.2 # args.learning_rate_weights
+    #         model.optimizer.param_groups[1]['lr'] = model.optimizer.param_groups[0]['lr'] * 0.0048 # args.learning_rate_biases
+    #         print(model.optimizer.param_groups[0]['lr'], model.optimizer.param_groups[1]['lr'])
 
     # ======================
     # EPOCH STATISTICS.
@@ -972,7 +929,6 @@ for e in range(epochs):
           f'Train loss: {epoch_train_loss:.4f} | '
           f'Val loss: {epoch_val_loss:.4f} | '
           f'Duration: {(time.time()-t0):.2f} s | '
-          f'Saved: {save_model} | '
           f'Collapse Level (SimSiam only): {collapse_level:.4f}/1.0\n')
 
 
@@ -992,8 +948,10 @@ print(model)
 
 
 # First convolutional layer weights.
-print(model.backbone[0])
-print(model.backbone[0].weight[63])
+# print(model.backbone[0])
+# print(model.backbone[0].weight[63])
+print(model.backbone.conv1)
+print(model.backbone.conv1.weight[63])
 
 
 # ***
