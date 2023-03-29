@@ -318,7 +318,7 @@ def inv_norm_tensor(tensor, mean, std):
     return tensor
 
 
-def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0,
+def show_one_batch(axes, num_cols, dataloader, task, idx_to_class, batch_id=0,
                    inv_norm=False, mean=None, std=None, param_dict={}):
     """
     Takes the "dataloader" and creates a figure using "axes",
@@ -339,6 +339,7 @@ def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0,
         the elements of an individual (sub-)plot in the figure.
         num_cols (int): Number of columns in the figure.
         dataloader (PyTorch dataloader): The dataloader.
+        task (str): Downstream task.
         idx_to_class (dict): Dictionary that maps ids to class' names. 
         batch_id (int, optional): Item (batch) to be displayed.
         inv_norm (bool, optional): Apply inverse transform to images.
@@ -366,7 +367,10 @@ def show_one_batch(axes, num_cols, dataloader, idx_to_class, batch_id=0,
                 label = labels[j]
 
                 # Get class name with the greatest abundance (multi-label for now).
-                class_name = idx_to_class[int(torch.argmax(label))]
+                if task == 'multiclass':
+                    class_name = idx_to_class[int(label)]
+                elif task == 'multilabel':
+                    class_name = idx_to_class[int(torch.argmax(label))]
 
                 # Convert image from tensor to numpy array.
                 if inv_norm:
