@@ -3,7 +3,7 @@
 
 # **TRAINING SSL MODELS USING THE ENTIRE SENTINEL-2 DATASET**
 
-# Reference tutorial: https://docs.lightly.ai/tutorials/package/tutorial_simsiam_esa.html
+# Reference: https://docs.lightly.ai/tutorials/package/tutorial_simsiam_esa.html
 
 # ***
 
@@ -23,8 +23,7 @@ from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
 from utils.models import SimSiam, BarlowTwins #, SimCLRModel
 from utils.computation import pca_computation, tsne_computation
 from utils.simclrv2 import SimCLRv2
-
-# from utils.graphs import simple_bar_plot
+from utils.graphs import simple_bar_plot
 
 # Arguments and paths.
 import os
@@ -66,7 +65,8 @@ import plotly.express as px
 from sklearn import random_projection
 
 # Showing images in the notebook.
-# import IPython
+# from IPython.display import Image
+# from IPython.core.display import HTML
 
 # Other imports.
 # import copy
@@ -127,7 +127,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('model_name', type=str,
                     choices=['simsiam', 'simclr', 'simclrv2', 'barlowtwins'],
-                    help="SSL model: 'simsiam', 'simclr(v2)', or 'barlowtwins.")
+                    help="SSL model: 'simsiam', 'simclr(v2)' or 'barlowtwins.")
 
 parser.add_argument('--dataset_name', '-dn', type=str,
                     default='Sentinel2GlobalLULC_SSL',
@@ -168,13 +168,17 @@ if is_notebook():
     args = parser.parse_args(
         args=['simclrv2',
               '--show',
-              '--cluster',
               '--dataset_name=Sentinel2GlobalLULC_SSL',
               '--dataset_ratio=(0.020,0.0196,0.9604)',
+              '--batch_size=64',
               '--epochs=25']
     )
 else:
     args = parser.parse_args(sys.argv[1:])
+
+
+# In[ ]:
+
 
 # Convert the parsed arguments into a dictionary and declare
 # variables with the same name as the arguments.
@@ -201,16 +205,20 @@ else:
     print(' - Torch sharing strategy set to file_system (less memory)')
     torch.multiprocessing.set_sharing_strategy('file_system')
 
+# Setting the device.
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+print(f"{'Device:'.ljust(20)} {device}")
+
+
+# In[ ]:
+
+
 # Setting the initial weights.
 if ini_weights == 'imagenet':
     weights = torchvision.models.ResNet18_Weights.DEFAULT
 elif ini_weights == 'random':
     weights = None
 print(f"{'Initial weights:'.ljust(20)} {weights}")
-
-# Setting the device.
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print(f"{'Device:'.ljust(20)} {device}")
 
 
 # ## Build paths
@@ -228,10 +236,20 @@ paths = build_paths(cwd, model_name)
 print()
 for path in paths:
     path_name_col = f'{path}:'
-    print(f'{path_name_col.ljust(15)} {paths[path]}')
+    print(f'{path_name_col.ljust(20)} {paths[path]}')
 
 
 # ## Settings and options
+
+# In[ ]:
+
+
+# Size of the images.
+input_size = 224
+
+# Format of the saved images.
+fig_format = '.png'
+
 
 # In[ ]:
 
@@ -244,12 +262,6 @@ out_dim = proj_hidden_dim = 512
 
 # The prediction head uses a bottleneck architecture.
 pred_hidden_dim = 128
-
-# Size of the images.
-input_size = 224
-
-# Format of the saved images.
-fig_format = '.png'
 
 
 # ## Load two pretrained models (ignore)
@@ -550,9 +562,9 @@ for d in dataset:
 # plt.show() if show else plt.close()
 
 
-# ## Look at some samples (lightly dataset)
+# ## Look at some training samples (lightly dataset)
 
-# ### Only one sample from the training batch
+# ### Only one sample from the first batch
 
 # In[ ]:
 
@@ -571,7 +583,7 @@ if show:
             break  # Only a few batches.
 
 
-# ### Two batches (almost)
+# ### Two batches
 
 # Note: Comment out the normalization augmentation first to view the images below properly.
 
@@ -644,7 +656,7 @@ elif model_name == 'simclr':
     hidden_dim = resnet.fc.in_features
     model = SimCLRModel(backbone, hidden_dim)
 elif model_name == 'simclrv2':
-    model = SimCLRv2(backbone='resnet18',
+    model = SimCLRv2(backbone='resnet50',
                      weights=None,
                      feature_dim=128)
 elif model_name == 'barlowtwins':
