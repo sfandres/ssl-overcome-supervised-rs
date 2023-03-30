@@ -121,7 +121,8 @@ def build_paths(cwd: str, model_name: str) -> dict:
         'datasets': datasets_path,
         'output': output_path,
         'runs': runs_path,
-        'model_checkpoints': checkpoints_model_path,
+        'log_checkpoints': checkpoints_logs_path,
+        'checkpoints': checkpoints_model_path,
         'images': images_model_path        
     }
 
