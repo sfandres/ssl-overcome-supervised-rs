@@ -32,8 +32,15 @@ import argparse
 
 # PyTorch.
 import torch
+import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
 import torchvision
+from torchvision.models import (
+    resnet18,
+    ResNet18_Weights,
+    resnet50,
+    ResNet50_Weights
+)
 from torchvision import transforms
 from torchinfo import summary
 
@@ -107,12 +114,18 @@ print(f"{'torch current seed:'.ljust(20)} {torch.initial_seed()}")
 # In[ ]:
 
 
-print(f"\n{'torch.cuda.is_available():'.ljust(32)} {torch.cuda.is_available()}")
-print(f"{'torch.cuda.device_count():'.ljust(32)} {torch.cuda.device_count()}")
-print(f"{'torch.cuda.current_device():'.ljust(32)} {torch.cuda.current_device()}")
-print(f"{'torch.cuda.device(0):'.ljust(32)} {torch.cuda.device(0)}")
-print(f"{'torch.cuda.get_device_name(0):'.ljust(32)} {torch.cuda.get_device_name(0)}")
-print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)} {torch.backends.cudnn.benchmark}")
+print(f"\n{'torch.cuda.is_available():'.ljust(32)}"
+      f"{torch.cuda.is_available()}")
+print(f"{'torch.cuda.device_count():'.ljust(32)}"
+      f"{torch.cuda.device_count()}")
+print(f"{'torch.cuda.current_device():'.ljust(32)}"
+      f"{torch.cuda.current_device()}")
+print(f"{'torch.cuda.device(0):'.ljust(32)}"
+      f"{torch.cuda.device(0)}")
+print(f"{'torch.cuda.get_device_name(0):'.ljust(32)}"
+      f"{torch.cuda.get_device_name(0)}")
+print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)}"
+      f"{torch.backends.cudnn.benchmark}")
 
 
 # ## Command line arguments
@@ -128,6 +141,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument('model_name', type=str,
                     choices=['simsiam', 'simclr', 'simclrv2', 'barlowtwins'],
                     help="SSL model: 'simsiam', 'simclr(v2)' or 'barlowtwins.")
+
+parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
+                    choices=['resnet18', 'resnet50'],
+                    help="backbone model name: 'resnet18' or 'resnet50'.")
 
 parser.add_argument('--dataset_name', '-dn', type=str,
                     default='Sentinel2GlobalLULC_SSL',
@@ -150,7 +167,6 @@ parser.add_argument('--ini_weights', type=str, default='random',
 parser.add_argument('--show', action='store_true',
                     help='the images should appear.');
 
-
 parser.add_argument('--balanced_dataset', action='store_true',
                     help='whether the dataset should be balanced.');
 
@@ -166,12 +182,15 @@ parser.add_argument('--cluster', action='store_true',
 # Input arguments.
 if is_notebook():
     args = parser.parse_args(
-        args=['simclrv2',
-              '--show',
-              '--dataset_name=Sentinel2GlobalLULC_SSL',
-              '--dataset_ratio=(0.020,0.0196,0.9604)',
-              '--batch_size=64',
-              '--epochs=25']
+        args=[
+            'simclrv2',
+            '--backbone=resnet18',
+            '--dataset_name=Sentinel2GlobalLULC_SSL',
+            '--dataset_ratio=(0.020,0.0196,0.9604)',
+            '--epochs=25',
+            '--batch_size=64',
+            '--show'
+        ]
     )
 else:
     args = parser.parse_args(sys.argv[1:])
@@ -213,12 +232,17 @@ print(f"{'Device:'.ljust(20)} {device}")
 # In[ ]:
 
 
-# Setting the initial weights.
-if ini_weights == 'imagenet':
-    weights = torchvision.models.ResNet18_Weights.DEFAULT
-elif ini_weights == 'random':
-    weights = None
-print(f"{'Initial weights:'.ljust(20)} {weights}")
+# Setting the model and initial weights.
+if backbone_name == 'resnet18':
+    if ini_weights == 'imagenet':
+        resnet = resnet18(weights=ResNet18_Weights.DEFAULT)
+    elif ini_weights == 'random':
+        resnet = resnet18(weights=None)
+elif backbone_name == 'resnet50':
+    if ini_weights == 'imagenet':
+        resnet = resnet50(weights=ResNet50_Weights.DEFAULT)
+    elif ini_weights == 'random':
+        resnet = resnet50(weights=None)
 
 
 # ## Build paths
@@ -635,32 +659,43 @@ if show:
 
 # Reference: Lightly tutorials
 
-# ## Backbone net (w/ ResNet18)
+# ## Backbone net
 
 # In[ ]:
 
 
-# Resnet trained from scratch.
-resnet = torchvision.models.resnet18(
-    weights=weights
-)
+# Model's backbone structure.
+if show:
+    print(summary(
+        resnet,
+        input_size=(batch_size, 3, input_size, input_size),
+        device=device)
+    )
+
+
+# In[ ]:
+
 
 # Removing head from resnet. Embedding.
-backbone = torch.nn.Sequential(*list(resnet.children())[:-1])
+input_dim = resnet.fc.in_features
+hidden_dim = input_dim
+backbone = nn.Sequential(*list(resnet.children())[:-1])
 
 # Model creation.
-if model_name == 'simsiam':
-    model = SimSiam(backbone, num_ftrs, proj_hidden_dim,
-                    pred_hidden_dim, out_dim)
-elif model_name == 'simclr':
-    hidden_dim = resnet.fc.in_features
-    model = SimCLRModel(backbone, hidden_dim)
-elif model_name == 'simclrv2':
-    model = SimCLRv2(backbone='resnet50',
-                     weights=None,
-                     feature_dim=128)
-elif model_name == 'barlowtwins':
-    model = BarlowTwins(backbone)
+# if model_name == 'simsiam':
+#     model = SimSiam(backbone, num_ftrs, proj_hidden_dim,
+#                     pred_hidden_dim, out_dim)
+# elif model_name == 'simclr':
+#     hidden_dim = resnet.fc.in_features
+#     model = SimCLRModel(backbone, hidden_dim)
+# elif model_name == 'simclrv2':
+if model_name == 'simclrv2':
+    model = SimCLRv2(backbone=backbone,
+                     input_dim=input_dim,
+                     hidden_dim=hidden_dim,
+                     output_dim=128)
+# elif model_name == 'barlowtwins':
+#     model = BarlowTwins(backbone)
 
 # Model's backbone structure.
 if show:
@@ -898,15 +933,16 @@ for e in range(epochs):
     # Move the model to CPU before saving it
     # to make it more platform-independent.
     model.to('cpu')
-    model.save(e, epoch_train_loss, paths['model_checkpoints'])
+    model.save(
+        backbone_name,
+        e,
+        epoch_train_loss,
+        dataset_ratio,
+        balanced_dataset,
+        paths['checkpoints'],
+        # collapse_level=collapse_level
+    )
     model.to(device)
-    # model.save(e,
-    #            epoch_train_loss,
-    #            epoch_val_loss,
-    #            balanced_dataset,
-    #            dataset_ratio,
-    #            paths['checkpoints'],
-    #            collapse_level=collapse_level)
 
     # ======================
     # UPDATE LEARNING RATE SCHEDULER.
