@@ -6,7 +6,7 @@
 #SBATCH --partition=volta                           ## Request specific partition.
 #SBATCH --mem=128GB                                 ## Real memory required per node.
 #SBATCH --wait-all-nodes=1                          ## Controls when the execution begins.
-#SBATCH --time=24:00:00                             ## Job duration.
+#SBATCH --time=72:00:00                             ## Job duration.
 #SBATCH --gpus-per-node=2                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --job-name=uexsslfn_%A_%a                   ## Name of the job.
 #SBATCH --output=uexsslfn_%A_%a.out                 ## Output file.
