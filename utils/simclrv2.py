@@ -16,6 +16,7 @@ import torch.nn as nn
 import torchvision.models.resnet as resnet
 from lightly.loss import NTXentLoss
 import os
+from datetime import datetime
 
 
 class SimCLRv2(nn.Module):
@@ -35,16 +36,17 @@ class SimCLRv2(nn.Module):
 
     def __init__(
         self,
-        backbone: str = 'resnet18',
-        weights = None,
-        feature_dim: int = 128
+        backbone: nn.Sequential,
+        input_dim: int = 512,
+        hidden_dim: int = 512,
+        output_dim: int = 128
     ):
         """
         Initializes a new SimCLR model.
 
         Args:
-            backbone (nn.Module): A ResNet backbone network.
-            weights (ResNet18/50_Weights): The pretrained weights of the network.
+            backbone (nn.Sequential): A ResNet backbone network.
+            input_dim (int): Number of input features to the fc layer.
             feature_dim (int): The dimensionality of the feature embeddings
             produced by the projection head network.
         """
@@ -55,25 +57,14 @@ class SimCLRv2(nn.Module):
         # Loss criterion (memory bank = 1 for MoCo).
         self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=0)
 
-        # Choose the backbone architecture based on the argument provided.
-        if backbone == 'resnet18':
-            self.backbone = resnet.resnet18(weights=weights)
-            num_ftrs = self.backbone.fc.in_features
-        elif backbone == 'resnet50':
-            self.backbone = resnet.resnet50(weights=weights)
-            num_ftrs = self.backbone.fc.in_features
-        else:
-            raise ValueError("Invalid backbone architecture")
-
-        # Replace the last fully connected layer with an identity function.
-        self.backbone.fc = nn.Identity()
+        # Include the backbone.
+        self.backbone = backbone
 
         # Projector network to generate feature embeddings.
-        hidden_dim = num_ftrs
         self.projection_head = nn.Sequential(
-            nn.Linear(num_ftrs, hidden_dim),
+            nn.Linear(input_dim, hidden_dim),
             nn.ReLU(inplace=True),
-            nn.Linear(hidden_dim, feature_dim)
+            nn.Linear(hidden_dim, output_dim)
         )
 
     def forward(
@@ -91,7 +82,7 @@ class SimCLRv2(nn.Module):
         """
 
         # Feature extraction using the ResNet backbone.
-        z = self.backbone(x)
+        z = self.backbone(x).flatten(start_dim=1)
 
         # Feature embeddings.
         h = self.projection_head(z)
@@ -126,9 +117,12 @@ class SimCLRv2(nn.Module):
 
     def save(
         self,
-        epoch: int,
-        loss: float,
-        path: str
+        backbone_name: str = None,
+        epoch: int = None,
+        train_loss: float = None,
+        dataset_ratio: str = None,
+        balanced_dataset: bool = None,
+        path: str = None
     ) -> None:
         """
         Saves the SimCLR model to a file with a custom name.
@@ -139,10 +133,31 @@ class SimCLRv2(nn.Module):
             path (str): The path where the checkpoint will be saved.
         """
 
-        # Get the class name and filename.
-        class_name = self.__class__.__name__
-        filename = f'{class_name}_epoch={epoch:03}_loss={loss:.4f}'
+        # Save parameters.
+        self.backbone_name = backbone_name
+        self.epoch = epoch
+        self.train_loss = train_loss
+        self.dataset_ratio = dataset_ratio
+        self.balanced_dataset = balanced_dataset
+        self.time = datetime.now()
 
         # Save the weights.
-        torch.save(self.state_dict(),
-                   os.path.join(path, filename))
+        torch.save(self.backbone.state_dict(),
+                   os.path.join(path, self.__str__()))
+
+    def __str__(self) -> str:
+        """Overwriting the string representation of the class."""
+
+        # Get the class name and filename.
+        class_name = self.__class__.__name__
+
+        # Filename with stats.
+        filename = f'{class_name}' \
+                   f'-{self.backbone_name}' \
+                   f'-epoch={self.epoch:03}' \
+                   f'-train_loss={self.train_loss:.3f}' \
+                   f'-ratio={self.dataset_ratio}' \
+                   f'-balanced={self.balanced_dataset}' \
+                   f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
+
+        return filename
