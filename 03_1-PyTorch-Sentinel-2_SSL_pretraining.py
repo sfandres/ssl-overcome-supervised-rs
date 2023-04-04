@@ -188,7 +188,7 @@ parser.add_argument('--cluster', '-c', action='store_true',
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'SimSiam',
+            'SimCLR',
             '--backbone=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
             '--dataset_ratio=(0.020,0.0196,0.9604)',
@@ -933,7 +933,7 @@ for epoch in range(epoch, epochs):
         dataset_ratio,
         balanced_dataset,
         paths['checkpoints'],
-        collapse_level=collapse_level if model_name == 'SimSiam' else None
+        collapse_level=collapse_level if model_name == 'SimSiam' else 0.
     )
 
     if epoch % save_interval == 0:

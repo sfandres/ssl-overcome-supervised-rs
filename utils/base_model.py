@@ -56,7 +56,7 @@ class BaseModel(nn.Module):
         dataset_ratio: str = None,
         balanced_dataset: bool = None,
         path: str = None,
-        collapse_level: float = None
+        collapse_level: float = 0.
     ) -> None:
         """
         Saves the model to a file with a custom name.
