@@ -20,9 +20,11 @@
 from utils.other import is_notebook, build_paths
 from utils.reproducibility import set_seed, seed_worker
 from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
-from utils.models import SimSiam, BarlowTwins #, SimCLRModel
 from utils.computation import pca_computation, tsne_computation
+from utils.simsiam import SimSiam
+from utils.simclr import SimCLR
 from utils.simclrv2 import SimCLRv2
+from utils.barlowtwins import BarlowTwins
 from utils.graphs import simple_bar_plot
 
 # Arguments and paths.
@@ -139,8 +141,8 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument('model_name', type=str,
-                    choices=['simsiam', 'simclr', 'simclrv2', 'barlowtwins'],
-                    help="SSL model: 'simsiam', 'simclr(v2)' or 'barlowtwins.")
+                    choices=['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins'],
+                    help="SSL model: 'SimSiam', 'SimCLR(v2)' or 'BarlowTwins.")
 
 parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
                     choices=['resnet18', 'resnet50'],
@@ -160,17 +162,20 @@ parser.add_argument('--epochs', '-e', type=int, default=25,
 parser.add_argument('--batch_size', '-bs', type=int, default=64,
                     help='number of images in a batch during training.')
 
-parser.add_argument('--ini_weights', type=str, default='random',
+parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                     choices=['random', 'imagenet'],
                     help="initial weights: 'random' (default) or 'imagenet'.")
 
-parser.add_argument('--show', action='store_true',
+parser.add_argument('--show', '-s', action='store_true',
                     help='the images should appear.');
 
-parser.add_argument('--balanced_dataset', action='store_true',
+parser.add_argument('--balanced_dataset', '-bd', action='store_true',
                     help='whether the dataset should be balanced.');
 
-parser.add_argument('--cluster', action='store_true',
+parser.add_argument('--resume_training', '-rt', action='store_true',
+                    help='the script runs on a cluster (large mem. space).');
+
+parser.add_argument('--cluster', '-c', action='store_true',
                     help='the script runs on a cluster (large mem. space).');
 
 
@@ -183,13 +188,14 @@ parser.add_argument('--cluster', action='store_true',
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'simclrv2',
+            'SimSiam',
             '--backbone=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
-            '--dataset_ratio=(0.020,0.0196,0.9604)',
-            '--epochs=25',
+            # '--dataset_ratio=(0.020,0.0196,0.9604)',
+            '--epochs=500',
             '--batch_size=64',
-            '--show'
+            '--show',
+            # '--resume_training'
         ]
     )
 else:
@@ -235,14 +241,18 @@ print(f"{'Device:'.ljust(20)} {device}")
 # Setting the model and initial weights.
 if backbone_name == 'resnet18':
     if ini_weights == 'imagenet':
-        resnet = resnet18(weights=ResNet18_Weights.DEFAULT)
+        resnet = resnet18(weights=ResNet18_Weights.DEFAULT,
+                          zero_init_residual=True)
     elif ini_weights == 'random':
-        resnet = resnet18(weights=None)
+        resnet = resnet18(weights=None,
+                          zero_init_residual=True)
 elif backbone_name == 'resnet50':
     if ini_weights == 'imagenet':
-        resnet = resnet50(weights=ResNet50_Weights.DEFAULT)
+        resnet = resnet50(weights=ResNet50_Weights.DEFAULT,
+                          zero_init_residual=True)
     elif ini_weights == 'random':
-        resnet = resnet50(weights=None)
+        resnet = resnet50(weights=None,
+                          zero_init_residual=True)
 
 
 # ## Build paths
@@ -273,19 +283,6 @@ input_size = 224
 
 # Format of the saved images.
 fig_format = '.png'
-
-
-# In[ ]:
-
-
-# Dimension of the embeddings.
-num_ftrs = 512
-
-# Dimension of the output of the prediction and projection heads.
-out_dim = proj_hidden_dim = 512
-
-# The prediction head uses a bottleneck architecture.
-pred_hidden_dim = 128
 
 
 # ## Load two pretrained models (ignore)
@@ -659,6 +656,10 @@ if show:
 
 # Reference: Lightly tutorials
 
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
+# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
+
 # ## Backbone net
 
 # In[ ]:
@@ -676,26 +677,127 @@ if show:
 # In[ ]:
 
 
+# # Dimension of the embeddings.
+# num_ftrs = 512
+
+# Dimension of the output of the prediction and projection heads.
+out_dim = proj_hidden_dim = 512
+
+# The prediction head uses a bottleneck architecture.
+pred_hidden_dim = 128
+
+
+# In[ ]:
+
+
 # Removing head from resnet. Embedding.
 input_dim = resnet.fc.in_features
 hidden_dim = input_dim
 backbone = nn.Sequential(*list(resnet.children())[:-1])
 
-# Model creation.
-# if model_name == 'simsiam':
-#     model = SimSiam(backbone, num_ftrs, proj_hidden_dim,
-#                     pred_hidden_dim, out_dim)
-# elif model_name == 'simclr':
-#     hidden_dim = resnet.fc.in_features
-#     model = SimCLRModel(backbone, hidden_dim)
-# elif model_name == 'simclrv2':
-if model_name == 'simclrv2':
-    model = SimCLRv2(backbone=backbone,
-                     input_dim=input_dim,
-                     hidden_dim=hidden_dim,
-                     output_dim=128)
-# elif model_name == 'barlowtwins':
-#     model = BarlowTwins(backbone)
+if model_name == 'SimSiam':
+    model = SimSiam(backbone=backbone,
+                    input_dim=input_dim,
+                    proj_hidden_dim=proj_hidden_dim,
+                    pred_hidden_dim=pred_hidden_dim,
+                    output_dim=out_dim)
+else:
+    model = globals()[model_name](backbone=backbone,
+                                  input_dim=input_dim,
+                                  hidden_dim=hidden_dim,
+                                  output_dim=out_dim)
+
+
+# ## Training
+
+# SimSiam uses a symmetric negative cosine similarity loss and does therefore not require any negative samples. We build a criterion and an optimizer.
+# 
+# 
+
+# ### Hyperparameters
+
+# In[ ]:
+
+
+# Device used for training.
+print(f'\nUsing {device} device')
+model.to(device)
+
+
+# In[ ]:
+
+
+# Set the initial learning rate.
+lr_init = 0.2
+
+# Use SGD with momentum and weight decay.
+optimizer = torch.optim.SGD(
+    model.parameters(),
+    lr=lr_init,
+    momentum=0.9,
+    weight_decay=5e-4
+)
+
+# Define the warmup duration.
+warmup_epochs = int(.05*epochs)
+
+# Linear warmup for the first defined epochs.
+warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+    optimizer,
+    lambda epoch: min(1, epoch / warmup_epochs),
+    verbose=True
+)
+
+# Cosine decay afterwards.
+cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    optimizer,
+    T_max=epochs-warmup_epochs,
+    verbose=True
+)
+
+
+# In[ ]:
+
+
+if resume_training:
+
+    # List of checkpoints.
+    ckpt_list = []
+    print()
+    for root, dirs, files in os.walk(paths['checkpoints']):
+        for i, filename in enumerate(sorted(files, reverse=True)):
+            if filename[:4] == 'ckpt':
+                ckpt_list.append(os.path.join(root, filename))
+                print(f'{i:02} --> {filename}')
+
+    # Load the checkpoint.
+    print(f'\nLoaded: {ckpt_list[0]}')
+    ckpt = torch.load(ckpt_list[0])
+
+    # Load from dict.
+    epoch = ckpt['epoch'] + 1
+    model.backbone.load_state_dict(ckpt['model_state_dict'])
+    optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+    warmup_scheduler.load_state_dict(ckpt['warmup_scheduler_state_dict'])
+    cosine_scheduler.load_state_dict(ckpt['cosine_scheduler_state_dict'])
+
+else:
+
+    # Start training from scratch.
+    epoch = 0
+
+
+# In[ ]:
+
+
+print(f'optimizer:\n{optimizer}')
+print(f'warmup_scheduler:\n{warmup_scheduler}')
+print(f'cosine_scheduler:\n{cosine_scheduler}')
+print(f"Initial lr: {optimizer.param_groups[0]['lr']}")
+
+
+# In[ ]:
+
 
 # Model's backbone structure.
 if show:
@@ -706,114 +808,14 @@ if show:
     )
 
 
-# ## Training
-
-# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
-# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
-# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
-
-# SimSiam uses a symmetric negative cosine similarity loss and does therefore not require any negative samples. We build a criterion and an optimizer.
-# 
-# 
-
-# ### Hyperparameters
-
-# <b>Based on the values given in <i>Focus on the Positives: Self-Supervised Learning for Biodiversity Monitoring</i>.</b>
-
-# In[ ]:
-
-
-# def get_lr(optimizer):
-#     for param_group in optimizer.param_groups:
-#         return param_group['lr']
-
-
-# In[ ]:
-
-
-# Set the initial learning rate.
-lr_init = 0.03
-
-# Use SGD with momentum and weight decay.
-optimizer = torch.optim.SGD(
-    model.parameters(),
-    lr=lr_init,
-    momentum=0.9,
-    weight_decay=5e-4
-)
-print(f'optimizer:\n{optimizer}')
-
-# Define the warmup duration.
-warmup_epochs = 25
-
-# Linear warmup for the first defined epochs.
-warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
-    optimizer,
-    lambda epoch: min(1, epoch / warmup_epochs),
-    verbose=True
-)
-
-# Cosine decay afterwards.
-main_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-    optimizer,
-    T_max=epochs-warmup_epochs,
-    verbose=True
-)
-
-# print(f"Initial lr: {optimizer.param_groups[0]['lr']}")
-
-
-# In[ ]:
-
-
-# if model_name == 'simsiam':
-#     model.set_up_optimizer_and_scheduler(epochs,
-#                                          batch_size)
-#     print(model.optimizer)
-#     print(model.scheduler)
-
-# elif model_name == 'simclr':
-#     model.set_up_optimizer_and_scheduler(epochs,
-#                                          batch_size)
-#     print(model.optimizer)
-#     print(model.warmup_scheduler)
-#     print(model.main_scheduler)
-
-# elif model_name == 'barlowtwins':
-#     model.configure_optimizer(batch_size)
-#     model.configure_scheduler(epochs,
-#                               batch_size)
-#     print(model.optimizer)
-#     print(model.warmup_scheduler)
-#     print(model.main_scheduler)
-
-# else:
-#     # Scale the learning rate.
-#     # lr = 0.05 * batch_size / 256
-#     lr = 0.2
-
-#     # Use SGD with momentum and weight decay.
-#     optimizer = torch.optim.SGD(
-#         model.parameters(),
-#         lr=lr,
-#         momentum=0.9,
-#         weight_decay=1e-4
-#     )
-
-
 # ### Loop
 
 # In[ ]:
 
 
-# Device used for training.
-print(f'\nUsing {device} device')
-model.to(device)
-
 # Saving best model's weights.
 collapse_level = 0.
-lowest_train_loss = 10000
-lowest_val_loss = 10000
+save_interval = 2
 total_train_batches = len(dataloader['train'])
 total_val_batches = len(dataloader['val'])
 print(f'Batches in (train, val) datasets: '
@@ -822,17 +824,15 @@ print(f'Batches in (train, val) datasets: '
 # ======================
 # TRAINING LOOP.
 # Iterating over the epochs.
-for e in range(epochs):
+for epoch in range(epoch, epochs):
 
     # Timer added.
     t0 = time.time()
 
-    # Training enabled.
-    model.train()
-
     # ======================
     # TRAINING COMPUTATION.
     # Iterating through the dataloader (lightly dataset is different).
+    model.train()
     running_train_loss = 0.
     for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
 
@@ -840,17 +840,8 @@ for e in range(epochs):
         x0 = x0.to(device)
         x1 = x1.to(device)
 
-        # Run the model on both transforms of the images:
-        # We get projections (z0 and z1) and
-        # predictions (p0 and p1) as output.
-        if model_name == 'simsiam':
-            z0, p0 = model(x0)
-            z1, p1 = model(x1)
-            loss = 0.5 * (model.criterion(z0, p1) + model.criterion(z1, p0))
-        elif model_name == 'simclrv2':
-            loss = model.training_step((x0, x1))
-        else:
-            loss = model.training_step(x0, x1)
+        # Compute loss.
+        loss = model.training_step((x0, x1))
 
         # Averaged loss across all training examples * batch_size.
         running_train_loss += loss.item() * batch_size
@@ -862,25 +853,19 @@ for e in range(epochs):
         # Clear the gradients.
         optimizer.step()
         optimizer.zero_grad()
-        # if model_name == 'simsiam' or model_name == 'simclr' or model_name == 'barlowtwins':
-        #     model.optimizer.step()
-        #     model.optimizer.zero_grad()
-        # else:
-        #     optimizer.step()
-        #     optimizer.zero_grad()
 
-        if model_name == 'simsiam':
-            model.check_collapse(p0, loss)
+        if model_name == 'SimSiam':
+            model.check_collapse(loss)
 
         # Show partial stats.
         if b % (total_train_batches//4) == (total_train_batches//4-1):
-            print(f'T[{e}, {b + 1:5d}] | '
+            print(f'T[{epoch}, {b + 1:5d}] | '
                   f'Running train loss: '
                   f'{running_train_loss/(b*batch_size):.4f}')
 
     # The level of collapse is large if the standard deviation of
     # the l2 normalized output is much smaller than 1 / sqrt(dim).
-    if model_name == 'simsiam':
+    if model_name == 'SimSiam':
         collapse_level = max(0., 1 - math.sqrt(out_dim) * model.avg_output_std)
 
     # ======================
@@ -901,23 +886,16 @@ for e in range(epochs):
             x0 = x0.to(device)
             x1 = x1.to(device)
 
-            # Compute loss
-            if model_name == 'simsiam':
-                z0, p0 = model(x0)
-                z1, p1 = model(x1)
-                loss = .5 * (model.criterion(z0, p1) + model.criterion(z1, p0))
-            elif model_name == 'simclrv2':
-                loss = model.training_step((x0, x1))
-            else:
-                loss = model.training_step(x0, x1)
+            # Compute loss.
+            loss = model.training_step((x0, x1))
 
             # Averaged loss across all validation examples * batch_size.
             running_val_loss += loss.item() * batch_size
 
             # Show partial stats.
             if vb % (total_val_batches//4) == (total_val_batches//4-1):
-                print(f'V[{e}, {vb + 1:5d}] | '
-                      f'Running val loss: '
+                print(f'V[{epoch}, {vb + 1:5d}] | '
+                      f'Running val loss:   '
                       f'{running_val_loss/(vb*batch_size):.4f}')
 
     model.train()
@@ -929,51 +907,43 @@ for e in range(epochs):
                       / len(dataloader['val'].sampler))
 
     # ======================
+    # UPDATE LEARNING RATE SCHEDULER.
+    # scheduler.step()
+    warmup_scheduler.step() if (epoch < warmup_epochs) else cosine_scheduler.step()
+    print(optimizer.param_groups[0]['lr'])
+
+    # ======================
     # SAVING CHECKPOINT.
     # Move the model to CPU before saving it
     # to make it more platform-independent.
-    model.to('cpu')
+    # Problems with resuming training.
+    # model.to('cpu')
     model.save(
         backbone_name,
-        e,
+        epoch,
         epoch_train_loss,
         dataset_ratio,
         balanced_dataset,
         paths['checkpoints'],
-        # collapse_level=collapse_level
+        collapse_level=collapse_level if model_name == 'SimSiam' else None
     )
-    model.to(device)
 
-    # ======================
-    # UPDATE LEARNING RATE SCHEDULER.
-    # scheduler.step()
-    warmup_scheduler.step() if (e < warmup_epochs) else main_scheduler.step()
-    print(optimizer.param_groups[0]['lr'])
-    # # Linear warmup.
-    # if e < 10:
-    #     warmup_scheduler.step()
-    # # Cosine decay.
-    # elif e >=10:
-    #     main_scheduler.step()
-    # print(f'lr: {model.optimizer.param_groups[0]["lr"]}')
-    # if model_name == 'simsiam':
-    #     model.scheduler.step()
-    # elif model_name == 'simclr' or model_name == 'barlowtwins':
-    #     # Linear warmup.
-    #     if e < 10:
-    #         model.warmup_scheduler.step()
-    #     # Cosine decay.
-    #     elif e >=10:
-    #         model.main_scheduler.step()
-    #     if model_name == 'barlowtwins':
-    #         model.optimizer.param_groups[0]['lr'] = model.optimizer.param_groups[0]['lr'] * 0.2 # args.learning_rate_weights
-    #         model.optimizer.param_groups[1]['lr'] = model.optimizer.param_groups[0]['lr'] * 0.0048 # args.learning_rate_biases
-    #         print(model.optimizer.param_groups[0]['lr'], model.optimizer.param_groups[1]['lr'])
+    if epoch % save_interval == 0:
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.backbone.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'warmup_scheduler_state_dict': warmup_scheduler.state_dict(),
+            'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
+            'loss': epoch_train_loss
+        }, os.path.join(paths['checkpoints'], 'ckpt_' + str(model)))
+
+    # model.to(device)
 
     # ======================
     # EPOCH STATISTICS.
     # Show some stats per epoch completed.
-    print(f'[Epoch {e:3d}] | '
+    print(f'[Epoch {epoch:3d}] | '
           f'Train loss: {epoch_train_loss:.4f} | '
           f'Val loss: {epoch_val_loss:.4f} | '
           f'Duration: {(time.time()-t0):.2f} s | '
