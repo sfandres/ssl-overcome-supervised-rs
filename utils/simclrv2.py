@@ -1,37 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""This module provides the SimCLR v2 class.
+"""This module provides the SimCLRv2 class.
 
 https://paperswithcode.com/method/simclrv2
 
 Author: Andres J. Sanchez-Fernandez
 Email: sfandres@unex.es
-Date: 2023-03-28
+Date: 2023-04-04
 """
 
 
 import torch
 import torch.nn as nn
-import torchvision.models.resnet as resnet
 from lightly.loss import NTXentLoss
-import os
-from datetime import datetime
+from .base_model import BaseModel
 
 
-class SimCLRv2(nn.Module):
+class SimCLRv2(BaseModel):
     """
-    SimCLR model with a ResNet backbone and a projection head.
+    SimCLRv2 self-supervised learning model.
 
     Attributes:
+        backbone (nn.Module): a ResNet backbone network.
+        projection_head (nn.Sequential): a projection head network that generates feature embeddings.
         criterion (NTXentLoss): Contrastive Cross Entropy Loss.
-        backbone (nn.Module): A ResNet backbone network.
-        projection_head (nn.Sequential): A projection head network that generates feature embeddings.
 
     Methods:
-        forward(x): Computes the forward pass of the SimCLR model.
-        training_step(batch): Computes the loss of the current batch (tuple of tensors).
-        save(loss, epoch, path): Saves the SimCLR model to a file with a custom name.
+        forward(x): computes the forward pass of the SimCLR model.
+        training_step(batch): computes the loss of the current batch (tuple of tensors).
     """
 
     def __init__(
@@ -45,17 +42,15 @@ class SimCLRv2(nn.Module):
         Initializes a new SimCLR model.
 
         Args:
-            backbone (nn.Sequential): A ResNet backbone network.
-            input_dim (int): Number of input features to the fc layer.
-            feature_dim (int): The dimensionality of the feature embeddings
+            backbone (nn.Sequential): a ResNet backbone network.
+            input_dim (int): the number of input features to the fc layer.
+            hidden_dim (int): the dimension of the hidden layers.
+            output_dim (int): the dimensionality of the feature embeddings
             produced by the projection head network.
         """
 
-        # Call the nn.Module superclass constructor.
-        super(SimCLRv2, self).__init__()
-
-        # Loss criterion (memory bank = 1 for MoCo).
-        self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=0)
+        # Call the BaseModel superclass constructor.
+        super().__init__()
 
         # Include the backbone.
         self.backbone = backbone
@@ -67,6 +62,9 @@ class SimCLRv2(nn.Module):
             nn.Linear(hidden_dim, output_dim)
         )
 
+        # Loss criterion (memory bank = 1 for MoCo).
+        self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=0)
+
     def forward(
         self,
         x: torch.Tensor
@@ -75,10 +73,10 @@ class SimCLRv2(nn.Module):
         Computes the forward pass of the SimCLR model.
 
         Args:
-            x (torch.Tensor): A batch of input images.
+            x (torch.Tensor): a batch of input images.
 
         Returns:
-            torch.Tensor: A tensor of feature embeddings produced by the projection head network.
+            torch.Tensor: a tensor of feature embeddings produced by the projection head network.
         """
 
         # Feature extraction using the ResNet backbone.
@@ -91,20 +89,21 @@ class SimCLRv2(nn.Module):
 
     def training_step(
         self,
-        batch: tuple[torch.Tensor, torch.Tensor],
+        two_batches: tuple[torch.Tensor, torch.Tensor],
     ) -> float:
         """
         Performs a single training step on a batch of transformed images.
 
         Args:
-            batch (tuple): A tuple of two batches of transformed images, where each batch is a tensor of size (batch_size, C, H, W).
+            two_batches (tuple): a tuple of two batches of transformed images,
+            where each batch is a tensor of size (batch_size, C, H, W).
 
         Returns:
-            Float: The loss value for the current batch.
+            float: The loss value for the current batch.
         """
 
         # Two batches of transformed images.
-        x0, x1 = batch
+        x0, x1 = two_batches
 
         # Output projections of both transformed batches.
         z0 = self.forward(x0)
@@ -114,50 +113,3 @@ class SimCLRv2(nn.Module):
         loss = self.criterion(z0, z1)
 
         return loss
-
-    def save(
-        self,
-        backbone_name: str = None,
-        epoch: int = None,
-        train_loss: float = None,
-        dataset_ratio: str = None,
-        balanced_dataset: bool = None,
-        path: str = None
-    ) -> None:
-        """
-        Saves the SimCLR model to a file with a custom name.
-
-        Args:
-            epoch (int): The epoch number for which the model is being saved.
-            loss (float): The loss value for the model at the given epoch.
-            path (str): The path where the checkpoint will be saved.
-        """
-
-        # Save parameters.
-        self.backbone_name = backbone_name
-        self.epoch = epoch
-        self.train_loss = train_loss
-        self.dataset_ratio = dataset_ratio
-        self.balanced_dataset = balanced_dataset
-        self.time = datetime.now()
-
-        # Save the weights.
-        torch.save(self.backbone.state_dict(),
-                   os.path.join(path, self.__str__()))
-
-    def __str__(self) -> str:
-        """Overwriting the string representation of the class."""
-
-        # Get the class name and filename.
-        class_name = self.__class__.__name__
-
-        # Filename with stats.
-        filename = f'{class_name}' \
-                   f'-{self.backbone_name}' \
-                   f'-epoch={self.epoch:03}' \
-                   f'-train_loss={self.train_loss:.3f}' \
-                   f'-ratio={self.dataset_ratio}' \
-                   f'-balanced={self.balanced_dataset}' \
-                   f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
-
-        return filename
