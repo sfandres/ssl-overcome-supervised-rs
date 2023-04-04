@@ -191,7 +191,7 @@ if is_notebook():
             'SimSiam',
             '--backbone=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
-            # '--dataset_ratio=(0.020,0.0196,0.9604)',
+            '--dataset_ratio=(0.020,0.0196,0.9604)',
             '--epochs=500',
             '--batch_size=64',
             '--show',
@@ -241,18 +241,26 @@ print(f"{'Device:'.ljust(20)} {device}")
 # Setting the model and initial weights.
 if backbone_name == 'resnet18':
     if ini_weights == 'imagenet':
-        resnet = resnet18(weights=ResNet18_Weights.DEFAULT,
-                          zero_init_residual=True)
+        resnet = resnet18(
+            weights=ResNet18_Weights.DEFAULT,
+            # zero_init_residual=True
+        )
     elif ini_weights == 'random':
-        resnet = resnet18(weights=None,
-                          zero_init_residual=True)
+        resnet = resnet18(
+            weights=None,
+            # zero_init_residual=True
+        )
 elif backbone_name == 'resnet50':
     if ini_weights == 'imagenet':
-        resnet = resnet50(weights=ResNet50_Weights.DEFAULT,
-                          zero_init_residual=True)
+        resnet = resnet50(
+            weights=ResNet50_Weights.DEFAULT,
+            # zero_init_residual=True
+        )
     elif ini_weights == 'random':
-        resnet = resnet50(weights=None,
-                          zero_init_residual=True)
+        resnet = resnet50(
+            weights=None,
+            # zero_init_residual=True
+        )
 
 
 # ## Build paths
