@@ -12,14 +12,14 @@
 #SBATCH --output=uexssl_%A_%a.out                   ## Output file.
 #SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
-#SBATCH --array=0-2:1                               ## Run job arrays.
+#SBATCH --array=0-3:1                               ## Run job arrays.
 
 ## Catch Slurm environment variables.
 job_id=${SLURM_ARRAY_JOB_ID}
 task_id=${SLURM_ARRAY_TASK_ID}
 
 ## Array of models.
-array_models=("simsiam" "simclr" "barlowtwins")
+array_models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins")
 model=${array_models[${task_id}]}
 
 ## Create a string for email subject.
@@ -41,10 +41,11 @@ ${model} \
 --backbone_name=resnet18 \
 --dataset_name=Sentinel2GlobalLULC_SSL \
 --dataset_ratio=\(0.400,0.1500,0.4500\) \
---epochs=100 \
---batch_size=256 \
+--epochs=500 \
+--batch_size=512 \
 --ini_weights=random \
---cluster
+--cluster \
+## '--resume_training'
 
 ## Send email when job ends.
 ## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
