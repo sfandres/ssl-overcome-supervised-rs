@@ -23,9 +23,9 @@ class BarlowTwins(BaseModel):
     BarlowTwins self-supervised learning model.
 
     Attributes:
-        backbone (nn.Module): a ResNet backbone network.
-        projection_head (nn.Sequential): a projection head network that generates feature embeddings.
-        criterion (BarlowTwinsLoss): loss function.
+        backbone (nn.Module): Backbone model.
+        projection_head (nn.Sequential): Projection head network that generates feature embeddings.
+        criterion (BarlowTwinsLoss): Loss function.
 
     Methods:
         forward(x): Computes the forward pass of the SimCLR model.
@@ -37,16 +37,16 @@ class BarlowTwins(BaseModel):
         backbone: nn.Sequential,
         input_dim: int = 512,
         hidden_dim: int = 512,
-        output_dim: int = 128
+        output_dim: int = 512
     ):
         """
         Initializes a new BarlowTwins model.
 
         Args:
-            backbone (nn.Sequential): a ResNet backbone network.
-            input_dim (int): the number of input features to the fc layer.
-            hidden_dim (int): the dimension of the hidden layers.
-            output_dim (int): the dimensionality of the feature embeddings
+            backbone (nn.Sequential): Backbone model.
+            input_dim (int): Number of input features to the fc layer.
+            hidden_dim (int): Dimension of the hidden layers.
+            output_dim (int): Dimensionality of the feature embeddings
             produced by the projection head network.
         """
 
@@ -69,13 +69,13 @@ class BarlowTwins(BaseModel):
         x: torch.Tensor
     ) -> torch.Tensor:
         """
-        Computes the forward pass of the SimCLR model.
+        Computes the forward pass.
 
         Args:
-            x (torch.Tensor): A batch of input images.
+            x (torch.Tensor): Batch of input images.
 
         Returns:
-            torch.Tensor: A tensor of feature embeddings produced by the projection head network.
+            torch.Tensor: Tensor of feature embeddings produced by the projection head network.
         """
 
         # Feature extraction using the ResNet backbone.
@@ -94,7 +94,7 @@ class BarlowTwins(BaseModel):
         Performs a single training step on a batch of transformed images.
 
         Args:
-            two_batches (tuple): A tuple of two batches of transformed images,
+            two_batches (tuple): Tuple of two batches of transformed images,
             where each batch is a tensor of size (batch_size, C, H, W).
 
         Returns:

@@ -23,13 +23,13 @@ class SimCLR(BaseModel):
     SimCLR self-supervised learning model.
 
     Attributes:
-        backbone (nn.Module): a ResNet backbone network.
-        projection_head (nn.Sequential): a projection head network that generates feature embeddings.
+        backbone (nn.Module): Backbone model.
+        projection_head (nn.Sequential): Projection head network that generates feature embeddings.
         criterion (NTXentLoss): Contrastive Cross Entropy Loss.
 
     Methods:
-        forward(x): computes the forward pass of the SimCLR model.
-        training_step(batch): computes the loss of the current batch (tuple of tensors).
+        forward(x): Computes the forward pass of the SimCLR model.
+        training_step(batch): Computes the loss of the current batch (tuple of tensors).
     """
 
     def __init__(
@@ -37,16 +37,16 @@ class SimCLR(BaseModel):
         backbone: nn.Sequential,
         input_dim: int = 512,
         hidden_dim: int = 512,
-        output_dim: int = 128
+        output_dim: int = 512
     ):
         """
         Initializes a new SimCLR model.
 
         Args:
-            backbone (nn.Sequential): a ResNet backbone network.
-            input_dim (int): the number of input features to the fc layer.
-            hidden_dim (int): the dimension of the hidden layers.
-            output_dim (int): the dimensionality of the feature embeddings
+            backbone (nn.Sequential): Backbone model.
+            input_dim (int): Number of input features to the fc layer.
+            hidden_dim (int): Dimension of the hidden layers.
+            output_dim (int): Dimensionality of the feature embeddings
             produced by the projection head network.
         """
 
@@ -69,13 +69,13 @@ class SimCLR(BaseModel):
         x: torch.Tensor
     ) -> torch.Tensor:
         """
-        Computes the forward pass of the SimCLR model.
+        Computes the forward pass.
 
         Args:
-            x (torch.Tensor): a batch of input images.
+            x (torch.Tensor): Batch of input images.
 
         Returns:
-            torch.Tensor: a tensor of feature embeddings produced by the projection head network.
+            torch.Tensor: Tensor of feature embeddings produced by the projection head network.
         """
 
         # Feature extraction using the ResNet backbone.
@@ -94,7 +94,7 @@ class SimCLR(BaseModel):
         Performs a single training step on a batch of transformed images.
 
         Args:
-            two_batches (tuple): a tuple of two batches of transformed images,
+            two_batches (tuple): Tuple of two batches of transformed images,
             where each batch is a tensor of size (batch_size, C, H, W).
 
         Returns:
