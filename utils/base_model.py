@@ -55,7 +55,8 @@ class BaseModel(nn.Module):
         train_loss: float = None,
         dataset_ratio: str = None,
         balanced_dataset: bool = None,
-        path: str = None
+        path: str = None,
+        collapse_level: float = None
     ) -> None:
         """
         Saves the model to a file with a custom name.
@@ -68,6 +69,7 @@ class BaseModel(nn.Module):
             dataset_ratio (str): the current ratio of the dataset.
             balanced_dataset (bool): whether the dataset is balanced.
             path (str): the path where the model is saved.
+            collapse_level (optional, float): collapse level for non-contrastive SSL models.
         """
 
         # Save parameters.
@@ -76,6 +78,7 @@ class BaseModel(nn.Module):
         self.train_loss = train_loss
         self.dataset_ratio = dataset_ratio
         self.balanced_dataset = balanced_dataset
+        self.collapse_level = collapse_level
         self.time = datetime.now()
 
         # Save the weights.
@@ -95,6 +98,7 @@ class BaseModel(nn.Module):
                    f'-train_loss={self.train_loss:.3f}' \
                    f'-ratio={self.dataset_ratio}' \
                    f'-balanced={self.balanced_dataset}' \
+                   f'-coll={self.collapse_level:.3f}(0)' \
                    f'-time={self.time:%Y_%m_%d_%H_%M_%S}'
 
         return filename
