@@ -823,7 +823,7 @@ if show:
 
 # Saving best model's weights.
 collapse_level = 0.
-save_interval = 2
+save_interval = 5
 total_train_batches = len(dataloader['train'])
 total_val_batches = len(dataloader['val'])
 print(f'Batches in (train, val) datasets: '

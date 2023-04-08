@@ -16,4 +16,4 @@ ${model} \
 --batch_size=64 \
 --ini_weights=random \
 --cluster \
-## '--resume_training'
+## --resume_training
