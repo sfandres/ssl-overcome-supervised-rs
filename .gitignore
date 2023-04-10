@@ -4,6 +4,7 @@ __pycache__
 
 # Conda environments
 lulc-conda
+lulc2-conda
 
 # Custom folders
 input
