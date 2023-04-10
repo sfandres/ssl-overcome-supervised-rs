@@ -61,7 +61,7 @@ class SimCLR(BaseModel):
                                                     hidden_dim=hidden_dim,
                                                     output_dim=output_dim)
 
-        # Loss criterion (memory bank = 1 for MoCo).
+        # Loss criterion (memory bank > 0 for MoCo).
         self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=0)
 
     def forward(
