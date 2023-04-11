@@ -3,11 +3,6 @@
 
 """This module provides functions to manage the datasets.
 
-The module contains two classes, the 'AndaluciaDataset' that is a custom dataset from
-PyTorch, and 'GaussianBlur' used in the data transformations. Also, there are several
-functions for data management: 'list_subdirs_fullpath', 'get_mean_std_dataloader',
-'load_mean_std_values', 'inv_norm_tensor', and 'show_one_batch'.
-
 Author: Andres J. Sanchez-Fernandez
 Email: sfandres@unex.es
 Date: 2023-03-24
@@ -44,6 +39,7 @@ class AndaluciaDataset(Dataset):
             root_dir (str): Root (parent) directory.
             level (str): Level of the dataset (N1 or N2).
             split (str): Train, validation or test splits.
+            train_ratio (int): Ratio to reduce the train set.
             transform (callable, optional): Optional transform to be
             applied on an image.
             target_transform (callable, optional): Optional transform to be
@@ -62,7 +58,7 @@ class AndaluciaDataset(Dataset):
                                           os.path.join('CSV',
                                                        f'csv_{split}.csv'))
 
-        # self.csv_dataset_info = pd.read_csv(self.csv_file_path)
+        # Reduction in train set.
         if split == 'train':
             df = pd.read_csv(self.csv_file_path)
             self.csv_dataset_info = df.sample(n=int(train_ratio*len(df.index)/100))
