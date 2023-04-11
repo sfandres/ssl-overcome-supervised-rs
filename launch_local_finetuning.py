@@ -32,24 +32,24 @@ def main():
     # print (f'Experiments: {times}')
 
     for dataset_train_pc in dataset_train_pcs:
-        print('----------------------------------------------------------')
+        print('\n----------------------------------------------------------')
         print(dataset_train_pc)
         print('----------------------------------------------------------')
         for task in tasks:
-            print(f'------------> {task}')
+            print(f'\n------------> {task}')
             for mode in modes:
-                print(f'------------> {mode}')
-                    os.system(
-                        'python3 03_2-PyTorch-Backbone_classifier.py '
-                        f'{mode} '
-                        f'{task} '
-                        f'--dataset_name={dataset_name} '
-                        f'--dataset_level={dataset_level} '
-                        f'--dataset_train_pc={dataset_train_pc} '
-                        f'--epochs={epochs} '
-                        f'--batch_size={batch_size} '
-                        f'--cluster'
-                    )
+                print(f'\n------------> {mode}\n')
+                os.system(
+                    'python3 03_2-PyTorch-Backbone_classifier.py '
+                    f'{mode} '
+                    f'{task} '
+                    f'--dataset_name={dataset_name} '
+                    f'--dataset_level={dataset_level} '
+                    f'--dataset_train_pc={dataset_train_pc} '
+                    f'--epochs={epochs} '
+                    f'--batch_size={batch_size} '
+                    f'--cluster'
+                )
 
     return 0
 
