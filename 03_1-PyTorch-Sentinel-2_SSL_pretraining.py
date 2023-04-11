@@ -178,6 +178,9 @@ parser.add_argument('--resume_training', '-rt', action='store_true',
 parser.add_argument('--cluster', '-c', action='store_true',
                     help='the script runs on a cluster (large mem. space).');
 
+parser.add_argument('--torch_compile', '-tc', action='store_true',
+                    help='PyTorch 2.0 compile enabled.');
+
 
 # ## Simulate and get input arguments
 
@@ -726,6 +729,11 @@ else:
 
 # In[ ]:
 
+
+# Compile model (only for PT2.0).
+if torch_compile:
+    model = torch.compile(model)
+    torch.set_float32_matmul_precision('high')
 
 # Device used for training.
 print(f'\nUsing {device} device')
