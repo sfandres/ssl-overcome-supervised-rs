@@ -3,8 +3,7 @@
 
 ## Array of models.
 array_models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins")
-idx = 0
-model=${array_models[idx]}
+model=${array_models[0]}
 
 ## Execute the Python script and pass the arguments.
 python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
