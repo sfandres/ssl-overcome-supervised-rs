@@ -7,7 +7,7 @@ Usage: This module does not have arguments.
 
 Author: Andres J. Sanchez-Fernandez
 Email: sfandres@unex.es
-Date: 2023-04-11
+Date: 2023-04-12
 """
 
 
@@ -22,8 +22,8 @@ def main():
     tasks = ['multiclass', 'multilabel']
     dataset_name = 'Sentinel2AndaluciaLULC'
     dataset_level = 'Level_N2'
-    dataset_train_pcs = [.025, .05, .075, .1, .25, .5, .75, 1.]
-    epochs = 4
+    dataset_train_pcs = [.01, .025, .05, .075, .1, .25, .5, .75, 1.]
+    epochs = 100
     batch_size = 64
 
     # for s in range(0, times):
