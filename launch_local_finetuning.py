@@ -18,10 +18,8 @@ import os
 def main():
     """"Main function."""
 
-    model_names = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins']
-
+    model_names = ['Random', 'Imagenet', 'SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins']
     tasks = ['multiclass', 'multilabel']
-    modes = ['scratch', 'imagenet', 'ssl']
     dataset_name = 'Sentinel2AndaluciaLULC'
     dataset_level = 'Level_N2'
     dataset_train_pcs = [.025, .05, .075, .1, .25, .5, .75, 1.]
@@ -37,11 +35,11 @@ def main():
         print('----------------------------------------------------------')
         for task in tasks:
             print(f'\n------------> {task}')
-            for mode in modes:
-                print(f'\n------------> {mode}\n')
+            for model in model_names:
+                print(f'\n------------> {model}\n')
                 os.system(
                     'python3 03_2-PyTorch-Backbone_classifier.py '
-                    f'{mode} '
+                    f'{model} '
                     f'{task} '
                     f'--dataset_name={dataset_name} '
                     f'--dataset_level={dataset_level} '
