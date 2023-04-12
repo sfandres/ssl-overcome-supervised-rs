@@ -49,6 +49,10 @@ import csv
 # Data management.
 import numpy as np
 
+# Performance metrics.
+from sklearn.metrics import f1_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+
 # Training checks.
 from datetime import datetime
 import time
@@ -76,6 +80,8 @@ if is_notebook():
 
 
 SEED = 42
+AVAIL_SSL_MODELS = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins']
+MODEL_CHOICES = ['Random', 'Imagenet'] + AVAIL_SSL_MODELS
 
 
 # ## Enable reproducibility
@@ -114,32 +120,28 @@ parser = argparse.ArgumentParser(
                  " models and compare them to standard approaches.")
 )
 
-parser.add_argument('model_name', type=str,
-                    choices=['scratch', 'imagenet', 'ssl'],
-                    help="taget model: 'scratch', 'imagenet' or 'ssl'.")
+parser.add_argument('model_name', type=str, choices=MODEL_CHOICES,
+                    help="target model.")
 
-parser.add_argument('task', type=str,
-                    choices=['multiclass', 'multilabel'],
-                    help="downstream task: 'multiclass' or 'multilabel'.")
+parser.add_argument('task', type=str, choices=['multiclass', 'multilabel'],
+                    help="downstream task.")
 
 parser.add_argument('--dataset_name', '-dn', type=str,
                     default='Sentinel2AndaluciaLULC',
-                    help='dataset name for evaluation.')
+                    help='dataset name for evaluation (default=Sentinel2AndaluciaLULC).')
 
-parser.add_argument('--dataset_level', '-dl', type=str,
-                    default='Level_N2',
+parser.add_argument('--dataset_level', '-dl', type=str, default='Level_N2',
                     choices=['Level_N1', 'Level_N2'],
-                    help="dataset level: 'Level_N1' or 'Level_N2'.")
+                    help="dataset level (default=Level_N2).")
 
-parser.add_argument('--dataset_train_pc', '-dtp', type=float,
-                    default=1.,
-                    help='dataset ratio for train subset.')
+parser.add_argument('--dataset_train_pc', '-dtp', type=float, default=1.,
+                    help='dataset ratio for train subset (default=1.).')
 
 parser.add_argument('--epochs', '-e', type=int, default=25,
-                    help='number of epochs for training.')
+                    help='number of epochs for training (default=25).')
 
 parser.add_argument('--batch_size', '-bs', type=int, default=64,
-                    help='number of images in a batch during training.')
+                    help='number of images in a batch during training (default=64).')
 
 parser.add_argument('--show', '-s', action='store_true',
                     help='the images should appear.');
@@ -160,13 +162,13 @@ parser.add_argument('--torch_compile', '-tc', action='store_true',
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'ssl',
+            'SimSiam',
             'multiclass',
             '--show',
             '--dataset_name=Sentinel2AndaluciaLULC',
-            '--dataset_train_pc=5',
+            '--dataset_train_pc=.05',
             '--batch_size=64',
-            '--epochs=25'
+            '--epochs=1'
         ]
     )
 else:
@@ -235,6 +237,9 @@ input_size = 224
 
 # Format of the saved images.
 fig_format = '.png'
+
+# Number of digits to the right of the decimal
+decimal_places = 2
 
 
 # ***
@@ -577,7 +582,7 @@ def train_one_epoch(epoch_index, tb_writer, batch_span_train):
 
 
 # Model: resnet with random weights.
-if model_name == 'scratch':
+if model_name == 'Random':
     print('\nModel without pretrained weights')
     model = torchvision.models.resnet18(weights=None)
 
@@ -597,7 +602,7 @@ if model_name == 'scratch':
         param.requires_grad = True
 
 # Model: resnet with pretrained weights (Imagenet-1k).
-elif model_name == 'imagenet':
+elif model_name == 'Imagenet':
     print('\nModel with pretrained weights on imagenet-1k')
     model = torchvision.models.resnet18(
         weights=torchvision.models.ResNet18_Weights.DEFAULT
@@ -619,7 +624,7 @@ elif model_name == 'imagenet':
         param.requires_grad = True
 
 # Model: resnet with pretrained weights (SSL).
-elif model_name == 'ssl':
+elif model_name in AVAIL_SSL_MODELS:
     print('\nModel with pretrained weights using SSL')
     resnet18 = torchvision.models.resnet18(weights=None)
 
@@ -630,18 +635,23 @@ elif model_name == 'ssl':
     model_list = []
     print()
     for root, dirs, files in os.walk(paths['log_checkpoints']):
-        for i, filename in enumerate(sorted(files, reverse=True)):
-            model_list.append(os.path.join(root, filename))
-            print(f'{i:02} --> {filename}')
+        for filename in files:
+            if model_name in filename and 'ckpt' not in filename:
+                model_list.append(os.path.join(root, filename))
+
+    # Sort model list and show the items.
+    model_list = sorted(model_list, reverse=True)
+    for i, model in enumerate(model_list):
+        print(f'{i:02} --> {model}')
 
     # Loading model.
-    idx = 8
-    print(f'\nLoaded: {model_list[idx]}')
+    idx = 0
     pt_backbone.load_state_dict(torch.load(model_list[idx]))
+    print(f'\nLoaded: {model_list[idx]}')
 
-    # Get SSL model name and overwrite it.
-    model_name = model_list[idx].split('/')[10].split('-')[0]
-    print(f'Model name: {model_name}')
+    # # Get SSL model name and overwrite it.
+    # model_name = model_list[idx].split('/')[10].split('-')[0]
+    # print(f'Model name: {model_name}')
 
     # Adding a linear layer on top of the model (linear classifier).
     # Here, the output of the model is directly passed to the CrossEntropyLoss function
@@ -851,9 +861,18 @@ with torch.no_grad():
         # Forward pass.
         outputs = model(inputs)
 
-        # Convert logits to probabilities and get predicted labels.
-        probs = torch.softmax(outputs, dim=1)
-        preds = torch.argmax(probs, dim=1)
+        # Get model predictions.
+        if task == 'multiclass':
+            # Convert logits to probabilities using a softmax function.
+            probs = torch.softmax(outputs, dim=1)
+            # Take the argmax of the probabilities to obtain the predicted class labels.
+            preds = torch.argmax(probs, dim=1)
+        elif task == 'multilabel':
+            # Convert logits to probabilities using a sigmoid function.
+            probs = torch.sigmoid(outputs)
+            # Scale predicted abundances to sum to 1 across all the classes for each sample.
+            preds_sum = probs.sum(dim=1, keepdim=True)
+            preds = probs / preds_sum
 
         # Append true and predicted labels to the lists (option 2).
         y_prob.append(probs)
@@ -861,8 +880,9 @@ with torch.no_grad():
         y_true.append(labels)
 
         # Compute top1 and top5 accuracy (option 1).
-        # top1_correct += torch.sum(preds == labels).item()
-        # top5_correct += torch.sum(torch.topk(probs, k=5, dim=1)[1] == labels.view(-1, 1)).item()
+        # if task == 'multiclass':
+        #     top1_correct += torch.sum(preds == labels).item()
+        #     top5_correct += torch.sum(torch.topk(probs, k=5, dim=1)[1] == labels.view(-1, 1)).item()
 
         # Progress bar.
         if i % (batches_test//8) == (batches_test//8 - 1) or i == batches_test - 1:
@@ -872,38 +892,69 @@ with torch.no_grad():
             else:
                 print(f"Progress: {progress}%", end='\r', flush=True)
 
-# Compute top1 and top5 accuracy (option 1).
-# top1_accuracy = top1_correct / len(dataloader['test'].dataset)
-# top5_accuracy = top5_correct / len(dataloader['test'].dataset)
-# print(f"\nTop-1 Accuracy: {top1_accuracy:.4f}")
-# print(f"Top-5 Accuracy: {top5_accuracy:.4f}")
-
-# Concatenate the lists into tensors (option 2).
-y_prob_cpu = torch.cat(y_prob).to('cpu')
-y_pred_cpu = torch.cat(y_pred).to('cpu')
-y_true_cpu = torch.cat(y_true).to('cpu')
-
-# Compute top1 and top5 accuracy (option 2).
-top1_accuracy = torch.sum(torch.eq(y_pred_cpu, y_true_cpu)).item() / len(y_true_cpu)
-top5_accuracy = torch.sum(torch.topk(y_prob_cpu, k=5, dim=1)[1] == y_true_cpu.view(-1, 1)).item() / len(y_true_cpu)
-print(f"\nTop-1 accuracy: {top1_accuracy:.4f}")
-print(f"Top-5 accuracy: {top5_accuracy:.4f}")
-
 
 # In[ ]:
 
 
-from sklearn.metrics import f1_score
+if task == 'multiclass':
+    # Compute top1 and top5 accuracy (option 1).
+    # top1_accuracy = top1_correct / len(dataloader['test'].dataset)
+    # top5_accuracy = top5_correct / len(dataloader['test'].dataset)
+    # print(f"\nTop-1 Accuracy: {top1_accuracy:.4f}")
+    # print(f"Top-5 Accuracy: {top5_accuracy:.4f}")
 
-f1_per_class = f1_score(y_true_cpu, y_pred_cpu, average=None)
-f1_micro = f1_score(y_true_cpu, y_pred_cpu, average='micro')
-f1_macro = f1_score(y_true_cpu, y_pred_cpu, average='macro')
-f1_weighted = f1_score(y_true_cpu, y_pred_cpu, average='weighted')
+    # Concatenate the lists into tensors (option 2).
+    y_prob_cpu = torch.cat(y_prob).to('cpu')
+    y_pred_cpu = torch.cat(y_pred).to('cpu')
+    y_true_cpu = torch.cat(y_true).to('cpu')
 
-print(f"\nPer class F-1 score:\n{f1_per_class}")
-print(f"\nF1-Score micro: {f1_micro:.4f}")
-print(f"F1-Score macro: {f1_macro:.4f}")
-print(f"F1-Score weighted: {f1_weighted:.4f}")
+    # Compute top1 and top5 accuracy (option 2).
+    top1_accuracy = torch.sum(torch.eq(y_pred_cpu, y_true_cpu)).item() / len(y_true_cpu)
+    top5_accuracy = torch.sum(torch.topk(y_prob_cpu, k=5, dim=1)[1] == y_true_cpu.view(-1, 1)).item() / len(y_true_cpu)
+    print(f"\nTop-1 accuracy: {top1_accuracy:.4f}")
+    print(f"Top-5 accuracy: {top5_accuracy:.4f}")
+
+    # F1 metrics.
+    f1_per_class = f1_score(y_true_cpu, y_pred_cpu, average=None)
+    f1_micro = f1_score(y_true_cpu, y_pred_cpu, average='micro')
+    f1_macro = f1_score(y_true_cpu, y_pred_cpu, average='macro')
+    f1_weighted = f1_score(y_true_cpu, y_pred_cpu, average='weighted')
+    print(f"\nPer class F-1 score:\n{f1_per_class}")
+    print(f"\nF1-Score micro: {f1_micro:.4f}")
+    print(f"F1-Score macro: {f1_macro:.4f}")
+    print(f"F1-Score weighted: {f1_weighted:.4f}")
+
+    # Data to be written.
+    data2 = []
+    header = ['model', 'vloss', 'f1_micro', 'f1_macro', 'f1_weighted', 'f1_per_class', 'top1_accuracy', 'top5_accuracy']
+    data = [model_name, avg_vloss, f1_micro, f1_macro, f1_weighted, np.round(f1_per_class, decimal_places), top1_accuracy, top5_accuracy]
+    data_rounded = [round(elem, decimal_places) if isinstance(elem, float) else elem for elem in data]
+    print(f'\nData to csv: {data_rounded}')
+
+elif task == 'multilabel':
+
+    # Concatenate the lists into tensors.
+    y_prob_cpu = torch.cat(y_prob).to('cpu')
+    y_pred_cpu = torch.cat(y_pred).to('cpu')
+    y_true_cpu = torch.cat(y_true).to('cpu')
+
+    # Compute global RMSE and MAE.
+    rmse = mean_squared_error(y_true_cpu, y_pred_cpu, squared=False)
+    mae = mean_absolute_error(y_true_cpu, y_pred_cpu)
+    print(f"\nRMSE: {rmse:.4f}")
+    print(f"MAE: {mae:.4f}")
+
+    # Compute RMSE and MAE per class.
+    rmse_per_class = mean_squared_error(y_true_cpu, y_pred_cpu, multioutput='raw_values', squared=False)
+    mae_per_class = mean_absolute_error(y_true_cpu, y_pred_cpu, multioutput='raw_values')
+    print(f"\nRMSE per class:\n{rmse_per_class}")
+    print(f"MAE per class:\n{mae_per_class}")
+
+    # Data to be written.
+    header = ['model', 'vloss', 'rmse', 'mae', 'rmse_per_class', 'mae_per_class']
+    data = [model_name, avg_vloss, rmse, mae, np.round(rmse_per_class, decimal_places), np.round(mae_per_class, decimal_places)]
+    data_rounded = [round(elem, decimal_places) if isinstance(elem, float) else elem for elem in data]
+    print(f'\nData to csv: {data_rounded}')
 
 
 # In[ ]:
@@ -912,21 +963,16 @@ print(f"F1-Score weighted: {f1_weighted:.4f}")
 # Open the file in the write mode.
 csv_file = os.path.join(paths['runs'], f'results_on_test_set_{task}_{dataset_train_pc:.3f}pc_train.csv')
 
-# Data to be written.
-header = ['model', 'vloss', 'f1_micro', 'f1_macro', 'f1_weighted', 'f1_per_class', 'top1_accuracy', 'top5_accuracy']
-data = [model_name, avg_vloss, f1_micro, f1_macro, f1_weighted, f1_per_class, top1_accuracy, top5_accuracy]
-
 # Check if file exists (header).
 if not os.path.isfile(csv_file):
     with open(csv_file, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(header)
-        # file.flush()  # flush the buffer to ensure the data is written to the file immediately
 
 # Write data.
 with open(csv_file, 'a', newline='') as file:
     csv_writer = csv.writer(file)
-    csv_writer.writerow(data)
+    csv_writer.writerow(data_rounded)
 
 
 # ***

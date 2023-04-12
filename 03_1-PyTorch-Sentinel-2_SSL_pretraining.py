@@ -96,6 +96,7 @@ if is_notebook():
 # In[ ]:
 
 
+AVAIL_SSL_MODELS = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins']
 SEED = 42
 
 
@@ -141,30 +142,30 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument('model_name', type=str,
-                    choices=['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins'],
-                    help="SSL model: 'SimSiam', 'SimCLR(v2)' or 'BarlowTwins.")
+                    choices=AVAIL_SSL_MODELS,
+                    help="target SSL model.")
 
 parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
                     choices=['resnet18', 'resnet50'],
-                    help="backbone model name: 'resnet18' or 'resnet50'.")
+                    help="backbone model name (default=resnet18).")
 
 parser.add_argument('--dataset_name', '-dn', type=str,
                     default='Sentinel2GlobalLULC_SSL',
-                    help='dataset name for training.')
+                    help='dataset name for training (default=Sentinel2GlobalLULC_SSL).')
 
 parser.add_argument('--dataset_ratio', '-dr', type=str,
                     default='(0.900,0.0250,0.0750)',
-                    help='dataset ratio for evaluation.')
+                    help='dataset ratio for evaluation (default=(0.900,0.0250,0.0750)).')
 
 parser.add_argument('--epochs', '-e', type=int, default=25,
-                    help='number of epochs for training.')
+                    help='number of epochs for training (default=25).')
 
 parser.add_argument('--batch_size', '-bs', type=int, default=64,
-                    help='number of images in a batch during training.')
+                    help='number of images in a batch during training (default=64).')
 
 parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                     choices=['random', 'imagenet'],
-                    help="initial weights: 'random' (default) or 'imagenet'.")
+                    help="initial weights (default=random).")
 
 parser.add_argument('--show', '-s', action='store_true',
                     help='the images should appear.');
