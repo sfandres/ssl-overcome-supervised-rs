@@ -688,11 +688,12 @@ elif model_name in AVAIL_SSL_MODELS:
 
 
 # Show model structure.
-print(summary(
-    model,
-    input_size=(batch_size, 3, input_size, input_size),
-    device=device)
-)
+if show:
+    print(summary(
+        model,
+        input_size=(batch_size, 3, input_size, input_size),
+        device=device)
+    )
 
 
 # In[ ]:
