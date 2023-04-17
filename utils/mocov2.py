@@ -22,6 +22,8 @@ class MoCov2(BaseModel):
     """
     MoCov2 self-supervised learning model.
 
+    Reference: https://docs.lightly.ai/self-supervised-learning/examples/moco.html
+
     Attributes:
         backbone (nn.Module): Backbone model.
         backbone_momentum (nn.Module): Backbone model.
