@@ -111,7 +111,7 @@ class MoCov2(BaseModel):
         key = self.backbone_momentum(x).flatten(start_dim=1)
 
         # Feature embeddings.
-        key = self.projection_head_momentum(query)
+        key = self.projection_head_momentum(key)
 
         return key
     
@@ -119,7 +119,7 @@ class MoCov2(BaseModel):
     def training_step(
         self,
         two_batches: tuple[torch.Tensor, torch.Tensor],
-        momentum_val: float = None
+        **kwargs
     ) -> float:
         """
         Performs a single training step on a batch of transformed images.
@@ -127,11 +127,17 @@ class MoCov2(BaseModel):
         Args:
             two_batches (tuple): Tuple of two batches of transformed images,
             where each batch is a tensor of size (batch_size, C, H, W).
-            momentum_val (float): Momentum value according to the current epoch.
+            momentum_val (float) in kwargs: Momentum value according to the current epoch.
 
         Returns:
             float: The loss value for the current batch.
         """
+
+        # check if momentum is present in kwargs
+        if 'momentum_val' in kwargs:
+            momentum_val = kwargs['momentum_val']
+        else:
+            momentum_val = None
 
         update_momentum(self.backbone,
                         self.backbone_momentum,
