@@ -2,8 +2,8 @@
 ## Shebang.
 
 ## Array of models.
-array_models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins")
-model=${array_models[0]}
+array_models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
+model=${array_models[4]}
 
 ## Execute the Python script and pass the arguments.
 python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \

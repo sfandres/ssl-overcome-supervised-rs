@@ -18,7 +18,7 @@ import os
 def main():
     """"Main function."""
 
-    model_names = ['Random', 'Imagenet', 'SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins']
+    model_names = ['Random', 'Imagenet', 'SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins', 'MoCov2']
     tasks = ['multiclass', 'multilabel']
     dataset_name = 'Sentinel2AndaluciaLULC'
     dataset_level = 'Level_N2'

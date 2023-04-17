@@ -19,7 +19,7 @@ job_id=${SLURM_ARRAY_JOB_ID}
 task_id=${SLURM_ARRAY_TASK_ID}
 
 ## Array of models.
-array_models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins")
+array_models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
 model=${array_models[${task_id}]}
 
 ## Create a string for email subject.
