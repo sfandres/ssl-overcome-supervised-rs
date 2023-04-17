@@ -89,6 +89,7 @@ class BarlowTwins(BaseModel):
     def training_step(
         self,
         two_batches: tuple[torch.Tensor, torch.Tensor],
+        **kwargs
     ) -> float:
         """
         Performs a single training step on a batch of transformed images.
