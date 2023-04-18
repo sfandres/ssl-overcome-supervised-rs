@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""This script launches the training of the self-supervised learning models.
+"""This script launches the finetuning of the random, imagenet, and self-supervised learning models.
 
 Usage: This module does not have arguments.
 
