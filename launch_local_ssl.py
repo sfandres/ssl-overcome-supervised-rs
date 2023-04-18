@@ -21,7 +21,7 @@ def main():
     model_names = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins', 'MoCov2']
     backbone = 'resnet18'
     dataset_name = 'Sentinel2GlobalLULC_SSL'
-    dataset_ratio = '(0.020,0.0196,0.9604)'
+    dataset_ratio = '\(0.020,0.0196,0.9604\)'
     epochs = 25
     batch_size = 64
 
