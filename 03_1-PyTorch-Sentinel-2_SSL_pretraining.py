@@ -16,8 +16,20 @@
 # In[ ]:
 
 
-# Custom modules.
 from utils.other import is_notebook, build_paths
+
+# Load notebook extensions.
+if is_notebook():
+    get_ipython().run_line_magic('load_ext', 'tensorboard')
+    get_ipython().run_line_magic('load_ext', 'pycodestyle_magic')
+    get_ipython().run_line_magic('pycodestyle_on', '')
+    get_ipython().run_line_magic('env', 'RAY_PICKLE_VERBOSE_DEBUG=1')
+
+
+# In[ ]:
+
+
+# Custom modules.
 from utils.reproducibility import set_seed, seed_worker
 from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
 from utils.computation import pca_computation, tsne_computation
@@ -64,6 +76,12 @@ from datetime import datetime
 import time
 import math
 
+# Hyperparameter tunning.
+from functools import partial
+from ray import tune
+from ray.tune import CLIReporter
+from ray.tune.schedulers import ASHAScheduler
+
 # For plotting.
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -83,16 +101,6 @@ from sklearn import random_projection
 # import copy
 # from lightly.utils.debug import std_of_l2_normalized
 # import matplotlib.font_manager
-
-
-# In[ ]:
-
-
-# Load notebook extensions.
-if is_notebook():
-    get_ipython().run_line_magic('load_ext', 'tensorboard')
-    get_ipython().run_line_magic('load_ext', 'pycodestyle_magic')
-    get_ipython().run_line_magic('pycodestyle_on', '')
 
 
 # In[ ]:
@@ -149,43 +157,48 @@ parser.add_argument('model_name', type=str,
 
 parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
                     choices=['resnet18', 'resnet50'],
-                    help="backbone model name (default=resnet18).")
+                    help="backbone model name (default: resnet18).")
 
 parser.add_argument('--dataset_name', '-dn', type=str,
                     default='Sentinel2GlobalLULC_SSL',
                     help='dataset name for training '
-                         '(default=Sentinel2GlobalLULC_SSL).')
+                         '(default: Sentinel2GlobalLULC_SSL).')
 
 parser.add_argument('--dataset_ratio', '-dr', type=str,
                     default='(0.900,0.0250,0.0750)',
                     help='dataset ratio for evaluation '
-                         '(default=(0.900,0.0250,0.0750)).')
+                         '(default: (0.900,0.0250,0.0750)).')
 
 parser.add_argument('--epochs', '-e', type=int, default=25,
-                    help='number of epochs for training (default=25).')
+                    help='number of epochs for training (default: 25).')
 
 parser.add_argument('--batch_size', '-bs', type=int, default=64,
                     help='number of images in a batch during training '
-                         '(default=64).')
+                         '(default: 64).')
 
 parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                     choices=['random', 'imagenet'],
-                    help="initial weights (default=random).")
+                    help="initial weights (default: random).")
 
 parser.add_argument('--show', '-s', action='store_true',
-                    help='the images should appear.');
+                    help='the images should appear.')
 
 parser.add_argument('--balanced_dataset', '-bd', action='store_true',
-                    help='whether the dataset should be balanced.');
-
-parser.add_argument('--resume_training', '-rt', action='store_true',
-                    help='the script runs on a cluster (large mem. space).');
+                    help='whether the dataset should be balanced.')
 
 parser.add_argument('--cluster', '-c', action='store_true',
-                    help='the script runs on a cluster (large mem. space).');
+                    help='the script runs on a cluster (large mem. space).')
 
 parser.add_argument('--torch_compile', '-tc', action='store_true',
-                    help='PyTorch 2.0 compile enabled.');
+                    help='PyTorch 2.0 compile enabled.')
+
+parser.add_argument('--resume_training', '-r', action='store_true',
+                    help='training is resumed from the latest checkpoint.')
+
+parser.add_argument('--ray_tune', '-t', action='store_true',
+                    help='hyperparameter tuning with Ray Tune.')
+
+print()
 
 
 # ## Simulate and get input arguments
@@ -197,13 +210,14 @@ parser.add_argument('--torch_compile', '-tc', action='store_true',
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'MoCov2',
+            'SimSiam',
             '--backbone=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
             '--dataset_ratio=(0.020,0.0196,0.9604)',
-            '--epochs=50',
+            '--epochs=25',
             '--batch_size=64',
             '--show',
+            '--ray_tune',
             # '--resume_training'
         ]
     )
@@ -519,8 +533,8 @@ dataloader = {x: torch.utils.data.DataLoader(
     num_workers=0,
     collate_fn=collate_fn[x],
     drop_last=False,
-    worker_init_fn=seed_worker,
-    generator=g
+    worker_init_fn=seed_worker if not ray_tune else None,
+    generator=g if not ray_tune else None
 ) for x in splits[1:]}
 
 # Dataloader for training.
@@ -532,8 +546,8 @@ dataloader['train'] = torch.utils.data.DataLoader(
     num_workers=0,
     collate_fn=collate_fn['train'],
     drop_last=False,
-    worker_init_fn=seed_worker,
-    generator=g
+    worker_init_fn=seed_worker if not ray_tune else None,
+    generator=g if not ray_tune else None
 )
 
 # Check if shuffle is enabled.
@@ -673,12 +687,6 @@ if show:
 
 # Reference: Lightly tutorials
 
-# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
-# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
-# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
-
-# ## Backbone net
-
 # In[ ]:
 
 
@@ -690,6 +698,8 @@ if show:
         device=device)
     )
 
+
+# ## Backbone net
 
 # In[ ]:
 
@@ -707,127 +717,40 @@ pred_hidden_dim = 128
 # In[ ]:
 
 
-# Removing head from resnet. Embedding.
-input_dim = resnet.fc.in_features
-hidden_dim = input_dim
-backbone = nn.Sequential(*list(resnet.children())[:-1])
+# # Removing head from resnet. Embedding.
+# input_dim = resnet.fc.in_features
+# hidden_dim = input_dim
+# backbone = nn.Sequential(*list(resnet.children())[:-1])
 
-if model_name == 'SimSiam':
-    model = SimSiam(backbone=backbone,
-                    input_dim=input_dim,
-                    proj_hidden_dim=proj_hidden_dim,
-                    pred_hidden_dim=pred_hidden_dim,
-                    output_dim=out_dim)
-else:
-    model = globals()[model_name](backbone=backbone,
-                                  input_dim=input_dim,
-                                  hidden_dim=hidden_dim,
-                                  output_dim=out_dim)
+# if model_name == 'SimSiam':
+#     model = SimSiam(backbone=backbone,
+#                     input_dim=input_dim,
+#                     proj_hidden_dim=proj_hidden_dim,
+#                     pred_hidden_dim=pred_hidden_dim,
+#                     output_dim=out_dim)
+# else:
+#     model = globals()[model_name](backbone=backbone,
+#                                   input_dim=input_dim,
+#                                   hidden_dim=hidden_dim,
+#                                   output_dim=out_dim)
 
 
 # ## Training
 
-# SimSiam uses a symmetric negative cosine similarity loss and does therefore not require any negative samples. We build a criterion and an optimizer.
-# 
-# 
-
-# ### Hyperparameters
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
+# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
 
 # In[ ]:
 
 
-# Compile model (only for PT2.0).
-if torch_compile:
-    model = torch.compile(model)
-    torch.set_float32_matmul_precision('high')
-
-# Device used for training.
-print(f'\nUsing {device} device')
-model.to(device)
-
-
-# In[ ]:
-
-
-# Set the initial learning rate.
-lr_init = 0.2
-
-# Use SGD with momentum and weight decay.
-optimizer = torch.optim.SGD(
-    model.parameters(),
-    lr=lr_init,
-    momentum=0.9,
-    weight_decay=5e-4
-)
-
-# Define the warmup duration.
-warmup_epochs = max(1, int(.05*epochs))
-
-# Linear warmup for the first defined epochs.
-warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
-    optimizer,
-    lambda epoch: min(1, epoch / warmup_epochs),
-    verbose=True
-)
-
-# Cosine decay afterwards.
-cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-    optimizer,
-    T_max=epochs-warmup_epochs,
-    verbose=True
-)
-
-
-# In[ ]:
-
-
-if resume_training:
-
-    # List of checkpoints.
-    ckpt_list = []
-    print()
-    for root, dirs, files in os.walk(paths['checkpoints']):
-        for i, filename in enumerate(sorted(files, reverse=True)):
-            if filename[:4] == 'ckpt':
-                ckpt_list.append(os.path.join(root, filename))
-                print(f'{i:02} --> {filename}')
-
-    # Load the checkpoint.
-    print(f'\nLoaded: {ckpt_list[0]}')
-    ckpt = torch.load(ckpt_list[0])
-
-    # Load from dict.
-    epoch = ckpt['epoch'] + 1
-    model.backbone.load_state_dict(ckpt['model_state_dict'])
-    optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-    warmup_scheduler.load_state_dict(ckpt['warmup_scheduler_state_dict'])
-    cosine_scheduler.load_state_dict(ckpt['cosine_scheduler_state_dict'])
-
-else:
-
-    # Start training from scratch.
-    epoch = 0
-
-
-# In[ ]:
-
-
-print(f'optimizer:\n{optimizer}')
-print(f'warmup_scheduler:\n{warmup_scheduler}')
-print(f'cosine_scheduler:\n{cosine_scheduler}')
-print(f"Initial lr: {optimizer.param_groups[0]['lr']}")
-
-
-# In[ ]:
-
-
-# Model's backbone structure.
-if show:
-    print(summary(
-        model.backbone,
-        input_size=(batch_size, 3, input_size, input_size),
-        device=device)
-    )
+# # Model's backbone structure.
+# if show:
+#     print(summary(
+#         model.backbone,
+#         input_size=(batch_size, 3, input_size, input_size),
+#         device=device)
+#     )
 
 
 # ### Loop
@@ -835,157 +758,336 @@ if show:
 # In[ ]:
 
 
-# Saving best model's weights.
-collapse_level = 0.
-save_interval = 5
-total_train_batches = len(dataloader['train'])
-total_val_batches = len(dataloader['val'])
-print(f'Batches in (train, val) datasets: '
-      f'({total_train_batches}, {total_val_batches})\n')
-momentum_val = None  # Only for MoCov2.
-
-# ======================
-# TRAINING LOOP.
-# Iterating over the epochs.
-for epoch in range(epoch, epochs):
-
-    if model_name == 'MoCov2':
-        momentum_val = cosine_schedule(epoch, epochs, 0.996, 1)
-        print(f"Momentum value: {momentum_val}")
-    print(f"Learning rate: {optimizer.param_groups[0]['lr']}")
-
-    # Timer added.
-    t0 = time.time()
+def train(
+    config: dict
+):
 
     # ======================
-    # TRAINING COMPUTATION.
-    # Iterating through the dataloader (lightly dataset is different).
-    model.train()
-    running_train_loss = 0.
-    for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
+    # DEFINE MODEL.
+    # Removing head from resnet. Embedding.
+    input_dim = resnet.fc.in_features
+    hidden_dim = input_dim
+    backbone = nn.Sequential(*list(resnet.children())[:-1])
 
-        # Move images to the GPU (same batch two transformations).
-        x0 = x0.to(device)
-        x1 = x1.to(device)
-
-        # Compute loss.
-        loss = model.training_step((x0, x1), momentum_val=momentum_val)
-
-        # Averaged loss across all training examples * batch_size.
-        running_train_loss += loss.item() * batch_size
-
-        # Run backpropagation.
-        loss.backward()
-
-        # Update the parameters of the model.
-        # Clear the gradients.
-        optimizer.step()
-        optimizer.zero_grad()
-
-        if model_name == 'SimSiam':
-            model.check_collapse(loss)
-
-        # Show partial stats.
-        if b % (total_train_batches//4) == (total_train_batches//4-1):
-            print(f'T[{epoch}, {b + 1:5d}] | '
-                  f'Running train loss: '
-                  f'{running_train_loss/(b*batch_size):.4f}')
-
-    # The level of collapse is large if the standard deviation of
-    # the l2 normalized output is much smaller than 1 / sqrt(dim).
     if model_name == 'SimSiam':
-        collapse_level = max(0., 1 - math.sqrt(out_dim) * model.avg_output_std)
+        model = SimSiam(backbone=backbone, input_dim=input_dim, proj_hidden_dim=proj_hidden_dim, pred_hidden_dim=pred_hidden_dim, output_dim=out_dim)
+    elif model_name == 'SimCLR':
+        model = SimCLR(backbone=backbone, input_dim=input_dim, hidden_dim=hidden_dim, output_dim=out_dim)
+    elif model_name == 'SimCLRv2':
+        model = SimCLRv2(backbone=backbone, input_dim=input_dim, hidden_dim=hidden_dim, output_dim=out_dim)
+    elif model_name == 'BarlowTwins':
+        model = BarlowTwins(backbone=backbone, input_dim=input_dim, hidden_dim=hidden_dim, output_dim=out_dim)
+    elif model_name == 'MoCov2':
+        model = MoCov2(backbone=backbone, input_dim=input_dim, hidden_dim=hidden_dim, output_dim=out_dim)
 
     # ======================
-    # TRAINING LOSS.
-    # Loss averaged across all training examples for the current epoch.
-    epoch_train_loss = (running_train_loss
-                        / len(dataloader['train'].sampler))
+    # ADDING GPU SUPPORT.
+    # Compile model (only for PT2.0).
+    if torch_compile:
+        model = torch.compile(model)
+        torch.set_float32_matmul_precision('high')
+
+    # Device used for training.
+    print(f'\nUsing {device} device')
+    print(f'Model name: {model_name}')
+    model.to(device)
 
     # ======================
-    # EVALUATION COMPUTATION.
-    # The evaluation process was not okey (it's been deleted).
-    model.eval()
-    running_val_loss = 0.
-    with torch.no_grad():
-        for vb, ((x0, x1), y, _) in enumerate(dataloader['val']):
+    # CONFIGURE OPTIMIZER AND SCHEDULERS.
+    # Set the initial learning rate.
+    if ray_tune:
+        lr_init = config["lr"]
+    else:
+        lr_init = 0.2
+
+    # Use SGD with momentum and weight decay.
+    optimizer = torch.optim.SGD(
+        model.parameters(),
+        lr=lr_init,
+        momentum=0.9,
+        weight_decay=5e-4
+    )
+
+    # Define the warmup duration.
+    warmup_epochs = max(1, int(.05*epochs))
+    warmup_epochs = 5
+
+    # Linear warmup for the first defined epochs.
+    warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer,
+        lambda epoch: min(1, epoch / warmup_epochs),
+        verbose=True
+    )
+
+    # Cosine decay afterwards.
+    cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=epochs-warmup_epochs,
+        verbose=True
+    )
+
+    # ======================
+    # LOAD CHECKPOINTS (IF ENABLED).
+    if resume_training:
+
+        # List of checkpoints.
+        ckpt_list = []
+        print()
+        for root, dirs, files in os.walk(paths['checkpoints']):
+            for i, filename in enumerate(sorted(files, reverse=True)):
+                if filename[:4] == 'ckpt':
+                    ckpt_list.append(os.path.join(root, filename))
+                    print(f'{i:02} --> {filename}')
+
+        # Load the best checkpoint.
+        print(f'\nLoaded: {ckpt_list[0]}')
+        ckpt = torch.load(ckpt_list[0])
+
+        # Load from dict.
+        epoch = ckpt['epoch'] + 1
+        model.backbone.load_state_dict(ckpt['model_state_dict'])
+        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+        warmup_scheduler.load_state_dict(ckpt['warmup_scheduler_state_dict'])
+        cosine_scheduler.load_state_dict(ckpt['cosine_scheduler_state_dict'])
+
+    else:
+        epoch = 0  # start training from scratch.
+
+    # ======================
+    # INITIAL PARAMETERS.
+    save_interval = 2
+    total_train_batches = len(dataloader['train'])
+    total_val_batches = len(dataloader['val'])
+    collapse_level = 0.
+    momentum_val = None  # only for moco.
+    print(f'optimizer:\n{optimizer}')
+    print(f'warmup_scheduler:\n{warmup_scheduler}')
+    print(f'cosine_scheduler:\n{cosine_scheduler}')
+    print(f"Initial lr: {optimizer.param_groups[0]['lr']}")
+
+    # ======================
+    # TRAINING LOOP.
+    # Iterating over the epochs.
+    print(f'\nBatches in (train, val) datasets: '
+          f'({total_train_batches}, {total_val_batches})\n')
+    for epoch in range(epoch, epochs):
+
+        if model_name == 'MoCov2':
+            momentum_val = cosine_schedule(epoch, epochs, 0.996, 1)
+            print(f"Momentum value: {momentum_val}")
+        print(f"Learning rate: {optimizer.param_groups[0]['lr']}")
+
+        # Timer added.
+        t0 = time.time()
+
+        # ======================
+        # TRAINING COMPUTATION.
+        # Iterating through the dataloader (lightly dataset is different).
+        model.train()
+        running_train_loss = 0.
+        for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
 
             # Move images to the GPU (same batch two transformations).
             x0 = x0.to(device)
             x1 = x1.to(device)
 
-            # Compute loss.
-            loss = model.training_step((x0, x1), momentum_val=momentum_val)
+            # Zero the parameter gradients.
+            optimizer.zero_grad()
 
-            # Averaged loss across all validation examples * batch_size.
-            running_val_loss += loss.item() * batch_size
+            # Forward + backward + optimize: Compute the loss, run
+            # backpropagation, and update the parameters of the model.
+            loss = model.training_step((x0, x1), momentum_val=momentum_val)
+            loss.backward()
+            optimizer.step()
+
+            if model_name == 'SimSiam':
+                model.check_collapse(loss.item())
+
+            # Print statistics.
+            # Averaged loss across all training examples * batch_size.
+            running_train_loss += loss.item() * batch_size
 
             # Show partial stats.
-            if vb % (total_val_batches//4) == (total_val_batches//4-1):
-                print(f'V[{epoch}, {vb + 1:5d}] | '
-                      f'Running val loss:   '
-                      f'{running_val_loss/(vb*batch_size):.4f}')
+            if b % (total_train_batches//4) == (total_train_batches//4-1):
+                print(f'T[{epoch}, {b + 1:5d}] | '
+                      f'Running train loss: '
+                      f'{running_train_loss/(b*batch_size):.4f}')
 
-    model.train()
+        # The level of collapse is large if the standard deviation of
+        # the l2 normalized output is much smaller than 1 / sqrt(dim).
+        if model_name == 'SimSiam':
+            collapse_level = max(
+                0., 1 - math.sqrt(out_dim) * model.avg_output_std)
 
-    # ======================
-    # VALIDATION LOSS.
-    # Loss averaged across all training examples for the current epoch.
-    epoch_val_loss = (running_val_loss
-                      / len(dataloader['val'].sampler))
+        # ======================
+        # TRAINING LOSS.
+        # Loss averaged across all training examples for the current epoch.
+        epoch_train_loss = (running_train_loss
+                            / len(dataloader['train'].sampler))
 
-    # ======================
-    # UPDATE LEARNING RATE SCHEDULER.
-    # scheduler.step()
-    warmup_scheduler.step() if (epoch < warmup_epochs) else cosine_scheduler.step()
+        # ======================
+        # EVALUATION COMPUTATION.
+        # The evaluation process was not okey (it's been deleted).
+        model.eval()
+        running_val_loss = 0.
+        # val_loss = 0.0
+        # val_steps = 0
+        with torch.no_grad():
+            for vb, ((x0, x1), _, _) in enumerate(dataloader['val']):
 
-    # ======================
-    # SAVING CHECKPOINT.
-    # Move the model to CPU before saving it
-    # to make it more platform-independent.
-    # Problems with resuming training.
-    # model.to('cpu')
-    model.save(
-        backbone_name,
-        epoch,
-        epoch_train_loss,
-        dataset_ratio,
-        balanced_dataset,
-        paths['checkpoints'],
-        collapse_level=collapse_level if model_name == 'SimSiam' else 0.
-    )
+                # Move images to the GPU (same batch two transformations).
+                x0 = x0.to(device)
+                x1 = x1.to(device)
 
-    if epoch % save_interval == 0:
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.backbone.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'warmup_scheduler_state_dict': warmup_scheduler.state_dict(),
-            'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
-            'loss': epoch_train_loss
-        }, os.path.join(paths['checkpoints'], 'ckpt_' + str(model)))
+                # Compute loss.
+                loss = model.training_step((x0, x1), momentum_val=momentum_val)
 
-    # model.to(device)
+                # Averaged loss across all validation examples * batch_size.
+                running_val_loss += loss.item() * batch_size
 
-    # ======================
-    # EPOCH STATISTICS.
-    # Show some stats per epoch completed.
-    print(f'[Epoch {epoch:3d}] | '
-          f'Train loss: {epoch_train_loss:.4f} | '
-          f'Val loss: {epoch_val_loss:.4f} | '
-          f'Duration: {(time.time()-t0):.2f} s | '
-          f'Collapse Level (SimSiam only): {collapse_level:.4f}/1.0\n')
+                # val_loss += loss.cpu().numpy()
+                # val_steps += 1
+
+                # Show partial stats.
+                if vb % (total_val_batches//4) == (total_val_batches//4-1):
+                    print(f'V[{epoch}, {vb + 1:5d}] | '
+                          f'Running val loss:   '
+                          f'{running_val_loss/(vb*batch_size):.4f}')
+
+        # ======================
+        # VALIDATION LOSS.
+        # Loss averaged across all training examples for the current epoch.
+        epoch_val_loss = (running_val_loss
+                          / len(dataloader['val'].sampler))
+
+        # ======================
+        # UPDATE LEARNING RATE SCHEDULER.
+        # scheduler.step()
+        if (epoch < warmup_epochs):
+            warmup_scheduler.step()
+        else:
+            cosine_scheduler.step()
+
+        # ======================
+        # SAVING CHECKPOINT.
+        # Move the model to CPU before saving it
+        # to make it more platform-independent.
+        # Problems with resuming training.
+        # model.to('cpu')
+        model.save(
+            backbone_name,
+            epoch,
+            epoch_train_loss,
+            dataset_ratio,
+            balanced_dataset,
+            paths['checkpoints'],
+            collapse_level=collapse_level if model_name == 'SimSiam' else 0.
+        )
+
+        if epoch % save_interval == 0:
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.backbone.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'warmup_scheduler_state_dict': warmup_scheduler.state_dict(),
+                'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
+                'loss': epoch_train_loss
+            }, os.path.join(paths['checkpoints'], 'ckpt_' + str(model)))
+
+        # model.to(device)
+
+        # ======================
+        # EPOCH STATISTICS.
+        # Show some stats per epoch completed.
+        print(f'[Epoch {epoch:3d}] | '
+              f'Train loss: {epoch_train_loss:.4f} | '
+              f'Val loss: {epoch_val_loss:.4f} | '
+              f'Duration: {(time.time()-t0):.2f} s | '
+              f'Collapse Level (SimSiam only): {collapse_level:.4f}/1.0\n')
+
+        # ======================
+        # RAY TUNE.
+        if ray_tune:
+            tune.report(loss=epoch_val_loss)
+
+
+# ## Hyperparameter tuning: Ray Tune
+
+# In[ ]:
+
+
+if ray_tune:
+
+    max_num_epochs = epochs
+    num_samples = 10
+    gpus_per_trial = 1
+    paths['ray_tune'] = os.path.join(paths['output'], 'ray_results')
+
+    config = {
+        # "l1": tune.sample_from(lambda _: 2 ** np.random.randint(2, 9)),
+        # "l2": tune.sample_from(lambda _: 2 ** np.random.randint(2, 9)),
+        "lr": tune.loguniform(1e-4, 1e-1),
+        # "batch_size": tune.choice([2, 4, 8, 16])
+    }
+
+    scheduler = ASHAScheduler(
+        metric="loss",
+        mode="min",
+        max_t=max_num_epochs,
+        grace_period=1,
+        reduction_factor=2)
+
+    reporter = CLIReporter(
+        # ``parameter_columns=["l1", "l2", "lr", "batch_size"]``,
+        # metric_columns=["loss", "accuracy", "training_iteration"])
+        metric_columns=["loss", "training_iteration"])
+
+    result = tune.run(
+        partial(train),
+        resources_per_trial={"cpu": 1, "gpu": gpus_per_trial},
+        name=model_name,
+        config=config,
+        num_samples=num_samples,
+        local_dir=paths['ray_tune'],
+        scheduler=scheduler,
+        verbose=1,
+        progress_reporter=reporter)
 
 
 # In[ ]:
 
 
-print(model)
+if ray_tune:
 
+    # Get a dataframe for the last reported results of all of the trials.
+    df = result.results_df
+    df.to_csv(os.path.join(paths['ray_tune'], f'ray_tune_results_df_{model_name}.csv'))
+
+    # Get best results.
+    best_trial = result.get_best_trial("loss", "min", "last")
+    print(f"Best trial config: {best_trial.config}")
+    print(f"Best trial final val loss: {best_trial.last_result['loss']}")
+
+
+# In[ ]:
+
+
+get_ipython().run_line_magic('tensorboard', '--port 6006 --logdir ./output/ray_results/')
+
+
+# ## Normal training
 
 # Collapse level: the closer to zero the better
 
 # A value close to 0 indicates that the representations have collapsed. A value close to 1/sqrt(dimensions), where dimensions are the number of representation dimensions, indicates that the representations are stable. 
+
+# In[ ]:
+
+
+if not ray_tune:
+    config = None
+    train(config)
+
 
 # ### Checking the weights of the last model
 
@@ -1182,6 +1284,8 @@ if plot == '3d' or plot == "23d" or plot == 'all':
 # ***
 
 # # Check each model's performance/collapse on val data
+
+# ADD SOFTMAX IF NECESSARY!!
 
 # In[ ]:
 
