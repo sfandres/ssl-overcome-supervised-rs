@@ -49,6 +49,7 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
+from torch.utils.data import SubsetRandomSampler, DataLoader
 import torchvision
 from torchvision.models import (
     resnet18,
@@ -186,6 +187,9 @@ parser.add_argument('--show', '-s', action='store_true',
 parser.add_argument('--balanced_dataset', '-bd', action='store_true',
                     help='whether the dataset should be balanced.')
 
+parser.add_argument('--reduced_dataset', '-rd', action='store_true',
+                    help='whether the dataset should be reduced.')
+
 parser.add_argument('--cluster', '-c', action='store_true',
                     help='the script runs on a cluster (large mem. space).')
 
@@ -210,14 +214,15 @@ print()
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'SimSiam',
+            'SimCLR',
             '--backbone=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
-            '--dataset_ratio=(0.020,0.0196,0.9604)',
-            '--epochs=25',
+            # '--dataset_ratio=(0.020,0.0196,0.9604)',
+            '--epochs=5',
             '--batch_size=64',
             '--show',
             '--ray_tune',
+            '--reduced_dataset',
             # '--resume_training'
         ]
     )
@@ -441,7 +446,7 @@ for d in dataset:
     print(f'\n{d}: {dataset[d]}')
 
 
-# ## Dealing with imbalanced data
+# ## Dealing with imbalanced data (option)
 
 # In[ ]:
 
@@ -475,8 +480,50 @@ else:
     sampler = None
     shuffle = True
 
-print(f'\nSampler:  {sampler}')
-print(f'Shuffle:  {shuffle}')
+print(f'\nSampler: {sampler}')
+print(f'Shuffle:   {shuffle}')
+
+
+# ## Creating a reduced subset (option)
+
+# In[ ]:
+
+
+if reduced_dataset:
+
+    # Get the number of samples in the full dataset.
+    num_samples = len(dataset['train'])
+
+    # Get the labels.
+    labels = dataset['train'].targets
+
+    # Get the unique labels and their corresponding counts in the dataset.
+    unique_labels, label_counts = np.unique(labels, return_counts=True)
+
+    # Set the percentage of samples you want to keep.
+    percent_keep = 0.1
+
+    # Calculate the number of samples to keep for each label.
+    num_keep = np.ceil(percent_keep * label_counts).astype(int)
+
+    # Create a list of indices for the samples to keep.
+    keep_indices = []
+    for i in range(len(unique_labels)):
+        label_indices_i = np.where(labels == unique_labels[i])[0]
+        np.random.shuffle(label_indices_i)
+        keep_indices_i = label_indices_i[:num_keep[i]]
+        keep_indices.extend(keep_indices_i)
+
+    # Create a SubsetRandomSampler using the keep indices.
+    sampler = SubsetRandomSampler(keep_indices)
+    shuffle = False
+
+else:
+    sampler = None
+    shuffle = True
+
+print(f'\nSampler: {sampler}')
+print(f'Shuffle:   {shuffle}')
 
 
 # ## Cast to Lightly dataset
@@ -569,9 +616,9 @@ for d in dataloader:
 for d in dataset:
     samples = np.unique(dataset[d].targets, return_counts=True)[1]
     print(f'\n{d}:')
-    print(f'  - #Samples/class:\n{samples}')
-    print(f'  - #Samples: {len(dataset[d].targets)}')
-    print(f'  - #Batches: {len(dataloader[d])}')
+    print(f'  - #Samples/class (from dataset):\n{samples}')
+    print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
+    print(f'  - #Batches from dataloader: {len(dataloader[d])}')
 
 
 # ## Check the distribution of samples in the dataloader (lightly dataset)
@@ -579,39 +626,40 @@ for d in dataset:
 # In[ ]:
 
 
-# # List to save the labels.
-# labels_list = []
+# List to save the labels.
+labels_list = []
 
-# # Accessing Data and Targets in a PyTorch DataLoader.
-# t0 = time.time()
-# for i, (images, labels, names) in enumerate(dataloader['train']):
-#     labels_list.append(labels)
+# Accessing Data and Targets in a PyTorch DataLoader.
+t0 = time.time()
+for i, (images, labels, names) in enumerate(dataloader['train']):
+    labels_list.append(labels)
 
-# # Concatenate list of lists (batches).
-# labels_list = torch.cat(labels_list, dim=0).numpy()
-# print(f'\nSample distribution computation in train dataset (s): '
-#       f'{(time.time()-t0):.2f}')
+# Concatenate list of lists (batches).
+labels_list = torch.cat(labels_list, dim=0).numpy()
+print(f'\nSample distribution computation in train dataset (s): '
+      f'{(time.time()-t0):.2f}')
 
-# # Count number of unique values.
-# data_x, data_y = np.unique(labels_list, return_counts=True)
+# Count number of unique values.
+data_x, data_y = np.unique(labels_list, return_counts=True)
 
-# # New function to plot (suitable for execution in shell).
-# fig, ax = plt.subplots(1, 1, figsize=(20, 5))
-# simple_bar_plot(ax,
-#                 data_x,
-#                 'Class',
-#                 data_y,
-#                 'N samples (dataloader)')
+# New function to plot (suitable for execution in shell).
+fig, ax = plt.subplots(1, 1, figsize=(20, 5))
+simple_bar_plot(ax,
+                data_x,
+                'Class',
+                data_y,
+                'N samples (dataloader)')
 
-# plt.gcf().subplots_adjust(bottom=0.15)
-# plt.gcf().subplots_adjust(left=0.15)
-# fig_name_save = (f'sample_distribution'
-#                  f'-ratio={dataset_ratio}'
-#                  f'-balanced={handle_imb_classes}')
-# fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
-#             bbox_inches='tight')
+plt.gcf().subplots_adjust(bottom=0.15)
+plt.gcf().subplots_adjust(left=0.15)
+fig_name_save = (f'sample_distribution'
+                 f'-ratio={dataset_ratio}'
+                 f'-balanced_dataset={balanced_dataset}'
+                 f'-reduced_dataset={reduced_dataset}')
+fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
+            bbox_inches='tight')
 
-# plt.show() if show else plt.close()
+plt.show() if show else plt.close()
 
 
 # ## Look at some training samples (lightly dataset)
@@ -765,20 +813,27 @@ def train(
     # ======================
     # DEFINE MODEL.
     # Removing head from resnet. Embedding.
-    input_dim = resnet.fc.in_features
-    hidden_dim = input_dim
     backbone = nn.Sequential(*list(resnet.children())[:-1])
+    input_dim = hidden_dim = resnet.fc.in_features
+    print(f'\nModel name: {model_name}')
+    print(f"Hidden layer dimension: {config['hidden_dim']}")
+    print(f"Output layer dimension: {config['out_dim']}")
 
     if model_name == 'SimSiam':
-        model = SimSiam(backbone=backbone, input_dim=input_dim, proj_hidden_dim=proj_hidden_dim, pred_hidden_dim=pred_hidden_dim, output_dim=out_dim)
+        model = SimSiam(backbone=backbone, input_dim=input_dim, proj_hidden_dim=config['out_dim'],
+                        pred_hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
     elif model_name == 'SimCLR':
-        model = SimCLR(backbone=backbone, input_dim=input_dim, hidden_dim=hidden_dim, output_dim=out_dim)
+        model = SimCLR(backbone=backbone, input_dim=input_dim,
+                       hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
     elif model_name == 'SimCLRv2':
-        model = SimCLRv2(backbone=backbone, input_dim=input_dim, hidden_dim=hidden_dim, output_dim=out_dim)
+        model = SimCLRv2(backbone=backbone, input_dim=input_dim,
+                         hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
     elif model_name == 'BarlowTwins':
-        model = BarlowTwins(backbone=backbone, input_dim=input_dim, hidden_dim=hidden_dim, output_dim=out_dim)
+        model = BarlowTwins(backbone=backbone, input_dim=input_dim,
+                            hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
     elif model_name == 'MoCov2':
-        model = MoCov2(backbone=backbone, input_dim=input_dim, hidden_dim=hidden_dim, output_dim=out_dim)
+        model = MoCov2(backbone=backbone, input_dim=input_dim,
+                       hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
 
     # ======================
     # ADDING GPU SUPPORT.
@@ -788,17 +843,13 @@ def train(
         torch.set_float32_matmul_precision('high')
 
     # Device used for training.
-    print(f'\nUsing {device} device')
-    print(f'Model name: {model_name}')
+    print(f'\nDevice: {device}')
     model.to(device)
 
     # ======================
     # CONFIGURE OPTIMIZER AND SCHEDULERS.
     # Set the initial learning rate.
-    if ray_tune:
-        lr_init = config["lr"]
-    else:
-        lr_init = 0.2
+    lr_init = config["lr"]
 
     # Use SGD with momentum and weight decay.
     optimizer = torch.optim.SGD(
@@ -809,8 +860,9 @@ def train(
     )
 
     # Define the warmup duration.
-    warmup_epochs = max(1, int(.05*epochs))
-    warmup_epochs = 5
+    warmup_epochs = config['warmup_epochs']
+    print(f'Warmup epochs: {warmup_epochs}')
+    print(f'Total epochs:  {epochs}')
 
     # Linear warmup for the first defined epochs.
     warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -854,28 +906,27 @@ def train(
         epoch = 0  # start training from scratch.
 
     # ======================
-    # INITIAL PARAMETERS.
+    # INITIAL PARAMETERS AND INFO.
+    print(f'\nOptimizer:\n{optimizer}')
+    print(f'Warmup scheduler: {warmup_scheduler}')
+    print(f'Cosine scheduler: {cosine_scheduler}')
     save_interval = 2
     total_train_batches = len(dataloader['train'])
     total_val_batches = len(dataloader['val'])
     collapse_level = 0.
     momentum_val = None  # only for moco.
-    print(f'optimizer:\n{optimizer}')
-    print(f'warmup_scheduler:\n{warmup_scheduler}')
-    print(f'cosine_scheduler:\n{cosine_scheduler}')
-    print(f"Initial lr: {optimizer.param_groups[0]['lr']}")
+    print(f'\nBatches in (train, val) datasets: '
+          f'({total_train_batches}, {total_val_batches})\n')
 
     # ======================
     # TRAINING LOOP.
     # Iterating over the epochs.
-    print(f'\nBatches in (train, val) datasets: '
-          f'({total_train_batches}, {total_val_batches})\n')
     for epoch in range(epoch, epochs):
 
+        # Set momentum for moco.
         if model_name == 'MoCov2':
             momentum_val = cosine_schedule(epoch, epochs, 0.996, 1)
             print(f"Momentum value: {momentum_val}")
-        print(f"Learning rate: {optimizer.param_groups[0]['lr']}")
 
         # Timer added.
         t0 = time.time()
@@ -884,6 +935,7 @@ def train(
         # TRAINING COMPUTATION.
         # Iterating through the dataloader (lightly dataset is different).
         model.train()
+        print(f"Learning rate: {optimizer.param_groups[0]['lr']}")
         running_train_loss = 0.
         for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
 
@@ -1019,16 +1071,26 @@ def train(
 if ray_tune:
 
     max_num_epochs = epochs
-    num_samples = 10
+    num_samples = 3
     gpus_per_trial = 1
     paths['ray_tune'] = os.path.join(paths['output'], 'ray_results')
 
     config = {
-        # "l1": tune.sample_from(lambda _: 2 ** np.random.randint(2, 9)),
-        # "l2": tune.sample_from(lambda _: 2 ** np.random.randint(2, 9)),
-        "lr": tune.loguniform(1e-4, 1e-1),
+        "hidden_dim": tune.grid_search([128, 256, 512]),
+        "out_dim": tune.grid_search([128, 256, 512]),
+        "lr": tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
+        "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
+        # "out_dim": tune.sample_from(lambda _: 2 ** np.random.randint(7, 9)),
         # "batch_size": tune.choice([2, 4, 8, 16])
+        # "lr": tune.loguniform(1e-4, 1e-1),
     }
+
+    # config = {
+    #     "hidden_dim": 128,
+    #     "out_dim": 128,
+    #     "lr": tune.loguniform(1e-4, 1e-1),
+    #     "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
+    # }
 
     scheduler = ASHAScheduler(
         metric="loss",
@@ -1059,9 +1121,11 @@ if ray_tune:
 
 if ray_tune:
 
-    # Get a dataframe for the last reported results of all of the trials.
+    # Sorted dataframe for the last reported results of all of the trials.
     df = result.results_df
-    df.to_csv(os.path.join(paths['ray_tune'], f'ray_tune_results_df_{model_name}.csv'))
+    df = df.sort_values(by=['loss'], ascending=True)
+    df.to_csv(os.path.join(paths['ray_tune'],
+                           f'ray_tune_results_df_{model_name}.csv'))
 
     # Get best results.
     best_trial = result.get_best_trial("loss", "min", "last")
@@ -1085,11 +1149,24 @@ get_ipython().run_line_magic('tensorboard', '--port 6006 --logdir ./output/ray_r
 
 
 if not ray_tune:
-    config = None
+
+    config = {
+        "hidden_dim": 128,
+        "out_dim": 128,
+        "lr": 1e-3,
+        "warmup_epochs": max(1, int(0.1 * epochs)),
+    }
+
     train(config)
 
 
 # ### Checking the weights of the last model
+
+# In[ ]:
+
+
+1e-3
+
 
 # In[ ]:
 
