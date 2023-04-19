@@ -501,7 +501,7 @@ if reduced_dataset:
     unique_labels, label_counts = np.unique(labels, return_counts=True)
 
     # Set the percentage of samples you want to keep.
-    percent_keep = 0.1
+    percent_keep = 0.05
 
     # Calculate the number of samples to keep for each label.
     num_keep = np.ceil(percent_keep * label_counts).astype(int)
@@ -1071,7 +1071,7 @@ def train(
 if ray_tune:
 
     max_num_epochs = epochs
-    num_samples = 3
+    num_samples = 1
     gpus_per_trial = 1
     paths['ray_tune'] = os.path.join(paths['output'], 'ray_results')
 
