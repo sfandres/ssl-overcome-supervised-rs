@@ -22,7 +22,7 @@ def main():
     backbone = 'resnet18'
     dataset_name = 'Sentinel2GlobalLULC_SSL'
     dataset_ratio = '\(0.020,0.0196,0.9604\)'
-    epochs = 25
+    epochs = 10
     batch_size = 64
 
     # for s in range(0, times):
@@ -37,11 +37,12 @@ def main():
             f'{model} '
             f'--backbone={backbone} '
             f'--dataset_name={dataset_name} '
-            f'--dataset_ratio={dataset_ratio} '
+            # f'--dataset_ratio={dataset_ratio} '
             f'--epochs={epochs} '
             f'--batch_size={batch_size} '
             f'--cluster '
-            f'--ray_tune'
+            f'--ray_tune '
+            f'--reduced_dataset '
         )
 
     return 0
