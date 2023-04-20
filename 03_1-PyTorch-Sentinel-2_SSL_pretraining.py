@@ -540,11 +540,6 @@ print()
 for d in lightly_dataset:
     print(f'{d}:\t{lightly_dataset[d]}')
 
-# test_data_lightly = lightly.data.LightlyDataset.from_torch_dataset(
-#     test_data,
-#     transform=test_transform
-# )
-
 
 # ## Collate functions
 
@@ -747,59 +742,11 @@ if show:
     )
 
 
-# ## Backbone net
-
-# In[ ]:
-
-
-# # Dimension of the embeddings.
-# num_ftrs = 512
-
-# Dimension of the output of the prediction and projection heads.
-out_dim = proj_hidden_dim = 512
-
-# The prediction head uses a bottleneck architecture.
-pred_hidden_dim = 128
-
-
-# In[ ]:
-
-
-# # Removing head from resnet. Embedding.
-# input_dim = resnet.fc.in_features
-# hidden_dim = input_dim
-# backbone = nn.Sequential(*list(resnet.children())[:-1])
-
-# if model_name == 'SimSiam':
-#     model = SimSiam(backbone=backbone,
-#                     input_dim=input_dim,
-#                     proj_hidden_dim=proj_hidden_dim,
-#                     pred_hidden_dim=pred_hidden_dim,
-#                     output_dim=out_dim)
-# else:
-#     model = globals()[model_name](backbone=backbone,
-#                                   input_dim=input_dim,
-#                                   hidden_dim=hidden_dim,
-#                                   output_dim=out_dim)
-
-
 # ## Training
 
 # <p style="color:red"><b>-----------------------------------------------------------------</b></p>
 # <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
 # <p style="color:red"><b>-----------------------------------------------------------------</b></p>
-
-# In[ ]:
-
-
-# # Model's backbone structure.
-# if show:
-#     print(summary(
-#         model.backbone,
-#         input_size=(batch_size, 3, input_size, input_size),
-#         device=device)
-#     )
-
 
 # ### Loop
 
@@ -1063,7 +1010,11 @@ def train(
             tune.report(loss=epoch_val_loss)
 
 
-# ## Hyperparameter tuning: Ray Tune
+# ## Training (also with hyperparameter tuning using Ray Tune)
+
+# Collapse level: the closer to zero the better
+
+# A value close to 0 indicates that the representations have collapsed. A value close to 1/sqrt(dimensions), where dimensions are the number of representation dimensions, indicates that the representations are stable. 
 
 # In[ ]:
 
@@ -1078,19 +1029,12 @@ if ray_tune:
     config = {
         "hidden_dim": tune.grid_search([128, 256, 512]),
         "out_dim": tune.grid_search([128, 256, 512]),
-        "lr": tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-        "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
         # "out_dim": tune.sample_from(lambda _: 2 ** np.random.randint(7, 9)),
-        # "batch_size": tune.choice([2, 4, 8, 16])
+        "lr": tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
         # "lr": tune.loguniform(1e-4, 1e-1),
+        "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
+        # "batch_size": tune.choice([2, 4, 8, 16])
     }
-
-    # config = {
-    #     "hidden_dim": 128,
-    #     "out_dim": 128,
-    #     "lr": tune.loguniform(1e-4, 1e-1),
-    #     "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
-    # }
 
     scheduler = ASHAScheduler(
         metric="loss",
@@ -1114,6 +1058,17 @@ if ray_tune:
         scheduler=scheduler,
         verbose=1,
         progress_reporter=reporter)
+
+else:
+
+    config = {
+        "hidden_dim": 128,
+        "out_dim": 128,
+        "lr": 1e-3,
+        "warmup_epochs": max(1, int(0.1 * epochs)),
+    }
+
+    train(config)
 
 
 # In[ ]:
@@ -1139,34 +1094,7 @@ if ray_tune:
 get_ipython().run_line_magic('tensorboard', '--port 6006 --logdir ./output/ray_results/')
 
 
-# ## Normal training
-
-# Collapse level: the closer to zero the better
-
-# A value close to 0 indicates that the representations have collapsed. A value close to 1/sqrt(dimensions), where dimensions are the number of representation dimensions, indicates that the representations are stable. 
-
-# In[ ]:
-
-
-if not ray_tune:
-
-    config = {
-        "hidden_dim": 128,
-        "out_dim": 128,
-        "lr": 1e-3,
-        "warmup_epochs": max(1, int(0.1 * epochs)),
-    }
-
-    train(config)
-
-
 # ### Checking the weights of the last model
-
-# In[ ]:
-
-
-1e-3
-
 
 # In[ ]:
 
@@ -1174,8 +1102,8 @@ if not ray_tune:
 # First convolutional layer weights.
 # print(model.backbone[0])
 # print(model.backbone[0].weight[63])
-print(model.backbone.conv1)
-print(model.backbone.conv1.weight[63])
+# print(model.backbone.conv1)
+# print(model.backbone.conv1.weight[63])
 
 
 # ***
@@ -1189,36 +1117,36 @@ print(model.backbone.conv1.weight[63])
 # In[ ]:
 
 
-# Empty lists.
-embeddings = []
-labels = []
+# # Empty lists.
+# embeddings = []
+# labels = []
 
-# Disable gradients for faster calculations.
-# Put the model in evaluation mode.
-model.eval()
-with torch.no_grad():
-    # for i, (x, y, fnames) in enumerate(dataloader_val):
-    # Now taking only the first transformed batch.
-    for i, ((x, _), y, fnames) in enumerate(dataloader['val']):
+# # Disable gradients for faster calculations.
+# # Put the model in evaluation mode.
+# model.eval()
+# with torch.no_grad():
+#     # for i, (x, y, fnames) in enumerate(dataloader_val):
+#     # Now taking only the first transformed batch.
+#     for i, ((x, _), y, fnames) in enumerate(dataloader['val']):
 
-        # Move the images to the GPU.
-        x = x.to(device)
-        y = y.to(device)
+#         # Move the images to the GPU.
+#         x = x.to(device)
+#         y = y.to(device)
 
-        # Embed the images with the pre-trained backbone.
-        emb = model.backbone(x).flatten(start_dim=1)
+#         # Embed the images with the pre-trained backbone.
+#         emb = model.backbone(x).flatten(start_dim=1)
 
-        # Store the embeddings and filenames in lists.
-        embeddings.append(emb)
-        labels.append(y)
+#         # Store the embeddings and filenames in lists.
+#         embeddings.append(emb)
+#         labels.append(y)
 
-# Concatenate the embeddings and convert to numpy.
-embeddings = torch.cat(embeddings, dim=0).to('cpu').numpy()
-labels = torch.cat(labels, dim=0).to('cpu').numpy()
+# # Concatenate the embeddings and convert to numpy.
+# embeddings = torch.cat(embeddings, dim=0).to('cpu').numpy()
+# labels = torch.cat(labels, dim=0).to('cpu').numpy()
 
-# Show shapes.
-print(np.shape(embeddings))
-print(np.shape(labels))
+# # Show shapes.
+# print(np.shape(embeddings))
+# print(np.shape(labels))
 
 
 # # PCA
@@ -1226,7 +1154,7 @@ print(np.shape(labels))
 # In[ ]:
 
 
-plot = 'all'
+# plot = 'all'
 
 
 # https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html
@@ -1234,44 +1162,44 @@ plot = 'all'
 # In[ ]:
 
 
-# PCA computation.
-df = pca_computation(embeddings, labels, SEED)
+# # PCA computation.
+# df = pca_computation(embeddings, labels, SEED)
 
-# 2-D plot.
-if plot == '2d' or plot == "23d" or plot == 'all':
-    fig = plt.figure(figsize=(10, 10))
-    sns.scatterplot(
-        x='pca_x',
-        y='pca_y',
-        hue='labels',
-        palette=sns.color_palette('hls', 29),
-        data=df,
-        legend='full',
-        alpha=0.9
-    )
-    fig_name_save = (f'pca_2d-{model}')
-    fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
-                bbox_inches='tight')
-    plt.show() if show else plt.close()
+# # 2-D plot.
+# if plot == '2d' or plot == "23d" or plot == 'all':
+#     fig = plt.figure(figsize=(10, 10))
+#     sns.scatterplot(
+#         x='pca_x',
+#         y='pca_y',
+#         hue='labels',
+#         palette=sns.color_palette('hls', 29),
+#         data=df,
+#         legend='full',
+#         alpha=0.9
+#     )
+#     fig_name_save = (f'pca_2d-{model}')
+#     fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     plt.show() if show else plt.close()
 
-# 3-D plot with matplotlib.
-if plot == '3d' or plot == "23d" or plot == 'all':
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(
-        xs=df['pca_x'],
-        ys=df['pca_y'],
-        zs=df['pca_z'],
-        c=df['labels'],
-        cmap='tab10'
-    )
-    ax.set_xlabel('pca_x')
-    ax.set_ylabel('pca_y')
-    ax.set_zlabel('pca_z')
-    fig_name_save = (f'pca_3d-{model}')
-    fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
-                bbox_inches='tight')
-    plt.show() if show else plt.close()
+# # 3-D plot with matplotlib.
+# if plot == '3d' or plot == "23d" or plot == 'all':
+#     fig = plt.figure(figsize=(10, 10))
+#     ax = fig.add_subplot(projection='3d')
+#     ax.scatter(
+#         xs=df['pca_x'],
+#         ys=df['pca_y'],
+#         zs=df['pca_z'],
+#         c=df['labels'],
+#         cmap='tab10'
+#     )
+#     ax.set_xlabel('pca_x')
+#     ax.set_ylabel('pca_y')
+#     ax.set_zlabel('pca_z')
+#     fig_name_save = (f'pca_3d-{model}')
+#     fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     plt.show() if show else plt.close()
 
 # # 3-D plot with pyplot.
 # if (plot == '3d-plotly' or plot == 'all') and show:
@@ -1297,47 +1225,47 @@ if plot == '3d' or plot == "23d" or plot == 'all':
 # In[ ]:
 
 
-# t-SNE computation for 2-D.
-df = tsne_computation(embeddings, labels, SEED, n_components=2)
+# # t-SNE computation for 2-D.
+# df = tsne_computation(embeddings, labels, SEED, n_components=2)
 
-# 2-D plot.
-if plot == '2d' or plot == "23d" or plot == 'all':
-    fig = plt.figure(figsize=(10, 10))
-    sns.scatterplot(
-        x='tsne_x',
-        y='tsne_y',
-        hue='labels',
-        palette=sns.color_palette('hls', 29),
-        data=df,
-        legend='full',
-        alpha=0.9
-    )
-    fig_name_save = (f'tsne_2d-{model}')
-    fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
-                bbox_inches='tight')
-    plt.show() if show else plt.close()
+# # 2-D plot.
+# if plot == '2d' or plot == "23d" or plot == 'all':
+#     fig = plt.figure(figsize=(10, 10))
+#     sns.scatterplot(
+#         x='tsne_x',
+#         y='tsne_y',
+#         hue='labels',
+#         palette=sns.color_palette('hls', 29),
+#         data=df,
+#         legend='full',
+#         alpha=0.9
+#     )
+#     fig_name_save = (f'tsne_2d-{model}')
+#     fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     plt.show() if show else plt.close()
 
-# t-SNE computation for 3-D.
-df = tsne_computation(embeddings, labels, SEED, n_components=3)
+# # t-SNE computation for 3-D.
+# df = tsne_computation(embeddings, labels, SEED, n_components=3)
 
-# 3-D plot with matplotlib.
-if plot == '3d' or plot == "23d" or plot == 'all':
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(projection='3d')
-    ax.scatter(
-        xs=df['tsne_x'],
-        ys=df['tsne_y'],
-        zs=df['tsne_z'],
-        c=df['labels'],
-        cmap='tab10'
-    )
-    ax.set_xlabel('tsne_x')
-    ax.set_ylabel('tsne_y')
-    ax.set_zlabel('tsne_z')
-    fig_name_save = (f'tsne_3d-{model}')
-    fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
-                bbox_inches='tight')
-    plt.show() if show else plt.close()
+# # 3-D plot with matplotlib.
+# if plot == '3d' or plot == "23d" or plot == 'all':
+#     fig = plt.figure(figsize=(10, 10))
+#     ax = fig.add_subplot(projection='3d')
+#     ax.scatter(
+#         xs=df['tsne_x'],
+#         ys=df['tsne_y'],
+#         zs=df['tsne_z'],
+#         c=df['labels'],
+#         cmap='tab10'
+#     )
+#     ax.set_xlabel('tsne_x')
+#     ax.set_ylabel('tsne_y')
+#     ax.set_zlabel('tsne_z')
+#     fig_name_save = (f'tsne_3d-{model}')
+#     fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
+#                 bbox_inches='tight')
+#     plt.show() if show else plt.close()
 
 # # 3-D plot with pyplot.
 # if (plot == '3d-plotly' or plot == 'all') and show:
