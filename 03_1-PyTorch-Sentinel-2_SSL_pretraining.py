@@ -924,40 +924,40 @@ def train(
         epoch_train_loss = (running_train_loss
                             / len(dataloader['train'].sampler))
 
-        # ======================
-        # EVALUATION COMPUTATION.
-        # The evaluation process was not okey (it's been deleted).
-        model.eval()
-        running_val_loss = 0.
-        # val_loss = 0.0
-        # val_steps = 0
-        with torch.no_grad():
-            for vb, ((x0, x1), _, _) in enumerate(dataloader['val']):
+#         # ======================
+#         # EVALUATION COMPUTATION.
+#         # The evaluation process was not okey (it's been deleted).
+#         model.eval()
+#         running_val_loss = 0.
+#         # val_loss = 0.0
+#         # val_steps = 0
+#         with torch.no_grad():
+#             for vb, ((x0, x1), _, _) in enumerate(dataloader['val']):
 
-                # Move images to the GPU (same batch two transformations).
-                x0 = x0.to(device)
-                x1 = x1.to(device)
+#                 # Move images to the GPU (same batch two transformations).
+#                 x0 = x0.to(device)
+#                 x1 = x1.to(device)
 
-                # Compute loss.
-                loss = model.training_step((x0, x1), momentum_val=momentum_val)
+#                 # Compute loss.
+#                 loss = model.training_step((x0, x1), momentum_val=momentum_val)
 
-                # Averaged loss across all validation examples * batch_size.
-                running_val_loss += loss.item() * batch_size
+#                 # Averaged loss across all validation examples * batch_size.
+#                 running_val_loss += loss.item() * batch_size
 
-                # val_loss += loss.cpu().numpy()
-                # val_steps += 1
+#                 # val_loss += loss.cpu().numpy()
+#                 # val_steps += 1
 
-                # Show partial stats.
-                if vb % (total_val_batches//4) == (total_val_batches//4-1):
-                    print(f'V[{epoch}, {vb + 1:5d}] | '
-                          f'Running val loss:   '
-                          f'{running_val_loss/(vb*batch_size):.4f}')
+#                 # Show partial stats.
+#                 if vb % (total_val_batches//4) == (total_val_batches//4-1):
+#                     print(f'V[{epoch}, {vb + 1:5d}] | '
+#                           f'Running val loss:   '
+#                           f'{running_val_loss/(vb*batch_size):.4f}')
 
-        # ======================
-        # VALIDATION LOSS.
-        # Loss averaged across all training examples for the current epoch.
-        epoch_val_loss = (running_val_loss
-                          / len(dataloader['val'].sampler))
+#         # ======================
+#         # VALIDATION LOSS.
+#         # Loss averaged across all training examples for the current epoch.
+#         epoch_val_loss = (running_val_loss
+#                           / len(dataloader['val'].sampler))
 
         # ======================
         # UPDATE LEARNING RATE SCHEDULER.
@@ -1000,14 +1000,14 @@ def train(
         # Show some stats per epoch completed.
         print(f'[Epoch {epoch:3d}] | '
               f'Train loss: {epoch_train_loss:.4f} | '
-              f'Val loss: {epoch_val_loss:.4f} | '
+              # f'Val loss: {epoch_val_loss:.4f} | '
               f'Duration: {(time.time()-t0):.2f} s | '
               f'Collapse Level (SimSiam only): {collapse_level:.4f}/1.0\n')
 
         # ======================
         # RAY TUNE.
         if ray_tune:
-            tune.report(loss=epoch_val_loss)
+            tune.report(loss=epoch_train_loss)
 
 
 # ## Training (also with hyperparameter tuning using Ray Tune)
