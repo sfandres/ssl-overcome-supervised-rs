@@ -916,7 +916,7 @@ def train(
         # the l2 normalized output is much smaller than 1 / sqrt(dim).
         if model_name == 'SimSiam':
             collapse_level = max(
-                0., 1 - math.sqrt(out_dim) * model.avg_output_std)
+                0., 1 - math.sqrt(config['out_dim']) * model.avg_output_std)
 
         # ======================
         # TRAINING LOSS.
