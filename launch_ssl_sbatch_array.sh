@@ -12,7 +12,7 @@
 #SBATCH --output=uexssl_%A_%a.out                   ## Output file.
 #SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
-#SBATCH --array=0-3:1                               ## Run job arrays.
+#SBATCH --array=0-4:1                               ## Run job arrays.
 
 ## Catch Slurm environment variables.
 job_id=${SLURM_ARRAY_JOB_ID}
