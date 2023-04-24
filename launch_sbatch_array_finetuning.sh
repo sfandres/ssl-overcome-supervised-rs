@@ -33,7 +33,7 @@ echo " " | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 ## module load cuda/11.0.1
 ## source ~/lulc/lulc-venv/bin/activate
 source ~/anaconda3/etc/profile.d/conda.sh
-conda activate lulc-conda
+conda activate lulc2-conda
 
 ## Execute the Python script and pass the arguments.
 srun python3 03_2-PyTorch-Backbone_classifier.py \
