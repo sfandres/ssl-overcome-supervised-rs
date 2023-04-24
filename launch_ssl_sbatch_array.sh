@@ -48,7 +48,8 @@ ${model} \
 ## --resume_training \
 --reduced_dataset \
 --ray_tune \
-## --load_best_hyperparameters
+## --load_best_hyperparameters \
+--num_samples_trials=1
 
 ## Send email when job ends.
 ## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es

@@ -205,6 +205,9 @@ parser.add_argument('--ray_tune', '-t', action='store_true',
 parser.add_argument('--load_best_hyperparameters', '-ldh', action='store_true',
                     help='load the best hyperparameters previously computed.')
 
+parser.add_argument('--num_samples_trials', '-nst', type=int, default=1,
+                    help='number of samples for the trials (default: 1).')
+
 print()
 
 
@@ -228,7 +231,8 @@ if is_notebook():
             # '--resume_training',
             '--reduced_dataset',
             '--ray_tune',
-            '--load_best_hyperparameters'
+            '--load_best_hyperparameters',
+            '--num_samples_trials=10'
         ]
     )
 else:
@@ -944,7 +948,8 @@ def train(
 #                 x1 = x1.to(device)
 
 #                 # Compute loss.
-#                 loss = model.training_step((x0, x1), momentum_val=momentum_val)
+#                 loss = model.training_step((x0, x1),
+#                                            momentum_val=momentum_val)
 
 #                 # Averaged loss across all validation examples * batch_size.
 #                 running_val_loss += loss.item() * batch_size
@@ -1027,11 +1032,10 @@ def train(
 if ray_tune:
 
     max_num_epochs = epochs
-    num_samples = 2
     gpus_per_trial = 1
     paths['ray_tune'] = os.path.join(paths['output'], 'ray_results')
     print(f'Max. number of epochs: {max_num_epochs}')
-    print(f'Number of samples:     {num_samples}')
+    print(f'Number of samples:     {num_samples_trials}')
 
     # Configuration.
     if load_best_hyperparameters:
@@ -1083,7 +1087,7 @@ if ray_tune:
         resources_per_trial={"cpu": 16, "gpu": gpus_per_trial},
         name=model_name,
         config=config,
-        num_samples=num_samples,
+        num_samples=num_samples_trials,
         local_dir=paths['ray_tune'],
         scheduler=scheduler,
         verbose=1,

@@ -25,6 +25,7 @@ def main():
     epochs = 10
     batch_size = 64
     ini_weights = 'random'
+    num_samples_trials = 10
 
     # for s in range(0, times):
     # print (f'Experiments: {times}')
@@ -46,7 +47,8 @@ def main():
             # '--resume_training '
             '--reduced_dataset '
             '--ray_tune '
-            # '--load_best_hyperparameters'
+            # '--load_best_hyperparameters '
+            f'--num_samples_trials={num_samples_trials}'
         )
 
     return 0
