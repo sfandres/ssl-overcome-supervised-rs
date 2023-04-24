@@ -40,12 +40,14 @@ srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
 ${model} \
 --backbone_name=resnet18 \
 --dataset_name=Sentinel2GlobalLULC_SSL \
---dataset_ratio=\(0.400,0.1500,0.4500\) \
---epochs=500 \
+--epochs=10 \
 --batch_size=512 \
 --ini_weights=random \
 --cluster \
-## --resume_training
+## --resume_training \
+--reduced_dataset \
+--ray_tune \
+## --load_best_hyperparameters
 
 ## Send email when job ends.
 ## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
