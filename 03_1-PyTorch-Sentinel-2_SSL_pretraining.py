@@ -202,6 +202,9 @@ parser.add_argument('--resume_training', '-r', action='store_true',
 parser.add_argument('--ray_tune', '-t', action='store_true',
                     help='hyperparameter tuning with Ray Tune.')
 
+parser.add_argument('--load_best_hyperparameters', '-ldh', action='store_true',
+                    help='load the best hyperparameters previously computed.')
+
 print()
 
 
@@ -215,15 +218,17 @@ if is_notebook():
     args = parser.parse_args(
         args=[
             'SimCLR',
-            '--backbone=resnet18',
+            '--backbone_name=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
-            # '--dataset_ratio=(0.020,0.0196,0.9604)',
-            '--epochs=5',
+            '--dataset_ratio=(0.900,0.0250,0.0750)',
+            '--epochs=10',
             '--batch_size=64',
+            '--ini_weights=random',
             '--show',
-            '--ray_tune',
+            # '--resume_training',
             '--reduced_dataset',
-            # '--resume_training'
+            '--ray_tune',
+            '--load_best_hyperparameters'
         ]
     )
 else:
@@ -1022,19 +1027,44 @@ def train(
 if ray_tune:
 
     max_num_epochs = epochs
-    num_samples = 1
+    num_samples = 2
     gpus_per_trial = 1
     paths['ray_tune'] = os.path.join(paths['output'], 'ray_results')
+    print(f'Max. number of epochs: {max_num_epochs}')
+    print(f'Number of samples:     {num_samples}')
 
-    config = {
-        "hidden_dim": tune.grid_search([128, 256, 512]),
-        "out_dim": tune.grid_search([128, 256, 512]),
-        # "out_dim": tune.sample_from(lambda _: 2 ** np.random.randint(7, 9)),
-        "lr": tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-        # "lr": tune.loguniform(1e-4, 1e-1),
-        "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
-        # "batch_size": tune.choice([2, 4, 8, 16])
-    }
+    # Configuration.
+    if load_best_hyperparameters:
+
+        # Build the filename.
+        filename = f'ray_tune_results_df_{model_name}.csv'
+
+        # Load the CSV file into a pandas dataframe.
+        df = pd.read_csv(os.path.join(paths['ray_tune'], filename),
+                         usecols=lambda col: col.startswith('loss')
+                         or col.startswith('config/'))
+
+        # Configuration.
+        print(f'\nSetting the configuration from {filename}')
+        config = {
+            'hidden_dim': df.loc[0, 'config/hidden_dim'],
+            'out_dim': df.loc[0, 'config/out_dim'],
+            'lr': tune.loguniform(1e-4, 1e-1),
+            'warmup_epochs': max(1, int(0.1 * max_num_epochs)),
+        }
+
+    else:
+
+        print(f'\nSetting the configuration using tune.grid_search')
+        config = {
+            "hidden_dim": tune.grid_search([128, 256, 512]),
+            "out_dim": tune.grid_search([128, 256, 512]),
+            # "out_dim": tune.sample_from(lambda _: 2 ** np.random.randint(7, 9)),
+            "lr": tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
+            # "lr": tune.loguniform(1e-4, 1e-1),
+            "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
+            # "batch_size": tune.choice([2, 4, 8, 16])
+        }
 
     scheduler = ASHAScheduler(
         metric="loss",
@@ -1059,8 +1089,28 @@ if ray_tune:
         verbose=1,
         progress_reporter=reporter)
 
+    # Sorted dataframe for the last reported results of all of the trials.
+    df = result.results_df
+    df = df.sort_values(by=['loss'], ascending=True)
+
+    # Create the name of the file.
+    if load_best_hyperparameters:
+        filename = f'ray_tune_results_df_best_hyperp_{model_name}.csv'
+    else:
+        filename = f'ray_tune_results_df_{model_name}.csv'
+
+    # Write the results to a CSV file.
+    df.to_csv(os.path.join(paths['ray_tune'], filename))
+
+    # Get best results.
+    best_trial = result.get_best_trial("loss", "min", "last")
+    print(f"Best trial config: {best_trial.config}")
+    print(f"Best trial final val loss: {best_trial.last_result['loss']}")
+
 else:
 
+    # Configuration.
+    print(f'\nSetting a custom configuration')
     config = {
         "hidden_dim": 128,
         "out_dim": 128,
@@ -1069,23 +1119,6 @@ else:
     }
 
     train(config)
-
-
-# In[ ]:
-
-
-if ray_tune:
-
-    # Sorted dataframe for the last reported results of all of the trials.
-    df = result.results_df
-    df = df.sort_values(by=['loss'], ascending=True)
-    df.to_csv(os.path.join(paths['ray_tune'],
-                           f'ray_tune_results_df_{model_name}.csv'))
-
-    # Get best results.
-    best_trial = result.get_best_trial("loss", "min", "last")
-    print(f"Best trial config: {best_trial.config}")
-    print(f"Best trial final val loss: {best_trial.last_result['loss']}")
 
 
 # In[ ]:
