@@ -40,6 +40,7 @@ srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
 ${model} \
 --backbone_name=resnet18 \
 --dataset_name=Sentinel2GlobalLULC_SSL \
+--dataset_ratio=\(0.900,0.0250,0.0750\) \
 --epochs=10 \
 --batch_size=512 \
 --ini_weights=random \
