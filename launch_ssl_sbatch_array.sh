@@ -35,6 +35,15 @@ echo " " | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
+## Declare more options (gridsearch or loguniform for tune)
+ray_tune=("gridsearch" "loguniform")
+num_samples_trials=10
+tune_options="--reduced_dataset --ray_tune=${ray_tune[1]} --num_samples_trials=${num_samples_trials}"
+resume_training="--resume_training"
+
+## Select the type of training.
+more_options=""  ## ${tune_options} or ${resume_training}
+
 ## Execute the Python script and pass the arguments.
 srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
 ${model} \
@@ -45,10 +54,7 @@ ${model} \
 --batch_size=512 \
 --ini_weights=random \
 --cluster \
-## --resume_training \
-## --reduced_dataset \
-## --ray_tune=loguniform \
-## --num_samples_trials=10 \
+${more_options}
 
 ## Send email when job ends.
 ## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es

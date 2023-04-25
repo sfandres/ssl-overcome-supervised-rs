@@ -25,8 +25,13 @@ def main():
     epochs = 500
     batch_size = 64
     ini_weights = 'random'
+
     ray_tune = ['gridsearch', 'loguniform']
     num_samples_trials = 10
+    tune_options = f'--reduced_dataset --ray_tune={ray_tune[1]} --num_samples_trials={num_samples_trials}'
+    resume_training = '--resume_training'
+
+    more_options = ''  ## tune_options or resume_training
 
     # for s in range(0, times):
     # print (f'Experiments: {times}')
@@ -44,11 +49,8 @@ def main():
             f'--epochs={epochs} '
             f'--batch_size={batch_size} '
             f'--ini_weights={ini_weights} '
-            '--cluster '
-            # '--resume_training '
-            # '--reduced_dataset '
-            # f'--ray_tune={ray_tune[1]} '
-            # f'--num_samples_trials={num_samples_trials} '
+            f'--cluster '
+            f'{more_options}'
         )
 
     return 0
