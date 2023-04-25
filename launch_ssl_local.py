@@ -22,7 +22,7 @@ def main():
     backbone_name = 'resnet18'
     dataset_name = 'Sentinel2GlobalLULC_SSL'
     dataset_ratio = '\(0.900,0.0250,0.0750\)'
-    epochs = 10
+    epochs = 500
     batch_size = 64
     ini_weights = 'random'
     ray_tune = ['gridsearch', 'loguniform']
@@ -45,10 +45,10 @@ def main():
             f'--batch_size={batch_size} '
             f'--ini_weights={ini_weights} '
             '--cluster '
+            # '--resume_training '
             # '--reduced_dataset '
             # f'--ray_tune={ray_tune[1]} '
             # f'--num_samples_trials={num_samples_trials} '
-            # '--resume_training '
         )
 
     return 0

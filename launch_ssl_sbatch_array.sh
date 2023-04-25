@@ -41,14 +41,14 @@ ${model} \
 --backbone_name=resnet18 \
 --dataset_name=Sentinel2GlobalLULC_SSL \
 --dataset_ratio=\(0.900,0.0250,0.0750\) \
---epochs=10 \
+--epochs=500 \
 --batch_size=512 \
 --ini_weights=random \
 --cluster \
+## --resume_training \
 ## --reduced_dataset \
 ## --ray_tune=loguniform \
 ## --num_samples_trials=10 \
-## --resume_training \
 
 ## Send email when job ends.
 ## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
