@@ -19,19 +19,19 @@ def main():
     """"Main function."""
 
     model_names = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins', 'MoCov2']
-    backbone_name = 'resnet18'
+    backbone_name = ['resnet18', 'resnet50']
     dataset_name = 'Sentinel2GlobalLULC_SSL'
     dataset_ratio = '\(0.900,0.0250,0.0750\)'
     epochs = 500
-    batch_size = 64
+    batch_size = 32
     ini_weights = 'random'
 
     ray_tune = ['gridsearch', 'loguniform']
     num_samples_trials = 10
-    tune_options = f'--reduced_dataset --ray_tune={ray_tune[1]} --num_samples_trials={num_samples_trials}'
+    tune_options = f'--reduced_dataset --ray_tune={ray_tune[0]} --num_samples_trials={num_samples_trials}'
     resume_training = '--resume_training'
 
-    more_options = ''  ## tune_options or resume_training
+    more_options = tune_options  ## '' / tune_options / resume_training
 
     # for s in range(0, times):
     # print (f'Experiments: {times}')
@@ -43,7 +43,7 @@ def main():
         os.system(
             'python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py '
             f'{model} '
-            f'--backbone_name={backbone_name} '
+            f'--backbone_name={backbone_name[1]} '
             f'--dataset_name={dataset_name} '
             f'--dataset_ratio={dataset_ratio} '
             f'--epochs={epochs} '
