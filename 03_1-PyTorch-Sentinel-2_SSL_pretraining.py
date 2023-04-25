@@ -864,7 +864,7 @@ def train(
     print(f'\nOptimizer:\n{optimizer}')
     print(f'Warmup scheduler: {warmup_scheduler}')
     print(f'Cosine scheduler: {cosine_scheduler}')
-    save_interval = 2
+    save_interval = 5
     total_train_batches = len(dataloader['train'])
     total_val_batches = len(dataloader['val'])
     collapse_level = 0.
