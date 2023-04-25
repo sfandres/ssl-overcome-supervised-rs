@@ -47,7 +47,7 @@ def main():
             # '--resume_training '
             '--reduced_dataset '
             '--ray_tune '
-            # '--load_best_hyperparameters '
+            '--load_best_hyperparameters '
             f'--num_samples_trials={num_samples_trials}'
         )
 
