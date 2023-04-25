@@ -25,6 +25,7 @@ def main():
     epochs = 10
     batch_size = 64
     ini_weights = 'random'
+    ray_tune = ['gridsearch', 'loguniform']
     num_samples_trials = 10
 
     # for s in range(0, times):
@@ -44,11 +45,10 @@ def main():
             f'--batch_size={batch_size} '
             f'--ini_weights={ini_weights} '
             '--cluster '
+            # '--reduced_dataset '
+            # f'--ray_tune={ray_tune[1]} '
+            # f'--num_samples_trials={num_samples_trials} '
             # '--resume_training '
-            '--reduced_dataset '
-            '--ray_tune '
-            '--load_best_hyperparameters '
-            f'--num_samples_trials={num_samples_trials}'
         )
 
     return 0

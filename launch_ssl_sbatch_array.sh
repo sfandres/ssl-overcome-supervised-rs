@@ -45,11 +45,10 @@ ${model} \
 --batch_size=512 \
 --ini_weights=random \
 --cluster \
---reduced_dataset \
---ray_tune \
---num_samples_trials=1 \
+## --reduced_dataset \
+## --ray_tune=loguniform \
+## --num_samples_trials=10 \
 ## --resume_training \
-## --load_best_hyperparameters \
 
 ## Send email when job ends.
 ## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es

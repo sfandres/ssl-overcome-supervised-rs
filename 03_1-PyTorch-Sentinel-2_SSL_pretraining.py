@@ -199,14 +199,12 @@ parser.add_argument('--torch_compile', '-tc', action='store_true',
 parser.add_argument('--resume_training', '-r', action='store_true',
                     help='training is resumed from the latest checkpoint.')
 
-parser.add_argument('--ray_tune', '-t', action='store_true',
-                    help='hyperparameter tuning with Ray Tune.')
+parser.add_argument('--ray_tune', '-rt', type=str,
+                    choices=['gridsearch', 'loguniform'],
+                    help='enables Ray Tune (tunes everything or only lr).')
 
-parser.add_argument('--load_best_hyperparameters', '-ldh', action='store_true',
-                    help='load the best hyperparameters previously computed.')
-
-parser.add_argument('--num_samples_trials', '-nst', type=int, default=1,
-                    help='number of samples for the trials (default: 1).')
+parser.add_argument('--num_samples_trials', '-nst', type=int, default=10,
+                    help='number of samples to tune the hyperparameters.')
 
 print()
 
@@ -220,7 +218,7 @@ print()
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'SimCLR',
+            'SimSiam',
             '--backbone_name=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
             '--dataset_ratio=(0.900,0.0250,0.0750)',
@@ -229,10 +227,9 @@ if is_notebook():
             '--ini_weights=random',
             '--show',
             # '--resume_training',
-            '--reduced_dataset',
-            '--ray_tune',
-            '--load_best_hyperparameters',
-            '--num_samples_trials=10'
+            # '--reduced_dataset',
+            # '--ray_tune=loguniform',
+            # '--num_samples_trials=1',
         ]
     )
 else:
@@ -269,7 +266,7 @@ else:
 
 # Setting the device.
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print(f"{'Device:'.ljust(20)} {device}")
+print(f"{'Device:'.ljust(23)} {device}")
 
 
 # In[ ]:
@@ -799,13 +796,14 @@ def train(
         torch.set_float32_matmul_precision('high')
 
     # Device used for training.
-    print(f'\nDevice: {device}')
+    print(f'Device: {device}')
     model.to(device)
 
     # ======================
     # CONFIGURE OPTIMIZER AND SCHEDULERS.
     # Set the initial learning rate.
     lr_init = config["lr"]
+    print(f'Init lr: {lr_init}')
 
     # Use SGD with momentum and weight decay.
     optimizer = torch.optim.SGD(
@@ -818,7 +816,7 @@ def train(
     # Define the warmup duration.
     warmup_epochs = config['warmup_epochs']
     print(f'Warmup epochs: {warmup_epochs}')
-    print(f'Total epochs:  {epochs}')
+    print(f'Total epochs:  {epochs}\n')
 
     # Linear warmup for the first defined epochs.
     warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -1023,8 +1021,10 @@ def train(
 # ## Training (also with hyperparameter tuning using Ray Tune)
 
 # Collapse level: the closer to zero the better
-
-# A value close to 0 indicates that the representations have collapsed. A value close to 1/sqrt(dimensions), where dimensions are the number of representation dimensions, indicates that the representations are stable. 
+# 
+# A value close to 0 indicates that the representations have collapsed. A value close to 1/sqrt(dimensions), where dimensions are the number of representation dimensions, indicates that the representations are stable.
+# 
+# https://docs.ray.io/en/latest/tune/api/search_space.html
 
 # In[ ]:
 
@@ -1034,11 +1034,11 @@ if ray_tune:
     max_num_epochs = epochs
     gpus_per_trial = 1
     paths['ray_tune'] = os.path.join(paths['output'], 'ray_results')
-    print(f'Max. number of epochs: {max_num_epochs}')
+    print(f'\nMax. number of epochs: {max_num_epochs}')
     print(f'Number of samples:     {num_samples_trials}')
 
     # Configuration.
-    if load_best_hyperparameters:
+    if ray_tune == 'loguniform':
 
         # Build the filename.
         filename = f'ray_tune_results_df_{model_name}.csv'
@@ -1049,7 +1049,7 @@ if ray_tune:
                          or col.startswith('config/'))
 
         # Configuration.
-        print(f'\nSetting the configuration from {filename}')
+        print(f'Setting the configuration from {filename} and tuning the lr')
         config = {
             'hidden_dim': df.loc[0, 'config/hidden_dim'],
             'out_dim': df.loc[0, 'config/out_dim'],
@@ -1057,15 +1057,14 @@ if ray_tune:
             'warmup_epochs': max(1, int(0.1 * max_num_epochs)),
         }
 
-    else:
+    elif ray_tune == 'gridsearch':
 
-        print(f'\nSetting the configuration using tune.grid_search')
+        print(f'Setting a new configuration using tune.grid_search')
         config = {
             "hidden_dim": tune.grid_search([128, 256, 512]),
             "out_dim": tune.grid_search([128, 256, 512]),
             # "out_dim": tune.sample_from(lambda _: 2 ** np.random.randint(7, 9)),
             "lr": tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-            # "lr": tune.loguniform(1e-4, 1e-1),
             "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
             # "batch_size": tune.choice([2, 4, 8, 16])
         }
@@ -1098,9 +1097,9 @@ if ray_tune:
     df = df.sort_values(by=['loss'], ascending=True)
 
     # Create the name of the file.
-    if load_best_hyperparameters:
+    if ray_tune == 'loguniform':
         filename = f'ray_tune_results_df_best_hyperp_{model_name}.csv'
-    else:
+    elif ray_tune == 'gridsearch':
         filename = f'ray_tune_results_df_{model_name}.csv'
 
     # Write the results to a CSV file.
@@ -1113,14 +1112,32 @@ if ray_tune:
 
 else:
 
-    # Configuration.
-    print(f'\nSetting a custom configuration')
-    config = {
-        "hidden_dim": 128,
-        "out_dim": 128,
-        "lr": 1e-3,
-        "warmup_epochs": max(1, int(0.1 * epochs)),
+    model_hyperparameters = {
+        'SimSiam': {'hidden_dim': 512,
+                    'out_dim': 512,
+                    'lr': 0.0054,
+                    'warmup_epochs': max(1, int(0.1 * epochs))},
+        'SimCLR': {'hidden_dim': 512,
+                   'out_dim': 256,
+                   'lr': 0.0049,
+                   'warmup_epochs': max(1, int(0.1 * epochs))},
+        'SimCLRv2': {'hidden_dim': 128,
+                     'out_dim': 256,
+                     'lr': 0.0049,
+                     'warmup_epochs': max(1, int(0.1 * epochs))},
+        'BarlowTwins': {'hidden_dim': 128,
+                        'out_dim': 128,
+                        'lr': 0.0001,
+                        'warmup_epochs': max(1, int(0.1 * epochs))},
+        'MoCov2': {'hidden_dim': 512,
+                   'out_dim': 128,
+                   'lr': 0.0049,
+                   'warmup_epochs': max(1, int(0.1 * epochs))}
     }
+
+    # Configuration.
+    print(f'\nSetting a custom configuration for each model')
+    config = model_hyperparameters[str(model_name)]
 
     train(config)
 
@@ -1128,7 +1145,7 @@ else:
 # In[ ]:
 
 
-get_ipython().run_line_magic('tensorboard', '--port 6006 --logdir ./output/ray_results/')
+get_ipython().run_line_magic('tensorboard', '--port 6006 --logdir ./output/')
 
 
 # ### Checking the weights of the last model
