@@ -219,17 +219,17 @@ if is_notebook():
     args = parser.parse_args(
         args=[
             'SimSiam',
-            '--backbone_name=resnet18',
+            '--backbone_name=resnet50',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
             '--dataset_ratio=(0.900,0.0250,0.0750)',
             '--epochs=10',
-            '--batch_size=64',
+            '--batch_size=32',
             '--ini_weights=random',
             '--show',
             # '--resume_training',
-            # '--reduced_dataset',
-            # '--ray_tune=loguniform',
-            # '--num_samples_trials=1',
+            '--reduced_dataset',
+            '--ray_tune=gridsearch',
+            '--num_samples_trials=1',
         ]
     )
 else:
@@ -267,34 +267,6 @@ else:
 # Setting the device.
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print(f"{'Device:'.ljust(23)} {device}")
-
-
-# In[ ]:
-
-
-# Setting the model and initial weights.
-if backbone_name == 'resnet18':
-    if ini_weights == 'imagenet':
-        resnet = resnet18(
-            weights=ResNet18_Weights.DEFAULT,
-            # zero_init_residual=True
-        )
-    elif ini_weights == 'random':
-        resnet = resnet18(
-            weights=None,
-            # zero_init_residual=True
-        )
-elif backbone_name == 'resnet50':
-    if ini_weights == 'imagenet':
-        resnet = resnet50(
-            weights=ResNet50_Weights.DEFAULT,
-            # zero_init_residual=True
-        )
-    elif ini_weights == 'random':
-        resnet = resnet50(
-            weights=None,
-            # zero_init_residual=True
-        )
 
 
 # ## Build paths
@@ -734,20 +706,6 @@ if show:
 
 # # Self-supervised models
 
-# Reference: Lightly tutorials
-
-# In[ ]:
-
-
-# Model's backbone structure.
-if show:
-    print(summary(
-        resnet,
-        input_size=(batch_size, 3, input_size, input_size),
-        device=device)
-    )
-
-
 # ## Training
 
 # <p style="color:red"><b>-----------------------------------------------------------------</b></p>
@@ -764,11 +722,44 @@ def train(
 ):
 
     # ======================
-    # DEFINE MODEL.
+    # DEFINE MODELS.
+    # Setting the model and initial weights.
+    if backbone_name == 'resnet18':
+        if ini_weights == 'imagenet':
+            resnet = resnet18(
+                weights=ResNet18_Weights.DEFAULT,
+                # zero_init_residual=True
+            )
+        elif ini_weights == 'random':
+            resnet = resnet18(
+                weights=None,
+                # zero_init_residual=True
+            )
+    elif backbone_name == 'resnet50':
+        if ini_weights == 'imagenet':
+            resnet = resnet50(
+                weights=ResNet50_Weights.DEFAULT,
+                # zero_init_residual=True
+            )
+        elif ini_weights == 'random':
+            resnet = resnet50(
+                weights=None,
+                # zero_init_residual=True
+            )
+
+    # Show model's backbone structure.
+    if show and not cluster:
+        print(summary(
+            resnet,
+            input_size=(batch_size, 3, input_size, input_size),
+            device=device)
+        )
+
     # Removing head from resnet. Embedding.
     backbone = nn.Sequential(*list(resnet.children())[:-1])
     input_dim = hidden_dim = resnet.fc.in_features
     print(f'\nModel name: {model_name}')
+    print(f'Backbone: {backbone_name}')
     print(f"Hidden layer dimension: {config['hidden_dim']}")
     print(f"Output layer dimension: {config['out_dim']}")
 
@@ -1041,7 +1032,7 @@ if ray_tune:
     if ray_tune == 'loguniform':
 
         # Build the filename.
-        filename = f'ray_tune_results_df_{model_name}.csv'
+        filename = f'ray_tune_results_{backbone_name}_{model_name}.csv'
 
         # Load the CSV file into a pandas dataframe.
         df = pd.read_csv(os.path.join(paths['ray_tune'], filename),
@@ -1063,7 +1054,6 @@ if ray_tune:
         config = {
             "hidden_dim": tune.grid_search([128, 256, 512]),
             "out_dim": tune.grid_search([128, 256, 512]),
-            # "out_dim": tune.sample_from(lambda _: 2 ** np.random.randint(7, 9)),
             "lr": tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
             "warmup_epochs": max(1, int(0.1 * max_num_epochs)),
             # "batch_size": tune.choice([2, 4, 8, 16])
@@ -1098,9 +1088,9 @@ if ray_tune:
 
     # Create the name of the file.
     if ray_tune == 'loguniform':
-        filename = f'ray_tune_results_df_best_hyperp_{model_name}.csv'
+        filename = f'ray_tune_results_lr_{backbone_name}_{model_name}.csv'
     elif ray_tune == 'gridsearch':
-        filename = f'ray_tune_results_df_{model_name}.csv'
+        filename = f'ray_tune_results_{backbone_name}_{model_name}.csv'
 
     # Write the results to a CSV file.
     df.to_csv(os.path.join(paths['ray_tune'], filename))
