@@ -1,6 +1,7 @@
 #!/bin/bash
 ## Shebang.
 
+
 ## Resource request.
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --partition=volta                           ## Request specific partition.
@@ -14,6 +15,51 @@
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
 #SBATCH --array=0-4:1                               ## Run job arrays.
 
+
+## Catch the arguments.
+function show_help {
+    echo "Usage: $0 [OPTION]"
+    echo "  -t, --training           Runs normal training."
+    echo "  -r, --resume-training    Resumes the training from a previous saved checkpoint."
+    echo "  -g, --gridsearch         Enables Ray Tune with tune.gridsearch to tune all the hyperparamenters."
+    echo "  -l, --loguniform         Enables Ray Tune with tune.loguniform to tune the learning rate."
+    echo "  -h, --help               Display the help message."
+}
+
+backbone_name="resnet18"
+epochs=500
+batch_size=512
+ini_weights="random"
+
+if [[ "$1" == "-t" ]] || [[ "$1" == "--training" ]]; then
+    echo "You chose normal training"
+    options="--backbone_name=${backbone_name} --epochs=${epochs} --batch_size=${batch_size} --ini_weights=${ini_weights}"
+
+elif [[ "$1" == "-r" ]] || [[ "$1" == "--resume-training" ]]; then
+    echo "You chose resume training"
+    options="--backbone_name=${backbone_name} --epochs=${epochs} --batch_size=${batch_size} --ini_weights=${ini_weights} --resume_training"
+
+elif [[ "$1" == "-g" ]] || [[ "$1" == "--gridsearch" ]]; then
+    echo "You chose tune.gridsearch"
+    options="--backbone_name=${backbone_name} --epochs=${epochs} --batch_size=${batch_size} \
+    --ini_weights=${ini_weights} --reduced_dataset --ray_tune=gridsearch --num_samples_trials=1"
+
+elif [[ "$1" == "-l" ]] || [[ "$1" == "--loguniform" ]]; then
+    echo "You chose tune.loguniform"
+    options="--backbone_name=${backbone_name} --epochs=${epochs} --batch_size=${batch_size} --ini_weights=${ini_weights} --reduced_dataset --ray_tune=loguniform --num_samples_trials=10"
+
+elif [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+    show_help
+    exit 0
+
+else
+    echo "Invalid option. Use -h or --help to display available options."
+    exit 1
+fi
+
+## Show the chosen options.
+echo ${options}
+
 ## Catch Slurm environment variables.
 job_id=${SLURM_ARRAY_JOB_ID}
 task_id=${SLURM_ARRAY_TASK_ID}
@@ -26,35 +72,19 @@ model=${array_models[${task_id}]}
 email_info="job_id=${job_id} task_id=${task_id} ssl_model=${model}"
 
 ## Send email when job begin (two options).
-## cat email_body.txt | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 echo " " | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 
-## Load virtual environment or module (not necessary).
-## module load cuda/11.0.1
-## source ~/lulc/lulc-venv/bin/activate
+## Load virtual environment.
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
-
-## Declare more options (gridsearch or loguniform for tune)
-ray_tune=("gridsearch" "loguniform")
-num_samples_trials=10
-tune_options="--reduced_dataset --ray_tune=${ray_tune[1]} --num_samples_trials=${num_samples_trials}"
-resume_training="--resume_training"
-
-## Select the type of training.
-more_options=""  ## ${tune_options} or ${resume_training}
 
 ## Execute the Python script and pass the arguments.
 srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
 ${model} \
---backbone_name=resnet18 \
 --dataset_name=Sentinel2GlobalLULC_SSL \
 --dataset_ratio=\(0.900,0.0250,0.0750\) \
---epochs=500 \
---batch_size=512 \
---ini_weights=random \
 --cluster \
-${more_options}
+${options}
 
 ## Send email when job ends.
 ## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
