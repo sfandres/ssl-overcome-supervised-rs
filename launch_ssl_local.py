@@ -50,8 +50,8 @@ def main():
         exp_options = f"--epochs={epochs} --resume_training"
     elif args.gridsearch:
         print("You chose tune.gridsearch")
-        epochs = 10
-        exp_options = f"--epochs={epochs} --reduced_dataset --ray_tune=gridsearch --num_samples_trials=1"
+        epochs = 5
+        exp_options = f"--epochs={epochs} --reduced_dataset --ray_tune=gridsearch --num_samples_trials=2"
     elif args.loguniform:
         print("You chose tune.loguniform")
         epochs = 10
