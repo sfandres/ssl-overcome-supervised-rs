@@ -32,7 +32,7 @@ dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=100
 if [ "${backbone_name}" == "resnet50" ]; then
-    batch_size=256
+    batch_size=128
 else
     batch_size=512
 fi
