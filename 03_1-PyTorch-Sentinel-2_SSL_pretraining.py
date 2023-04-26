@@ -223,7 +223,7 @@ if is_notebook():
             '--dataset_name=Sentinel2GlobalLULC_SSL',
             '--dataset_ratio=(0.900,0.0250,0.0750)',
             '--epochs=10',
-            '--batch_size=32',
+            '--batch_size=16',
             '--ini_weights=random',
             '--show',
             # '--resume_training',
@@ -266,7 +266,7 @@ else:
 
 # Setting the device.
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print(f"{'Device:'.ljust(23)} {device}")
+print(f"{'Device:'.ljust(23)} {device}\n")
 
 
 # ## Build paths
@@ -420,8 +420,8 @@ for t in transform:
 dataset = {x: torchvision.datasets.ImageFolder(
     os.path.join(paths[dataset_name], x)) for x in splits}
 
-for d in dataset:
-    print(f'\n{d}: {dataset[d]}')
+# for d in dataset:
+#     print(f'\n{d}: {dataset[d]}')
 
 
 # ## Dealing with imbalanced data (option)
@@ -457,9 +457,6 @@ if balanced_dataset:
 else:
     sampler = None
     shuffle = True
-
-print(f'\nSampler: {sampler}')
-print(f'Shuffle:   {shuffle}')
 
 
 # ## Creating a reduced subset (option)
@@ -500,9 +497,6 @@ else:
     sampler = None
     shuffle = True
 
-print(f'\nSampler: {sampler}')
-print(f'Shuffle:   {shuffle}')
-
 
 # ## Cast to Lightly dataset
 
@@ -514,9 +508,9 @@ print(f'Shuffle:   {shuffle}')
 lightly_dataset = {x: lightly.data.LightlyDataset.from_torch_dataset(
     dataset[x]) for x in splits}
 
-print()
-for d in lightly_dataset:
-    print(f'{d}:\t{lightly_dataset[d]}')
+# print()
+# for d in lightly_dataset:
+#     print(f'{d}:\t{lightly_dataset[d]}')
 
 
 # ## Collate functions
@@ -533,9 +527,9 @@ for d in lightly_dataset:
 collate_fn = {x: lightly.data.collate.BaseCollateFunction(
     transform[x]) for x in splits}
 
-print()
-for c in collate_fn:
-    print(f'{c}:\t{collate_fn[c]}')
+# print()
+# for c in collate_fn:
+#     print(f'{c}:\t{collate_fn[c]}')
 
 
 # **Important note:** These functions could be removed if I implement a custom load dataset with a get_item that gets and tranforms two batches of images.
@@ -544,6 +538,9 @@ for c in collate_fn:
 
 # In[ ]:
 
+
+print(f'\nSampler: {sampler}')
+print(f'Shuffle:   {shuffle}')
 
 # Dataloader for validating and testing.
 dataloader = {x: torch.utils.data.DataLoader(
@@ -576,8 +573,8 @@ if isinstance(dataloader['train'].sampler, torch.utils.data.RandomSampler):
 else:
     print('\nShuffle disabled in training!')
 
-for d in dataloader:
-    print(f"\n{d}:\t{vars(dataloader[d])}")
+# for d in dataloader:
+#     print(f"\n{d}:\t{vars(dataloader[d])}")
 
 
 # ## Check the balance and size of the dataset
@@ -707,10 +704,6 @@ if show:
 # # Self-supervised models
 
 # ## Training
-
-# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
-# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
-# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
 
 # ### Loop
 
@@ -972,17 +965,18 @@ def train(
         # to make it more platform-independent.
         # Problems with resuming training.
         # model.to('cpu')
-        model.save(
-            backbone_name,
-            epoch,
-            epoch_train_loss,
-            dataset_ratio,
-            balanced_dataset,
-            paths['checkpoints'],
-            collapse_level=collapse_level if model_name == 'SimSiam' else 0.
-        )
-
         if epoch % save_interval == 0:
+
+            model.save(
+                backbone_name,
+                epoch,
+                epoch_train_loss,
+                dataset_ratio,
+                balanced_dataset,
+                paths['checkpoints'],
+                collapse_level=collapse_level if model_name == 'SimSiam' else 0.
+            )
+
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.backbone.state_dict(),
@@ -991,7 +985,6 @@ def train(
                 'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
                 'loss': epoch_train_loss
             }, os.path.join(paths['checkpoints'], 'ckpt_' + str(model)))
-
         # model.to(device)
 
         # ======================
@@ -1135,8 +1128,14 @@ else:
 # In[ ]:
 
 
-get_ipython().run_line_magic('tensorboard', '--port 6006 --logdir ./output/')
+# Load notebook extensions.
+if is_notebook():
+    get_ipython().run_line_magic('tensorboard', '--port 6006 --logdir ./output/')
 
+
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
+# <p style="color:red"><b>----------> REVISED UP TO THIS POINT -----------</b></p>
+# <p style="color:red"><b>-----------------------------------------------------------------</b></p>
 
 # ### Checking the weights of the last model
 
