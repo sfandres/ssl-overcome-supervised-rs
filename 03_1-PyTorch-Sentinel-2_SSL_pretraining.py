@@ -1066,7 +1066,7 @@ if ray_tune:
 
     result = tune.run(
         partial(train),
-        resources_per_trial={"cpu": 16, "gpu": gpus_per_trial},
+        resources_per_trial={"cpu": 12, "gpu": gpus_per_trial},
         name=model_name,
         config=config,
         num_samples=num_samples_trials,
