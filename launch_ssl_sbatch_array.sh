@@ -30,7 +30,7 @@ model_names=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
 backbone_name="resnet18"  ## "resnet50"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
-epochs=500
+epochs=100
 if [ "${backbone_name}" == "resnet50" ]; then
     batch_size=512
 else
