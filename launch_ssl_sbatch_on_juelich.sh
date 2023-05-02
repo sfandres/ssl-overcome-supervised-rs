@@ -29,7 +29,7 @@ function show_help {
 
 ## Define settings for the experiments.
 model_names=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
-backbone_name="resnet18"  ## "resnet50"
+backbone_name="resnet50"  ## "resnet18"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=100
