@@ -7,7 +7,7 @@
 ##SBATCH --partition=dp-esb                         ## Request specific partition.
 ##SBATCH --nodelist=dp-esb[09,31,54]                ## Request specific nodes.
 ##SBATCH --mem=128GB                                ## Real memory required per node.
-#SBATCH --time=800                                  ## Job duration.
+#SBATCH --time=800                                  ## Job duration (1100 max but reset at 6am).
 #SBATCH --tasks-per-node=1                          ## Number of tasks on each node.
 #SBATCH --gpus-per-node=1                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --job-name=uexssl_%A_%a                     ## Name of the job.
@@ -15,7 +15,7 @@
 #SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
 ##SBATCH --wait-all-nodes=1                         ## Controls when the execution begins.
-#SBATCH --array=0-0:1                               ## Run job arrays.
+##SBATCH --array=0-0:1                              ## Run job arrays.
 
 
 function show_help {
