@@ -5,6 +5,7 @@
 ## Resource request.
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --partition=dp-esb                          ## Request specific partition.
+#SBATCH --nodelist=dp-esb[09,31,54,55-74]           ## Request specific nodes.
 ##SBATCH --mem=128GB                                ## Real memory required per node.
 #SBATCH --time=1100                                 ## Job duration.
 #SBATCH --tasks-per-node=1                          ## Number of tasks on each node.
