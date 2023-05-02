@@ -4,8 +4,8 @@
 
 ## Resource request.
 ##SBATCH --nodes=1                                  ## Number of nodes.
-#SBATCH --partition=dp-esb                          ## Request specific partition.
-#SBATCH --nodelist=dp-esb[09,31,54]           ## Request specific nodes.
+##SBATCH --partition=dp-esb                         ## Request specific partition.
+##SBATCH --nodelist=dp-esb[09,31,54]                ## Request specific nodes.
 ##SBATCH --mem=128GB                                ## Real memory required per node.
 #SBATCH --time=1100                                 ## Job duration.
 #SBATCH --tasks-per-node=1                          ## Number of tasks on each node.
@@ -15,7 +15,7 @@
 #SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
 ##SBATCH --wait-all-nodes=1                         ## Controls when the execution begins.
-#SBATCH --array=0-2:1                               ## Run job arrays.
+#SBATCH --array=0-0:1                               ## Run job arrays.
 
 
 function show_help {
