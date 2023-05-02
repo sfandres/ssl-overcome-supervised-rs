@@ -3,7 +3,7 @@
 
 
 ## Resource request.
-#SBATCH --nodes=5                                   ## Number of nodes.
+#SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --partition=volta                           ## Request specific partition.
 #SBATCH --mem=128GB                                 ## Real memory required per node.
 #SBATCH --time=72:00:00                             ## Job duration.
