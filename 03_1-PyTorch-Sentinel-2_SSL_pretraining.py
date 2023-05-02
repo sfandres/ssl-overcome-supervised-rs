@@ -1056,8 +1056,7 @@ if ray_tune:
         metric="loss",
         mode="min",
         max_t=max_num_epochs,
-        grace_period=1,
-        reduction_factor=2)
+        grace_period=3)
 
     reporter = CLIReporter(
         # ``parameter_columns=["l1", "l2", "lr", "batch_size"]``,
