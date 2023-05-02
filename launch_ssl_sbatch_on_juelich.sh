@@ -5,8 +5,9 @@
 ## Resource request.
 #SBATCH --nodes=4                                   ## Number of nodes.
 #SBATCH --partition=dp-esb                          ## Request specific partition.
-##SBATCH --mem=128GB                                 ## Real memory required per node.
+##SBATCH --mem=128GB                                ## Real memory required per node.
 #SBATCH --time=1100                                 ## Job duration.
+#SBATCH --tasks-per-node=1                          ## Number of tasks on each node.
 #SBATCH --gpus-per-node=1                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --job-name=uexssl_%A_%a                     ## Name of the job.
 #SBATCH --output=uexssl_%A_%a.out                   ## Output file.
