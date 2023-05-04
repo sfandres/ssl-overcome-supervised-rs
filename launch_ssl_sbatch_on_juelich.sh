@@ -7,7 +7,7 @@
 ##SBATCH --partition=dp-esb                         ## Request specific partition.
 ##SBATCH --nodelist=dp-esb[09,31,54]                ## Request specific nodes.
 ##SBATCH --mem=128GB                                ## Real memory required per node.
-#SBATCH --time=1000                                 ## Job duration (1100 max but reset at 6am).
+#SBATCH --time=1100                                 ## Job duration (1100 max but reset at 6am).
 #SBATCH --tasks-per-node=1                          ## Number of tasks on each node.
 #SBATCH --gpus-per-node=1                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --job-name=uexssl_%A_%a                     ## Name of the job.
@@ -29,7 +29,7 @@ function show_help {
 
 ## Define settings for the experiments.
 model_names=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
-backbone_name="resnet50"  ## "resnet18"
+backbone_name="resnet18"  ## "resnet18"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=100
@@ -51,12 +51,12 @@ elif [[ "$1" == "-r" ]] || [[ "$1" == "--resume-training" ]]; then
 
 elif [[ "$1" == "-g" ]] || [[ "$1" == "--gridsearch" ]]; then
     echo "You chose tune.gridsearch"
-    epochs=10
+    epochs=8
     exp_options="--epochs=${epochs} --reduced_dataset --ray_tune=gridsearch --num_samples_trials=3"
 
 elif [[ "$1" == "-l" ]] || [[ "$1" == "--loguniform" ]]; then
     echo "You chose tune.loguniform"
-    epochs=10
+    epochs=8
     exp_options="--epochs=${epochs} --reduced_dataset --ray_tune=loguniform --num_samples_trials=10"
 
 elif [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
