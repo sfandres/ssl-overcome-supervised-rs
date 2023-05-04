@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""This module provides the SimCLR class.
+"""This module provides the SimCLR(v2) class.
 
 https://paperswithcode.com/method/simclr
+https://github.com/lightly-ai/lightly/blob/master/lightly/models/modules/heads.py
 
 Author: Andres J. Sanchez-Fernandez
 Email: sfandres@unex.es
-Date: 2023-04-04
+Date: 2023-05-04
 """
 
 
@@ -20,7 +21,7 @@ from .base_model import BaseModel
 
 class SimCLR(BaseModel):
     """
-    SimCLR self-supervised learning model.
+    SimCLR(v2) self-supervised learning model.
 
     Attributes:
         backbone (nn.Module): Backbone model.
@@ -28,7 +29,7 @@ class SimCLR(BaseModel):
         criterion (NTXentLoss): Contrastive Cross Entropy Loss.
 
     Methods:
-        forward(x): Computes the forward pass of the SimCLR model.
+        forward(x): Computes the forward pass of the SimCLR(v2) model.
         training_step(batch): Computes the loss of the current batch (tuple of tensors).
     """
 
@@ -37,10 +38,12 @@ class SimCLR(BaseModel):
         backbone: nn.Sequential,
         input_dim: int = 512,
         hidden_dim: int = 512,
-        output_dim: int = 512
+        output_dim: int = 512,
+        num_layers: int = 2,
+        memory_bank_size: int = 0
     ):
         """
-        Initializes a new SimCLR model.
+        Initializes a new SimCLR(v2) model.
 
         Args:
             backbone (nn.Sequential): Backbone model.
@@ -48,6 +51,9 @@ class SimCLR(BaseModel):
             hidden_dim (int): Dimension of the hidden layers.
             output_dim (int): Dimensionality of the feature embeddings
             produced by the projection head network.
+            num_layers (int): Number of hidden layers (2 for v1, 3+ for v2).
+            memory_bank_size (int): Number of negative samples to store in the memory bank.
+            Use 0 for SimCLRv1 and 65536 for v2. Memory bank > 0 for MoCo, we typically use numbers like 4096 or 65536.
         """
 
         # Call the BaseModel superclass constructor.
@@ -62,13 +68,11 @@ class SimCLR(BaseModel):
         self.projection_head = SimCLRProjectionHead(input_dim=input_dim,
                                                     hidden_dim=hidden_dim,
                                                     output_dim=output_dim,
-                                                    num_layers=2,
+                                                    num_layers=num_layers,
                                                     batch_norm=True)
 
         # Loss criterion.
-        # memory_bank_size: Number of negative samples to store in the memory bank.
-        # Use 0 for SimCLR. For MoCo we typically use numbers like 4096 or 65536.
-        self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=0)
+        self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=memory_bank_size)
 
     def forward(
         self,
