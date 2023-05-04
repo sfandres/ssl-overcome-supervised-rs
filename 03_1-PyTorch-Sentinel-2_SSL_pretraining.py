@@ -35,7 +35,6 @@ from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
 from utils.computation import pca_computation, tsne_computation
 from utils.simsiam import SimSiam
 from utils.simclr import SimCLR
-from utils.simclrv2 import SimCLRv2
 from utils.mocov2 import MoCov2
 from utils.barlowtwins import BarlowTwins
 from utils.graphs import simple_bar_plot
@@ -218,8 +217,8 @@ print()
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'SimSiam',
-            '--backbone_name=resnet50',
+            'SimCLRv2',
+            '--backbone_name=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
             '--dataset_ratio=(0.900,0.0250,0.0750)',
             '--epochs=10',
@@ -228,8 +227,8 @@ if is_notebook():
             '--show',
             # '--resume_training',
             '--reduced_dataset',
-            '--ray_tune=gridsearch',
-            '--num_samples_trials=1',
+            # '--ray_tune=gridsearch',
+            # '--num_samples_trials=1',
         ]
     )
 else:
@@ -761,10 +760,12 @@ def train(
                         pred_hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
     elif model_name == 'SimCLR':
         model = SimCLR(backbone=backbone, input_dim=input_dim,
-                       hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
+                       hidden_dim=config['hidden_dim'], output_dim=config['out_dim'],
+                       num_layers=2, memory_bank_size=0)
     elif model_name == 'SimCLRv2':
-        model = SimCLRv2(backbone=backbone, input_dim=input_dim,
-                         hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
+        model = SimCLR(backbone=backbone, input_dim=input_dim,
+                       hidden_dim=config['hidden_dim'], output_dim=config['out_dim'],
+                       num_layers=3, memory_bank_size=65536)
     elif model_name == 'BarlowTwins':
         model = BarlowTwins(backbone=backbone, input_dim=input_dim,
                             hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
