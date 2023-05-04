@@ -13,6 +13,7 @@ Date: 2023-04-04
 
 import torch
 import torch.nn as nn
+from lightly.models.modules.heads import SimCLRProjectionHead
 from lightly.loss import NTXentLoss
 from .base_model import BaseModel
 
@@ -56,14 +57,25 @@ class SimCLRv2(BaseModel):
         self.backbone = backbone
 
         # Projector network to generate feature embeddings.
-        self.projection_head = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(inplace=True),
-            nn.Linear(hidden_dim, output_dim)
-        )
+        # self.projection_head = nn.Sequential(
+        #     nn.Linear(input_dim, hidden_dim),
+        #     nn.ReLU(inplace=True),
+        #     nn.Linear(hidden_dim, output_dim)
+        # )
+
+        # Projection head.
+        # num_layers: Number of hidden layers (2 for v1, 3+ for v2).
+        # batch_norm: Whether or not to use batch norms.
+        self.projection_head = SimCLRProjectionHead(input_dim=input_dim,
+                                                    hidden_dim=hidden_dim,
+                                                    output_dim=output_dim,
+                                                    num_layers=3,
+                                                    batch_norm=True)
 
         # Loss criterion (memory bank > 0 for MoCo).
-        self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=0)
+        # memory_bank_size: Number of negative samples to store in the memory bank.
+        # Use 0 for SimCLR. For MoCo we typically use numbers like 4096 or 65536.
+        self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=65536)  # 64K
 
     def forward(
         self,

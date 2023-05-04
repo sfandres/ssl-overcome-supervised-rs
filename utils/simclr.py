@@ -57,11 +57,17 @@ class SimCLR(BaseModel):
         self.backbone = backbone
 
         # Projection head.
+        # num_layers: Number of hidden layers (2 for v1, 3+ for v2).
+        # batch_norm: Whether or not to use batch norms.
         self.projection_head = SimCLRProjectionHead(input_dim=input_dim,
                                                     hidden_dim=hidden_dim,
-                                                    output_dim=output_dim)
+                                                    output_dim=output_dim,
+                                                    num_layers=2,
+                                                    batch_norm=True)
 
-        # Loss criterion (memory bank > 0 for MoCo).
+        # Loss criterion.
+        # memory_bank_size: Number of negative samples to store in the memory bank.
+        # Use 0 for SimCLR. For MoCo we typically use numbers like 4096 or 65536.
         self.criterion = NTXentLoss(temperature=0.5, memory_bank_size=0)
 
     def forward(
