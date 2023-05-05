@@ -202,6 +202,9 @@ parser.add_argument('--ray_tune', '-rt', type=str,
                     choices=['gridsearch', 'loguniform'],
                     help='enables Ray Tune (tunes everything or only lr).')
 
+parser.add_argument('--grace_period', '-gp', type=int, default=5,
+                    help='only stop trials at least this old in time.')
+
 parser.add_argument('--num_samples_trials', '-nst', type=int, default=10,
                     help='number of samples to tune the hyperparameters.')
 
@@ -228,6 +231,7 @@ if is_notebook():
             # '--resume_training',
             '--reduced_dataset',
             # '--ray_tune=gridsearch',
+            # '--grace_period=1',
             # '--num_samples_trials=1',
         ]
     )
@@ -1057,7 +1061,7 @@ if ray_tune:
         metric="loss",
         mode="min",
         max_t=max_num_epochs,
-        grace_period=3)
+        grace_period=grace_period)
 
     reporter = CLIReporter(
         # ``parameter_columns=["l1", "l2", "lr", "batch_size"]``,

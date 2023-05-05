@@ -49,13 +49,13 @@ elif [[ "$1" == "-r" ]] || [[ "$1" == "--resume-training" ]]; then
 
 elif [[ "$1" == "-g" ]] || [[ "$1" == "--gridsearch" ]]; then
     echo "You chose tune.gridsearch"
-    epochs=10
-    exp_options="--epochs=${epochs} --reduced_dataset --ray_tune=gridsearch --num_samples_trials=3"
+    epochs=15
+    exp_options="--epochs=${epochs} --reduced_dataset --ray_tune=gridsearch --grace_period=5 --num_samples_trials=3"
 
 elif [[ "$1" == "-l" ]] || [[ "$1" == "--loguniform" ]]; then
     echo "You chose tune.loguniform"
-    epochs=10
-    exp_options="--epochs=${epochs} --reduced_dataset --ray_tune=loguniform --num_samples_trials=10"
+    epochs=15
+    exp_options="--epochs=${epochs} --reduced_dataset --ray_tune=loguniform --grace_period=5 --num_samples_trials=10"
 
 elif [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
     show_help
