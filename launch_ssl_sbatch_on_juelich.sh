@@ -13,15 +13,15 @@
 
 
 function show_help {
-    echo "Usage: $0 [OPTION] $1 [BACKBONE] $2 [MODEL]"
+    echo "Usage: $0 [OPTION] [BACKBONE] [MODEL]"
     echo "  -t, --training           Runs normal training."
     echo "  -r, --resume-training    Resumes the training from a previous saved checkpoint."
     echo "  -h, --help               Display the help message."
 }
 
 ## Define settings for the experiments.
-backbone_name=$1
-model=$2
+backbone_name=$2
+model=$3
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=100
