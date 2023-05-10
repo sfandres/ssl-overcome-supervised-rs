@@ -6,8 +6,8 @@
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --ntasks=1                                  ## Number of tasks.
 #SBATCH --gpus-per-node=1                           ## Number of GPUs on each node (Sergio: 4).
-#SBATCH --job-name=uexssl_%A                        ## Name of the job.
-#SBATCH --output=uexssl_%A.out                      ## Output file.
+#SBATCH --job-name=uexssl_$2_$3_%A                  ## Name of the job.
+#SBATCH --output=uexssl_$2_$3_%A.out                ## Output file.
 #SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
 
@@ -79,4 +79,4 @@ ${exp_options}
 
 ## Send email when job ends.
 ## cat uexssl_${job_id}_${task_id}.out | /usr/bin/mail -s "Sbatch ${email_info} ended" sfandres@unex.es
-/usr/bin/mail -a uexssl_${job_id}.out -s "Sbatch ${email_info} ended" sfandres@unex.es
+/usr/bin/mail -a uexssl_$2_$3_${job_id}.out -s "Sbatch ${email_info} ended" sfandres@unex.es
