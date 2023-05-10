@@ -220,12 +220,12 @@ print()
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'MoCov2',
+            'SimSiam',
             '--backbone_name=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
             '--dataset_ratio=(0.900,0.0250,0.0750)',
             '--epochs=10',
-            '--batch_size=16',
+            '--batch_size=64',
             '--ini_weights=random',
             '--show',
             # '--resume_training',
@@ -1099,32 +1099,51 @@ if ray_tune:
 
 else:
 
-    model_hyperparameters = {
-        'SimSiam': {'hidden_dim': 512,
-                    'out_dim': 512,
-                    'lr': 0.0054,
-                    'warmup_epochs': max(1, int(0.1 * epochs))},
-        'SimCLR': {'hidden_dim': 512,
-                   'out_dim': 256,
-                   'lr': 0.0049,
-                   'warmup_epochs': max(1, int(0.1 * epochs))},
-        'SimCLRv2': {'hidden_dim': 128,
-                     'out_dim': 256,
-                     'lr': 0.0049,
-                     'warmup_epochs': max(1, int(0.1 * epochs))},
-        'BarlowTwins': {'hidden_dim': 128,
-                        'out_dim': 128,
-                        'lr': 0.0001,
-                        'warmup_epochs': max(1, int(0.1 * epochs))},
-        'MoCov2': {'hidden_dim': 512,
-                   'out_dim': 128,
-                   'lr': 0.0049,
-                   'warmup_epochs': max(1, int(0.1 * epochs))}
-    }
+    paths['ray_tune'] = os.path.join(paths['input'], 'best_configs')
+
+    # Build the filename.
+    filename_lr = f'ray_tune_results_lr_{backbone_name}_{model_name}.csv'
+
+    # Load the CSV file into a pandas dataframe.
+    df_lr = pd.read_csv(os.path.join(paths['ray_tune'], filename_lr),
+                        usecols=lambda col: col.startswith('loss')
+                        or col.startswith('config/'))
 
     # Configuration.
-    print(f'\nSetting a custom configuration for each model')
-    config = model_hyperparameters[str(model_name)]
+    print(f'\nSetting the best configuration for the model from file: {filename_lr}')
+    config = {
+        'hidden_dim': df_lr.loc[0, 'config/hidden_dim'],
+        'out_dim': df_lr.loc[0, 'config/out_dim'],
+        'lr': df_lr.loc[0, 'config/lr'],
+        'warmup_epochs': max(1, int(0.1 * epochs)),
+    }
+
+    # model_hyperparameters = {
+    #     'SimSiam': {'hidden_dim': 512,
+    #                 'out_dim': 512,
+    #                 'lr': 0.0054,
+    #                 'warmup_epochs': max(1, int(0.1 * epochs))},
+    #     'SimCLR': {'hidden_dim': 512,
+    #                'out_dim': 256,
+    #                'lr': 0.0049,
+    #                'warmup_epochs': max(1, int(0.1 * epochs))},
+    #     'SimCLRv2': {'hidden_dim': 128,
+    #                  'out_dim': 256,
+    #                  'lr': 0.0049,
+    #                  'warmup_epochs': max(1, int(0.1 * epochs))},
+    #     'BarlowTwins': {'hidden_dim': 128,
+    #                     'out_dim': 128,
+    #                     'lr': 0.0001,
+    #                     'warmup_epochs': max(1, int(0.1 * epochs))},
+    #     'MoCov2': {'hidden_dim': 512,
+    #                'out_dim': 128,
+    #                'lr': 0.0049,
+    #                'warmup_epochs': max(1, int(0.1 * epochs))}
+    # }
+
+    # Configuration.
+    # print(f'\nSetting a custom configuration for each model')
+    # config = model_hyperparameters[str(model_name)]
 
     train(config)
 
