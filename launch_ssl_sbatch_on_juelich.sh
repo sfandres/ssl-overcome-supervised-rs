@@ -5,8 +5,6 @@
 ## Resource request.
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --ntasks=1                                  ## Number of tasks.
-#SBATCH --partition=dp-esb                          ## Request specific partition.
-#SBATCH --time=1100                                 ## Job duration.
 #SBATCH --gpus-per-node=1                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --job-name=uexssl_%A                        ## Name of the job.
 #SBATCH --output=uexssl_%A.out                      ## Output file.
