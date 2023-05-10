@@ -220,7 +220,7 @@ print()
 if is_notebook():
     args = parser.parse_args(
         args=[
-            'SimCLRv2',
+            'MoCov2',
             '--backbone_name=resnet18',
             '--dataset_name=Sentinel2GlobalLULC_SSL',
             '--dataset_ratio=(0.900,0.0250,0.0750)',
@@ -857,7 +857,7 @@ def train(
     total_train_batches = len(dataloader['train'])
     total_val_batches = len(dataloader['val'])
     collapse_level = 0.
-    momentum_val = None  # only for moco.
+    # momentum_val = None  # only for moco.
     print(f'\nBatches in (train, val) datasets: '
           f'({total_train_batches}, {total_val_batches})\n')
 
@@ -867,9 +867,9 @@ def train(
     for epoch in range(epoch, epochs):
 
         # Set momentum for moco.
-        if model_name == 'MoCov2':
-            momentum_val = cosine_schedule(epoch, epochs, 0.996, 1)
-            print(f"Momentum value: {momentum_val}")
+        # if model_name == 'MoCov2':
+        #     momentum_val = cosine_schedule(epoch, epochs, 0.996, 1)
+        #     print(f"Momentum value: {momentum_val}")
 
         # Timer added.
         t0 = time.time()
@@ -891,7 +891,7 @@ def train(
 
             # Forward + backward + optimize: Compute the loss, run
             # backpropagation, and update the parameters of the model.
-            loss = model.training_step((x0, x1), momentum_val=momentum_val)
+            loss = model.training_step((x0, x1), momentum_val=0.999)
             loss.backward()
             optimizer.step()
 
