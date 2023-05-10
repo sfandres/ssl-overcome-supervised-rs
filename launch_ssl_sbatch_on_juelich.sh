@@ -63,7 +63,7 @@ email_info="job_id=${job_id} ssl_backbone=${backbone_name} ssl_model=${model}"
 echo " " | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 
 ## Load virtual environment.
-source ~/anaconda3/etc/profile.d/conda.sh
+source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 ## Execute the Python script and pass the arguments.
