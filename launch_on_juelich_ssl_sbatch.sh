@@ -6,8 +6,6 @@
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --ntasks=1                                  ## Number of tasks.
 #SBATCH --gpus-per-node=1                           ## Number of GPUs on each node (Sergio: 4).
-##SBATCH --job-name=uexssl_%A                       ## Name of the job.
-##SBATCH --output=uexssl_%A.out                     ## Output file.
 #SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
 
@@ -24,7 +22,7 @@ backbone_name=$2
 model=$3
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
-epochs=100
+epochs=150
 if [ "${backbone_name}" == "resnet50" ]; then
     batch_size=128
 else
