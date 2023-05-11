@@ -32,8 +32,8 @@ node=60
 
 for m in "${models[@]}"; do
     for b in "${backbones[@]}"; do
-        echo sbatch -p dp-esb -w dp-esb[${node}] -t 1050 -J ${b}_${m} -o ${b}_${m}.out launch_ssl_sbatch_on_juelich.sh $1 ${b} ${m}
-        sbatch -p dp-esb -w dp-esb[${node}] -t 1050 -J ${b}_${m} -o ${b}_${m}.out launch_ssl_sbatch_on_juelich.sh $1 ${b} ${m}
+        echo sbatch -p dp-esb -w dp-esb[${node}] -t 100 -J ${b}_${m} -o ${b}_${m}.out launch_ssl_sbatch_on_juelich.sh $1 ${b} ${m}
+        sbatch -p dp-esb -w dp-esb[${node}] -t 100 -J ${b}_${m} -o ${b}_${m}.out launch_ssl_sbatch_on_juelich.sh $1 ${b} ${m}
         (( node++ ))
     done
 done
