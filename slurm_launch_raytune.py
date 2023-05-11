@@ -9,7 +9,7 @@ import sys
 import time
 from pathlib import Path
 
-template_file = "slurm-template.sh"
+template_file = "slurm_template.sh"
 JOB_NAME = "${JOB_NAME}"
 NUM_NODES = "${NUM_NODES}"
 NUM_GPUS_PER_NODE = "${NUM_GPUS_PER_NODE}"
