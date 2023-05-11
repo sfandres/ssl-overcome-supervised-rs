@@ -25,15 +25,16 @@ else
     exit 1
 fi
 
-
+## Define the variables.
 models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
 backbones=("resnet18" "resnet50")
 node=60
 
+## Loop over the sbatch commands.
 for m in "${models[@]}"; do
     for b in "${backbones[@]}"; do
-        echo sbatch -p dp-esb -w dp-esb[${node}] -t 100 -J ${b}_${m} -o ${b}_${m}.out launch_on_juelich_ssl_sbatch.sh $1 ${b} ${m}
-        sbatch -p dp-esb -w dp-esb[${node}] -t 100 -J ${b}_${m} -o ${b}_${m}.out launch_on_juelich_ssl_sbatch.sh $1 ${b} ${m}
+        echo sbatch -p dp-esb -w dp-esb[${node}] -t 1080 -J ${b}_${m} -o ${b}_${m}.out launch_on_juelich_ssl_sbatch.sh $1 ${b} ${m}
+        sbatch -p dp-esb -w dp-esb[${node}] -t 1080 -J ${b}_${m} -o ${b}_${m}.out launch_on_juelich_ssl_sbatch.sh $1 ${b} ${m}
         (( node++ ))
     done
 done
