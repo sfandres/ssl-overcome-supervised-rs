@@ -229,7 +229,7 @@ if is_notebook():
             '--ini_weights=random',
             '--show',
             # '--resume_training',
-            '--reduced_dataset',
+            # '--reduced_dataset',
             # '--ray_tune=gridsearch',
             # '--grace_period=1',
             # '--num_samples_trials=1',
@@ -601,40 +601,40 @@ for d in dataset:
 # In[ ]:
 
 
-# List to save the labels.
-labels_list = []
+# # List to save the labels.
+# labels_list = []
 
-# Accessing Data and Targets in a PyTorch DataLoader.
-t0 = time.time()
-for i, (images, labels, names) in enumerate(dataloader['train']):
-    labels_list.append(labels)
+# # Accessing Data and Targets in a PyTorch DataLoader.
+# t0 = time.time()
+# for i, (images, labels, names) in enumerate(dataloader['train']):
+#     labels_list.append(labels)
 
-# Concatenate list of lists (batches).
-labels_list = torch.cat(labels_list, dim=0).numpy()
-print(f'\nSample distribution computation in train dataset (s): '
-      f'{(time.time()-t0):.2f}')
+# # Concatenate list of lists (batches).
+# labels_list = torch.cat(labels_list, dim=0).numpy()
+# print(f'\nSample distribution computation in train dataset (s): '
+#       f'{(time.time()-t0):.2f}')
 
-# Count number of unique values.
-data_x, data_y = np.unique(labels_list, return_counts=True)
+# # Count number of unique values.
+# data_x, data_y = np.unique(labels_list, return_counts=True)
 
-# New function to plot (suitable for execution in shell).
-fig, ax = plt.subplots(1, 1, figsize=(20, 5))
-simple_bar_plot(ax,
-                data_x,
-                'Class',
-                data_y,
-                'N samples (dataloader)')
+# # New function to plot (suitable for execution in shell).
+# fig, ax = plt.subplots(1, 1, figsize=(20, 5))
+# simple_bar_plot(ax,
+#                 data_x,
+#                 'Class',
+#                 data_y,
+#                 'N samples (dataloader)')
 
-plt.gcf().subplots_adjust(bottom=0.15)
-plt.gcf().subplots_adjust(left=0.15)
-fig_name_save = (f'sample_distribution'
-                 f'-ratio={dataset_ratio}'
-                 f'-balanced_dataset={balanced_dataset}'
-                 f'-reduced_dataset={reduced_dataset}')
-fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
-            bbox_inches='tight')
+# plt.gcf().subplots_adjust(bottom=0.15)
+# plt.gcf().subplots_adjust(left=0.15)
+# fig_name_save = (f'sample_distribution'
+#                  f'-ratio={dataset_ratio}'
+#                  f'-balanced_dataset={balanced_dataset}'
+#                  f'-reduced_dataset={reduced_dataset}')
+# fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
+#             bbox_inches='tight')
 
-plt.show() if show else plt.close()
+# plt.show() if show else plt.close()
 
 
 # ## Look at some training samples (lightly dataset)
