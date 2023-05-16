@@ -20,6 +20,7 @@ function show_help {
 ## Define settings for the experiments.
 backbone_name=$2
 model=$3
+input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=150
@@ -66,8 +67,9 @@ source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 ## Execute the Python script and pass the arguments.
-srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \
+srun python3 pytorch-DDP-Sentinel-2_SSL_pretraining.py \
 ${model} \
+--input_data=${input_data} \
 --backbone_name=${backbone_name} \
 --dataset_name=${dataset_name} \
 --dataset_ratio=${dataset_ratio} \

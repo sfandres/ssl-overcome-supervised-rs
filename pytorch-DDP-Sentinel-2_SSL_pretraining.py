@@ -391,11 +391,13 @@ def main(args):
     print()
     cwd = os.getcwd()
     paths = build_paths(cwd, args.model_name)
+    if args.input_data:
+        paths['datasets'] = args.input_data
 
     # Show built paths.
-    # for path in paths:
-    #     path_name_col = f'{path}:'
-    #     print(f'{path_name_col.ljust(20)} {paths[path]}')
+    for path in paths:
+        path_name_col = f'{path}:'
+        print(f'{path_name_col.ljust(20)} {paths[path]}')
 
     # Size of the images.
     input_size = 224
@@ -770,6 +772,9 @@ if __name__ == "__main__":
     parser.add_argument('model_name', type=str,
                         choices=AVAIL_SSL_MODELS,
                         help="target SSL model.")
+
+    parser.add_argument('--input_data', '-id', type=str,
+                        help="path to the input directory (if necessary).")
 
     parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
                         choices=['resnet18', 'resnet50'],
