@@ -5,6 +5,7 @@
 ## Resource request.
 #SBATCH --nodes=1                                   ## Number of nodes.
 #SBATCH --ntasks=1                                  ## Number of tasks.
+#SBATCH --cpus-per-task=4                           ## Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --gpus-per-node=1                           ## Number of GPUs on each node (Sergio: 4).
 #SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
