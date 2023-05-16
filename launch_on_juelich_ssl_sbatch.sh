@@ -28,7 +28,7 @@ if [ "${backbone_name}" == "resnet50" ]; then
 else
     batch_size=512
 fi
-num_workers=2  # change this
+num_workers=4  # change this
 ini_weights="random"
 
 ## Catch the arguments.
