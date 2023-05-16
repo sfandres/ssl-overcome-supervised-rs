@@ -3,7 +3,7 @@
 
 ## Array of models.
 array_models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
-model=${array_models[0]}
+model=${array_models[3]}
 
 ## Execution options.
 options="${model} \
@@ -12,13 +12,14 @@ options="${model} \
 --dataset_ratio=(0.900,0.0250,0.0750) \
 --epochs=5 \
 --batch_size=64 \
+--num_workers=4 \
 --ini_weights=random \
---cluster \
---reduced_dataset \
---distributed"
+--cluster "
+##--reduced_dataset"
 
-echo ""
+echo "---------------------"
 echo "Command executed: python3 pytorch-DDP-Sentinel-2_SSL_pretraining.py $options"
+echo "---------------------"
 
 ## Execute the Python script and pass the arguments.
 python3 pytorch-DDP-Sentinel-2_SSL_pretraining.py $options

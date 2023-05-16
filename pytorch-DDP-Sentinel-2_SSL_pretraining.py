@@ -2,12 +2,10 @@
 from utils.other import is_notebook, build_paths
 from utils.reproducibility import set_seed, seed_worker
 from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
-from utils.computation import pca_computation, tsne_computation
 from utils.simsiam import SimSiam
 from utils.simclr import SimCLR
 from utils.mocov2 import MoCov2
 from utils.barlowtwins import BarlowTwins
-from utils.graphs import simple_bar_plot
 
 # Arguments and paths.
 import os
@@ -17,8 +15,6 @@ import argparse
 # PyTorch.
 import torch
 import torch.nn as nn
-import torch.optim.lr_scheduler as lr_scheduler
-from torch.utils.data import SubsetRandomSampler, DataLoader
 import torchvision
 from torchvision.models import (
     resnet18,
@@ -29,20 +25,14 @@ from torchvision.models import (
 from torchvision import transforms
 from torchinfo import summary
 
-# For resizing images to thumbnails.
-import torchvision.transforms.functional as functional
-
 # Data management.
 import numpy as np
-import random
 import pandas as pd
 
 # SSL library.
 import lightly
-from lightly.utils.scheduler import cosine_schedule
 
 # Training checks.
-from datetime import datetime
 import time
 import math
 
@@ -53,18 +43,310 @@ from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
 
 # For plotting.
-from PIL import Image
 import matplotlib.pyplot as plt
-import matplotlib.offsetbox as osb
-from matplotlib import rcParams as rcp
-import seaborn as sns
-import plotly.express as px
-
-# For clustering and 2d representations.
-from sklearn import random_projection
 
 AVAIL_SSL_MODELS = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins', 'MoCov2']
 SEED = 42
+
+
+def show_batch(
+    batch: torch.Tensor = None,
+    batch_id: int = None
+) -> None:
+    """
+    Shows the images in a batch.
+
+    Args:
+        batch (torch.Tensor): batch of images.
+        batch_id (int): batch identification number.
+    """
+
+    # Figure settings
+    columns = 8
+    rows = 2
+    width = 30
+    height = 5
+
+    # Figure creation and show.
+    fig = plt.figure(figsize=(width, height))
+    fig.suptitle(f'Batch {batch_id}')
+    for i in range(1, columns * rows + 1):
+        if i < batch.shape[0]:  # batch_size
+            img = batch[i]
+            fig.add_subplot(rows, columns, i)
+            plt.imshow(torch.permute(img, (1, 2, 0)))
+    plt.show()
+
+
+def train(
+    config: dict = None
+) -> None:
+    """
+    Trains the SSL models.
+
+    Args:
+        config (dict): training configuration hyperparameters.
+    """
+
+    # Retrieve arguments from the dictionary (clean code).
+    args = config['args']
+
+    # Setting the device.
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print(f"\n{'Device:'.ljust(18)} {device}")
+
+    # ======================
+    # DEFINE MODELS.
+    # Setting the model and initial weights.
+    if args.backbone_name == 'resnet18':
+        if args.ini_weights == 'imagenet':
+            resnet = resnet18(
+                weights=ResNet18_Weights.DEFAULT,
+                # zero_init_residual=True
+            )
+        elif args.ini_weights == 'random':
+            resnet = resnet18(
+                weights=None,
+                # zero_init_residual=True
+            )
+    elif args.backbone_name == 'resnet50':
+        if args.ini_weights == 'imagenet':
+            resnet = resnet50(
+                weights=ResNet50_Weights.DEFAULT,
+                # zero_init_residual=True
+            )
+        elif args.ini_weights == 'random':
+            resnet = resnet50(
+                weights=None,
+                # zero_init_residual=True
+            )
+
+    # Show model's backbone structure.
+    if args.show and not args.cluster:
+        print(summary(
+            resnet,
+            input_size=(args.batch_size, 3,
+                        config['input_size'],
+                        config['input_size']),
+            device=device)
+        )
+
+    # Removing head from resnet. Embedding.
+    backbone = nn.Sequential(*list(resnet.children())[:-1])
+    input_dim = hidden_dim = resnet.fc.in_features
+    print(f"{'Model name:'.ljust(18)} {args.model_name}")
+    print(f"{'Backbone name:'.ljust(18)} {args.backbone_name}")
+    print(f"{'Hidden layer dim.:'.ljust(18)} {config['hidden_dim']}")
+    print(f"{'Output layer dim.:'.ljust(18)} {config['out_dim']}")
+
+    if args.model_name == 'SimSiam':
+        model = SimSiam(backbone=backbone, input_dim=input_dim, proj_hidden_dim=config['out_dim'],
+                        pred_hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
+    elif args.model_name == 'SimCLR':
+        model = SimCLR(backbone=backbone, input_dim=input_dim,
+                       hidden_dim=config['hidden_dim'], output_dim=config['out_dim'],
+                       num_layers=2, memory_bank_size=0)
+    elif args.model_name == 'SimCLRv2':
+        model = SimCLR(backbone=backbone, input_dim=input_dim,
+                       hidden_dim=config['hidden_dim'], output_dim=config['out_dim'],
+                       num_layers=3, memory_bank_size=65536)
+    elif args.model_name == 'BarlowTwins':
+        model = BarlowTwins(backbone=backbone, input_dim=input_dim,
+                            hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
+    elif args.model_name == 'MoCov2':
+        model = MoCov2(backbone=backbone, input_dim=input_dim,
+                       hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
+
+    # ======================
+    # ADDING GPU SUPPORT.
+    # Compile model (only for PT2.0).
+    if args.torch_compile:
+        model = torch.compile(model)
+        torch.set_float32_matmul_precision('high')
+
+    # Device used for training.
+    model.to(device)
+
+    # ======================
+    # CONFIGURE OPTIMIZER AND SCHEDULERS.
+    # Set the initial learning rate.
+    lr_init = config["lr"]
+    print(f"{'Initial lr:'.ljust(18)} {lr_init}")
+
+    # Use SGD with momentum and weight decay.
+    optimizer = torch.optim.SGD(
+        model.parameters(),
+        lr=lr_init,
+        momentum=0.9,
+        weight_decay=5e-4
+    )
+
+    # Define the warmup duration.
+    warmup_epochs = config['warmup_epochs']
+    print(f"{'Warmup epochs:'.ljust(18)} {warmup_epochs}")
+    print(f"{'Total epochs:'.ljust(18)} {args.epochs}")
+
+    # Linear warmup for the first defined epochs.
+    warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer,
+        lambda epoch: min(1, epoch / warmup_epochs),
+        verbose=True
+    )
+
+    # Cosine decay afterwards.
+    cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=args.epochs-warmup_epochs,
+        verbose=True
+    )
+
+    # ======================
+    # LOAD CHECKPOINTS (IF ENABLED).
+    if args.resume_training:
+
+        # List of checkpoints.
+        ckpt_list = []
+        print()
+        for root, dirs, files in os.walk(config['paths']['checkpoints']):
+            for i, filename in enumerate(sorted(files, reverse=True)):
+                if filename[:4] == 'ckpt' and args.backbone_name in filename:
+                    ckpt_list.append(os.path.join(root, filename))
+                    print(f'{i:02} --> {filename}')
+
+        # Load the best checkpoint.
+        print(f'\nLoaded: {ckpt_list[0]}')
+        ckpt = torch.load(ckpt_list[0])
+
+        # Load from dict.
+        epoch = ckpt['epoch'] + 1
+        model.backbone.load_state_dict(ckpt['model_state_dict'])
+        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+        warmup_scheduler.load_state_dict(ckpt['warmup_scheduler_state_dict'])
+        cosine_scheduler.load_state_dict(ckpt['cosine_scheduler_state_dict'])
+
+    else:
+        epoch = 0  # start training from scratch.
+
+    # ======================
+    # INITIAL PARAMETERS AND INFO.
+    print(f'Optimizer:\n{optimizer}')
+    print(f'Warmup scheduler: {warmup_scheduler}')
+    print(f'Cosine scheduler: {cosine_scheduler}')
+    save_interval = 5
+    total_train_batches = len(config['dataloader']['train'])
+    total_val_batches = len(config['dataloader']['val'])
+    collapse_level = 0.
+    # momentum_val = None  # only for moco.
+    print(f'\nBatches in (train, val) datasets: '
+          f'({total_train_batches}, {total_val_batches})\n')
+
+    # ======================
+    # TRAINING LOOP.
+    # Iterating over the epochs.
+    for epoch in range(epoch, args.epochs):
+
+        # Timer added.
+        t0 = time.time()
+
+        # ======================
+        # TRAINING COMPUTATION.
+        # Iterating through the dataloader (lightly dataset is different).
+        model.train()
+        print(f"Learning rate: {optimizer.param_groups[0]['lr']}")
+        running_train_loss = 0.
+        for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
+
+            # Move images to the GPU (same batch two transformations).
+            x0 = x0.to(device)
+            x1 = x1.to(device)
+
+            # Zero the parameter gradients.
+            optimizer.zero_grad()
+
+            # Forward + backward + optimize: Compute the loss, run
+            # backpropagation, and update the parameters of the model.
+            loss = model.training_step((x0, x1), momentum_val=0.999)
+            loss.backward()
+            optimizer.step()
+
+            if args.model_name == 'SimSiam':
+                model.check_collapse(loss.item())
+
+            # Print statistics.
+            # Averaged loss across all training examples * batch_size.
+            running_train_loss += loss.item() * args.batch_size
+
+            # Show partial stats.
+            if b % (total_train_batches//4) == (total_train_batches//4-1):
+                print(f'T[{epoch}, {b + 1:5d}] | '
+                      f'Running train loss: '
+                      f'{running_train_loss/(b*args.batch_size):.4f}')
+
+        # The level of collapse is large if the standard deviation of
+        # the l2 normalized output is much smaller than 1 / sqrt(dim).
+        if args.model_name == 'SimSiam':
+            collapse_level = max(
+                0., 1 - math.sqrt(config['out_dim']) * model.avg_output_std)
+
+        # ======================
+        # TRAINING LOSS.
+        # Loss averaged across all training examples for the current epoch.
+        epoch_train_loss = (running_train_loss
+                            / len(config['dataloader']['train'].sampler))
+
+        # ======================
+        # EVALUATION COMPUTATION.
+        # It was not right (needs implementation).
+
+        # ======================
+        # UPDATE LEARNING RATE SCHEDULER.
+        # scheduler.step()
+        if (epoch < warmup_epochs):
+            warmup_scheduler.step()
+        else:
+            cosine_scheduler.step()
+
+        # ======================
+        # SAVING CHECKPOINT.
+        # Move the model to CPU before saving it
+        # to make it more platform-independent.
+        # Problems with resuming training.
+        # model.to('cpu')
+        if epoch % save_interval == 0:
+
+            model.save(
+                args.backbone_name,
+                epoch,
+                epoch_train_loss,
+                args.dataset_ratio,
+                args.balanced_dataset,
+                config['paths']['checkpoints'],
+                collapse_level=collapse_level if args.model_name == 'SimSiam' else 0.
+            )
+
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.backbone.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'warmup_scheduler_state_dict': warmup_scheduler.state_dict(),
+                'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
+                'loss': epoch_train_loss
+            }, os.path.join(config['paths']['checkpoints'], 'ckpt_' + str(model)))
+        # model.to(device)
+
+        # ======================
+        # EPOCH STATISTICS.
+        # Show some stats per epoch completed.
+        print(f'[Epoch {epoch:3d}] | '
+              f'Train loss: {epoch_train_loss:.4f} | '
+              # f'Val loss: {epoch_val_loss:.4f} | '
+              f'Duration: {(time.time()-t0):.2f} s | '
+              f'Collapse Level (SimSiam only): {collapse_level:.4f}/1.0\n')
+
+        # ======================
+        # RAY TUNE.
+        if args.ray_tune:
+            tune.report(loss=epoch_train_loss)
 
 
 def main(args):
@@ -74,57 +356,46 @@ def main(args):
     g = set_seed(SEED)
     print(f"{'torch current seed:'.ljust(20)} {torch.initial_seed()}")
 
-    # Check torch CUDA
-    print(f"\n{'torch.cuda.is_available():'.ljust(32)}"
-      f"{torch.cuda.is_available()}")
-    print(f"{'torch.cuda.device_count():'.ljust(32)}"
-        f"{torch.cuda.device_count()}")
-    print(f"{'torch.cuda.current_device():'.ljust(32)}"
-        f"{torch.cuda.current_device()}")
-    print(f"{'torch.cuda.device(0):'.ljust(32)}"
-        f"{torch.cuda.device(0)}")
-    print(f"{'torch.cuda.get_device_name(0):'.ljust(32)}"
-        f"{torch.cuda.get_device_name(0)}")
-    print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)}"
-        f"{torch.backends.cudnn.benchmark}")
+    # # Check torch CUDA
+    # print(f"\n{'torch.cuda.is_available():'.ljust(32)}"
+    #   f"{torch.cuda.is_available()}")
+    # print(f"{'torch.cuda.device_count():'.ljust(32)}"
+    #     f"{torch.cuda.device_count()}")
+    # print(f"{'torch.cuda.current_device():'.ljust(32)}"
+    #     f"{torch.cuda.current_device()}")
+    # print(f"{'torch.cuda.device(0):'.ljust(32)}"
+    #     f"{torch.cuda.device(0)}")
+    # print(f"{'torch.cuda.get_device_name(0):'.ljust(32)}"
+    #     f"{torch.cuda.get_device_name(0)}")
+    # print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)}"
+    #     f"{torch.backends.cudnn.benchmark}")
 
     # Convert the parsed arguments into a dictionary and declare
     # variables with the same name as the arguments.
+    print()
     args_dict = vars(args)
     for arg_name in args_dict:
-        globals()[arg_name] = args_dict[arg_name]
-
-    # Iterate over the keys of the dictionary and check whether
-    # the corresponding variables have been declared.
-    print()
-    for arg_name in args_dict:
-        if arg_name in globals():
-            arg_name_col = f'{arg_name}:'
-            print(f'{arg_name_col.ljust(20)} {globals()[arg_name]}')
-        else:
-            print(f'{arg_name} has not been declared')
+        arg_name_col = f'{arg_name}:'
+        print(f'{arg_name_col.ljust(20)} {args_dict[arg_name]}')
 
     # Avoiding the runtimeError: "Too many open files.
     # Communication with the workers is no longer possible."
-    if is_notebook() or cluster:
+    if is_notebook() or args.cluster:
         print(' - Torch sharing strategy set to file_descriptor (default)')
         torch.multiprocessing.set_sharing_strategy('file_descriptor')
     else:
         print(' - Torch sharing strategy set to file_system (less memory)')
         torch.multiprocessing.set_sharing_strategy('file_system')
 
-    # Setting the device.
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print(f"{'Device:'.ljust(23)} {device}\n")
-
     # Build paths.
+    print()
     cwd = os.getcwd()
-    paths = build_paths(cwd, model_name)
+    paths = build_paths(cwd, args.model_name)
 
     # Show built paths.
-    for path in paths:
-        path_name_col = f'{path}:'
-        print(f'{path_name_col.ljust(20)} {paths[path]}')
+    # for path in paths:
+    #     path_name_col = f'{path}:'
+    #     print(f'{path_name_col.ljust(20)} {paths[path]}')
 
     # Size of the images.
     input_size = 224
@@ -141,10 +412,10 @@ def main(args):
     #--------------------------
     # Retrieve the path, mean and std values of each split from
     # a .txt file previously generated using a custom script.
-    paths[dataset_name], mean, std = load_dataset_based_on_ratio(
+    paths[args.dataset_name], mean, std = load_dataset_based_on_ratio(
         paths['datasets'],
-        dataset_name,
-        dataset_ratio
+        args.dataset_name,
+        args.dataset_ratio
     )
 
     #--------------------------
@@ -177,15 +448,15 @@ def main(args):
                             std['train'])
     ])
 
-    for t in transform:
-        print(f'\n{t}: {transform[t]}')
+    # for t in transform:
+    #     print(f'\n{t}: {transform[t]}')
 
     #--------------------------
     # ImageFolder.
     #--------------------------
     # Loading the three datasets with ImageFolder.
     dataset = {x: torchvision.datasets.ImageFolder(
-        os.path.join(paths[dataset_name], x)) for x in splits}
+        os.path.join(paths[args.dataset_name], x)) for x in splits}
 
     # for d in dataset:
     #     print(f'\n{d}: {dataset[d]}')
@@ -193,7 +464,7 @@ def main(args):
     #--------------------------
     # Dealing with imbalanced data (option).
     #--------------------------
-    if balanced_dataset:
+    if args.balanced_dataset:
 
         # Creating a list of labels of samples.
         train_sample_labels = dataset['train'].targets
@@ -209,7 +480,7 @@ def main(args):
 
         # Casting.
         samples_weight = torch.from_numpy(samples_weight)
-        samples_weigth = samples_weight.double()
+        samples_weight = samples_weight.double()
 
         # Sampler, imbalanced data.
         sampler = torch.utils.data.WeightedRandomSampler(
@@ -225,10 +496,7 @@ def main(args):
     #--------------------------
     # Creating a reduced subset (option).
     #--------------------------
-    if reduced_dataset:
-
-        # Get the number of samples in the full dataset.
-        num_samples = len(dataset['train'])
+    if args.reduced_dataset:
 
         # Get the labels.
         labels = dataset['train'].targets
@@ -251,7 +519,7 @@ def main(args):
             keep_indices.extend(keep_indices_i)
 
         # Create a SubsetRandomSampler using the keep indices.
-        sampler = SubsetRandomSampler(keep_indices)
+        sampler = torch.utils.data.SubsetRandomSampler(keep_indices)
         shuffle = False
 
     else:
@@ -286,16 +554,219 @@ def main(args):
     # PyTorch dataloaders.
     #--------------------------
 
+    print(f'\nSampler: {sampler}')
+    print(f'Shuffle: {shuffle}')
 
+    # Dataloader for validating and testing.
+    dataloader = {x: torch.utils.data.DataLoader(
+        lightly_dataset[x],
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        collate_fn=collate_fn[x],
+        pin_memory=True,
+        drop_last=False,
+        worker_init_fn=seed_worker if not args.ray_tune else None,
+        generator=g if not args.ray_tune else None
+    ) for x in splits[1:]}
+
+    # Dataloader for training.
+    dataloader['train'] = torch.utils.data.DataLoader(
+        lightly_dataset['train'],
+        batch_size=args.batch_size,
+        shuffle=shuffle,
+        sampler=sampler,
+        num_workers=args.num_workers,
+        collate_fn=collate_fn['train'],
+        pin_memory=True,
+        drop_last=False,
+        worker_init_fn=seed_worker if not args.ray_tune else None,
+        generator=g if not args.ray_tune else None
+    )
+
+    # Check if shuffle is enabled.
+    if isinstance(dataloader['train'].sampler, torch.utils.data.RandomSampler):
+        print('\nShuffle enabled in training!')
+    else:
+        print('\nShuffle disabled in training!')
+
+    # for d in dataloader:
+    #     print(f"\n{d}:\t{vars(dataloader[d])}")
+
+    #--------------------------
+    # Check the balance and size of the dataset.
+    #--------------------------
+
+    # Check samples per class, total samples and batches of each dataset.
+    for d in dataset:
+        samples = np.unique(dataset[d].targets, return_counts=True)[1]
+        print(f'\n{d}:')
+        # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
+        print(f'  - #Samples/class (from dataset):\n{samples}')
+        print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
+        print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
+
+    #--------------------------
+    # Check the distribution of samples in the dataloader (lightly dataset).
+    #--------------------------
+    # Not copied yet.
+
+    #--------------------------
+    # Look at some training samples (lightly dataset).
+    #--------------------------
+
+    # Accessing Data and Targets in a PyTorch DataLoader.
+    if args.show:
+        for i, (images, labels, names) in enumerate(dataloader['train']):
+            img = images[0][0]
+            label = labels[0]
+            print(images[0].shape)
+            print(labels.shape)
+            plt.title("Label: " + str(int(label)))
+            plt.imshow(torch.permute(img, (1, 2, 0)))
+            plt.show()
+            if i == 0:
+                break  # Only a few batches.
+
+    # Train loop.
+    if args.show:
+        for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
+            show_batch(x0, 0)  # Show the images within the first batch.
+            show_batch(x1, 1)
+            break
+
+    # ======================
+    # SELF-SUPERVISED MODELS.
+    # ======================
+
+    #--------------------------
+    # Training (also with hyperparameter tuning using Ray Tune)
+    #--------------------------
+
+    if args.ray_tune:
+
+        max_num_epochs = args.epochs
+        gpus_per_trial = 1
+        paths['ray_tune'] = os.path.join(paths['output'], 'ray_results')
+        print(f'\nMax. number of epochs: {max_num_epochs}')
+        print(f'Number of samples:     {args.num_samples_trials}')
+
+        # Configuration.
+        if args.ray_tune == 'loguniform':
+
+            # Build the filename.
+            filename = f'ray_tune_results_{args.backbone_name}_{args.model_name}.csv'
+
+            # Load the CSV file into a pandas dataframe.
+            df = pd.read_csv(os.path.join(paths['ray_tune'], filename),
+                            usecols=lambda col: col.startswith('loss')
+                            or col.startswith('config/'))
+
+            # Configuration.
+            print(f'Setting the configuration from {filename} and tuning the lr')
+            config = {
+                'args': args,
+                'input_size': input_size,
+                'dataloader': dataloader,
+                'paths': paths,
+                'hidden_dim': df.loc[0, 'config/hidden_dim'],
+                'out_dim': df.loc[0, 'config/out_dim'],
+                'lr': tune.loguniform(1e-4, 1e-1),
+                'warmup_epochs': max(1, int(0.1 * max_num_epochs)),
+            }
+
+        elif args.ray_tune == 'gridsearch':
+
+            print(f'Setting a new configuration using tune.grid_search')
+            config = {
+                'args': args,
+                'input_size': input_size,
+                'dataloader': dataloader,
+                'paths': paths,
+                'hidden_dim': tune.grid_search([128, 256, 512]),
+                'out_dim': tune.grid_search([128, 256, 512]),
+                'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
+                'warmup_epochs': max(1, int(0.1 * max_num_epochs)),
+            }
+
+        scheduler = ASHAScheduler(
+            metric='loss',
+            mode='min',
+            max_t=max_num_epochs,
+            grace_period=args.grace_period)
+
+        reporter = CLIReporter(
+            # ``parameter_columns=["l1", "l2", "lr", "batch_size"]``,
+            # metric_columns=["loss", "accuracy", "training_iteration"])
+            metric_columns=['loss', 'training_iteration'])
+
+        result = tune.run(
+            partial(train),
+            resources_per_trial={'cpu': 12, 'gpu': gpus_per_trial},
+            name=args.model_name,
+            config=config,
+            num_samples=args.num_samples_trials,
+            local_dir=paths['ray_tune'],
+            scheduler=scheduler,
+            verbose=1,
+            progress_reporter=reporter)
+
+        # Sorted dataframe for the last reported results of all of the trials.
+        df = result.results_df
+        df = df.sort_values(by=['loss'], ascending=True)
+
+        # Create the name of the file.
+        if args.ray_tune == 'loguniform':
+            filename = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
+        elif args.ray_tune == 'gridsearch':
+            filename = f'ray_tune_results_{args.backbone_name}_{args.model_name}.csv'
+
+        # Write the results to a CSV file.
+        df.to_csv(os.path.join(paths['ray_tune'], filename))
+
+        # Get best results.
+        best_trial = result.get_best_trial("loss", "min", "last")
+        print(f"Best trial config: {best_trial.config}")
+        print(f"Best trial final val loss: {best_trial.last_result['loss']}")
+
+    else:
+
+        paths['ray_tune'] = os.path.join(paths['input'], 'best_configs')
+
+        # Build the filename.
+        filename_lr = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
+
+        # Load the CSV file into a pandas dataframe.
+        df_lr = pd.read_csv(os.path.join(paths['ray_tune'], filename_lr),
+                            usecols=lambda col: col.startswith('loss')
+                            or col.startswith('config/'))
+
+        # Configuration.
+        print(f'\nSetting the best configuration for the model from file: {filename_lr}')
+        config = {
+            'args': args,
+            'input_size': input_size,
+            'dataloader': dataloader,
+            'paths': paths,
+            'hidden_dim': df_lr.loc[0, 'config/hidden_dim'],
+            'out_dim': df_lr.loc[0, 'config/out_dim'],
+            'lr': df_lr.loc[0, 'config/lr'],
+            'warmup_epochs': max(1, int(0.1 * args.epochs)),
+        }
+
+        train(config)
+
+    return 0
 
 
 if __name__ == "__main__":
 
-   # Get arguments.
+    # Get arguments.
     parser = argparse.ArgumentParser(
         description="Script for training the self-supervised learning models."
     )
 
+    # General arguments.
     parser.add_argument('model_name', type=str,
                         choices=AVAIL_SSL_MODELS,
                         help="target SSL model.")
@@ -321,6 +792,11 @@ if __name__ == "__main__":
                         help='number of images in a batch during training '
                             '(default: 64).')
 
+    parser.add_argument('--num_workers', '-nw', type=int, default=1,
+                        help='number of subprocesses to use for data loading. '
+                            '0 means that the data will be loaded in the '
+                            'main process (default: 1).')
+
     parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                         choices=['random', 'imagenet'],
                         help="initial weights (default: random).")
@@ -337,15 +813,13 @@ if __name__ == "__main__":
     parser.add_argument('--cluster', '-c', action='store_true',
                         help='the script runs on a cluster (large mem. space).')
 
-    parser.add_argument('--distributed', '-ddp', action='store_true',
-                        help='enables multi-node training using Pytorch DDP.')
-
     parser.add_argument('--torch_compile', '-tc', action='store_true',
                         help='PyTorch 2.0 compile enabled.')
 
     parser.add_argument('--resume_training', '-r', action='store_true',
                         help='training is resumed from the latest checkpoint.')
 
+    # Specific arguments for Ray Tune.
     parser.add_argument('--ray_tune', '-rt', type=str,
                         choices=['gridsearch', 'loguniform'],
                         help='enables Ray Tune (tunes everything or only lr).')
@@ -358,4 +832,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args(sys.argv[1:])
 
-    main(args)
+    # Main function.
+    sys.exit(main(args))
