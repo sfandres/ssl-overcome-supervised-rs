@@ -176,6 +176,11 @@ parser.add_argument('--batch_size', '-bs', type=int, default=64,
                     help='number of images in a batch during training '
                          '(default: 64).')
 
+parser.add_argument('--num_workers', '-nw', type=int, default=1,
+                    help='number of subprocesses to use for data loading. '
+                         '0 means that the data will be loaded in the main process. '
+                         '(default: 1).')
+
 parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                     choices=['random', 'imagenet'],
                     help="initial weights (default: random).")
@@ -198,6 +203,7 @@ parser.add_argument('--torch_compile', '-tc', action='store_true',
 parser.add_argument('--resume_training', '-r', action='store_true',
                     help='training is resumed from the latest checkpoint.')
 
+# Specifically for Ray Tune.
 parser.add_argument('--ray_tune', '-rt', type=str,
                     choices=['gridsearch', 'loguniform'],
                     help='enables Ray Tune (tunes everything or only lr).')
@@ -226,6 +232,7 @@ if is_notebook():
             '--dataset_ratio=(0.900,0.0250,0.0750)',
             '--epochs=10',
             '--batch_size=64',
+            '--num_workers=2',
             '--ini_weights=random',
             '--show',
             # '--resume_training',
@@ -543,14 +550,14 @@ collate_fn = {x: lightly.data.collate.BaseCollateFunction(
 
 
 print(f'\nSampler: {sampler}')
-print(f'Shuffle:   {shuffle}')
+print(f'Shuffle: {shuffle}')
 
 # Dataloader for validating and testing.
 dataloader = {x: torch.utils.data.DataLoader(
     lightly_dataset[x],
     batch_size=batch_size,
     shuffle=False,
-    num_workers=4,
+    num_workers=num_workers,
     collate_fn=collate_fn[x],
     pin_memory=True,
     drop_last=False,
@@ -564,7 +571,7 @@ dataloader['train'] = torch.utils.data.DataLoader(
     batch_size=batch_size,
     shuffle=shuffle,
     sampler=sampler,
-    num_workers=4,
+    num_workers=num_workers,
     collate_fn=collate_fn['train'],
     pin_memory=True,
     drop_last=False,
