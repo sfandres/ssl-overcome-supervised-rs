@@ -356,19 +356,25 @@ def main(args):
     g = set_seed(SEED)
     print(f"{'torch current seed:'.ljust(20)} {torch.initial_seed()}")
 
-    # # Check torch CUDA
-    # print(f"\n{'torch.cuda.is_available():'.ljust(32)}"
-    #   f"{torch.cuda.is_available()}")
-    # print(f"{'torch.cuda.device_count():'.ljust(32)}"
-    #     f"{torch.cuda.device_count()}")
-    # print(f"{'torch.cuda.current_device():'.ljust(32)}"
-    #     f"{torch.cuda.current_device()}")
-    # print(f"{'torch.cuda.device(0):'.ljust(32)}"
-    #     f"{torch.cuda.device(0)}")
-    # print(f"{'torch.cuda.get_device_name(0):'.ljust(32)}"
-    #     f"{torch.cuda.get_device_name(0)}")
-    # print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)}"
-    #     f"{torch.backends.cudnn.benchmark}")
+    # Check torch CUDA
+    print(f"\n{'torch.cuda.is_available():'.ljust(32)}"
+      f"{torch.cuda.is_available()}")
+    print(f"{'torch.cuda.device_count():'.ljust(32)}"
+        f"{torch.cuda.device_count()}")
+    print(f"{'torch.cuda.current_device():'.ljust(32)}"
+        f"{torch.cuda.current_device()}")
+    print(f"{'torch.cuda.device(0):'.ljust(32)}"
+        f"{torch.cuda.device(0)}")
+    print(f"{'torch.cuda.get_device_name(0):'.ljust(32)}"
+        f"{torch.cuda.get_device_name(0)}")
+    print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)}"
+        f"{torch.backends.cudnn.benchmark}")
+
+    # Check CPUs available (for num_workers).
+    print(f"\n{'os.sched_getaffinity:'.ljust(32)}"
+          f"{len(os.sched_getaffinity(0))}")
+    print(f"{'os.cpu_count():'.ljust(32)}"
+          f"{os.cpu_count()}")
 
     # Convert the parsed arguments into a dictionary and declare
     # variables with the same name as the arguments.
