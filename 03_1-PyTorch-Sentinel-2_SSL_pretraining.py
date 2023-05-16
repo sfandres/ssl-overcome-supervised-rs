@@ -178,8 +178,8 @@ parser.add_argument('--batch_size', '-bs', type=int, default=64,
 
 parser.add_argument('--num_workers', '-nw', type=int, default=1,
                     help='number of subprocesses to use for data loading. '
-                         '0 means that the data will be loaded in the main process. '
-                         '(default: 1).')
+                         '0 means that the data will be loaded in the '
+                         'main process (default: 1).')
 
 parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                     choices=['random', 'imagenet'],
@@ -839,7 +839,7 @@ def train(
         print()
         for root, dirs, files in os.walk(paths['checkpoints']):
             for i, filename in enumerate(sorted(files, reverse=True)):
-                if filename[:4] == 'ckpt':
+                if filename[:4] == 'ckpt' and backbone_name in filename:
                     ckpt_list.append(os.path.join(root, filename))
                     print(f'{i:02} --> {filename}')
 
