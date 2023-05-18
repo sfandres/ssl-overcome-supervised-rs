@@ -28,7 +28,7 @@ fi
 ## Define the variables.
 models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
 backbones=("resnet18" "resnet50")
-node=60
+node=40
 
 ## Loop over the sbatch commands.
 for m in "${models[@]}"; do
