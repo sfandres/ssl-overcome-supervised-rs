@@ -779,12 +779,12 @@ if __name__ == "__main__":
                         choices=AVAIL_SSL_MODELS,
                         help="target SSL model.")
 
-    parser.add_argument('--input_data', '-id', type=str,
-                        help="path to the input directory (if necessary).")
-
     parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
                         choices=['resnet18', 'resnet50'],
                         help="backbone model name (default: resnet18).")
+
+    parser.add_argument('--input_data', '-id', type=str,
+                        help="path to the input directory (if necessary).")
 
     parser.add_argument('--dataset_name', '-dn', type=str,
                         default='Sentinel2GlobalLULC_SSL',
@@ -835,10 +835,10 @@ if __name__ == "__main__":
                         choices=['gridsearch', 'loguniform'],
                         help='enables Ray Tune (tunes everything or only lr).')
 
-    parser.add_argument('--grace_period', '-gp', type=int, default=5,
+    parser.add_argument('--grace_period', '-gp', type=int,
                         help='only stop trials at least this old in time.')
 
-    parser.add_argument('--num_samples_trials', '-nst', type=int, default=10,
+    parser.add_argument('--num_samples_trials', '-nst', type=int,
                         help='number of samples to tune the hyperparameters.')
 
     args = parser.parse_args(sys.argv[1:])

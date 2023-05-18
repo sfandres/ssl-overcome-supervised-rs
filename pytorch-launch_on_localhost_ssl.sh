@@ -1,25 +1,72 @@
 #!/bin/bash
 ## Shebang.
 
-## Array of models.
-array_models=("SimSiam" "SimCLR" "SimCLRv2" "BarlowTwins" "MoCov2")
-model=${array_models[3]}
 
-## Execution options.
-options="${model} \
---backbone_name=resnet18 \
---dataset_name=Sentinel2GlobalLULC_SSL \
---dataset_ratio=(0.900,0.0250,0.0750) \
---epochs=5 \
---batch_size=64 \
---num_workers=4 \
---ini_weights=random \
---cluster "
-##--reduced_dataset"
+function show_help {
+    echo "Usage: $0 [OPTION] [MODEL] [BACKBONE]"
+    echo "  -t, --training           Runs normal training."
+    echo "  -r, --resume-training    Resumes the training from a previous saved checkpoint."
+    echo "  -h, --help               Display the help message."
+}
 
+
+## Catch the arguments.
+if [[ "$1" == "-t" ]] || [[ "$1" == "--training" ]]; then
+    echo "You chose normal training"
+    exp_options=""
+
+elif [[ "$1" == "-r" ]] || [[ "$1" == "--resume-training" ]]; then
+    echo "You chose resume training"
+    exp_options="--resume_training"
+
+elif [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+    show_help
+    exit 0
+
+else
+    echo "Invalid option. Use -h or --help to display available options."
+    exit 1
+fi
+
+if [ -z "$2" ] || [ -z "$3" ]; then
+    echo "Second (model) or third (backbone) argument is empty."
+    show_help
+    exit 0
+fi
+
+## Define settings for the experiments.
+model=$2
+backbone_name=$3
+## input_data=""
+dataset_name="Sentinel2GlobalLULC_SSL"
+dataset_ratio="(0.900,0.0250,0.0750)"
+epochs=300
+if [ "${backbone_name}" == "resnet50" ]; then
+    batch_size=32  ##128
+else
+    batch_size=64  ##512
+fi
+num_workers=4
+ini_weights="random"
+
+## Python script to be executed with the options and flags.
+script="pytorch-Sentinel-2_SSL_pretraining.py $model \
+--backbone_name=$backbone_name \
+--dataset_name=$dataset_name \
+--dataset_ratio=$dataset_ratio \
+--epochs=$epochs \
+--batch_size=$batch_size \
+--num_workers=$num_workers \
+--ini_weights=$ini_weights \
+--cluster \
+$exp_options"
+
+## Show the chosen options.
 echo "---------------------"
-echo "Command executed: python3 pytorch-Sentinel-2_SSL_pretraining.py $options"
+echo "Specific options of the current experiment: $model $backbone_name $exp_options"
+echo "Command executed:"
+echo ">> python3 $script"
 echo "---------------------"
 
-## Execute the Python script and pass the arguments.
-python3 pytorch-Sentinel-2_SSL_pretraining.py $options
+## Execute the script.
+python3 $script
