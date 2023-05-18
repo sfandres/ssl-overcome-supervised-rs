@@ -31,7 +31,7 @@ if [ "${backbone_name}" == "resnet50" ]; then
 else
     batch_size=512
 fi
-num_workers=4  # change this
+num_workers=1  # change this
 ini_weights="random"
 
 ## Catch the arguments.
@@ -69,7 +69,7 @@ source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 ## Execute the Python script and pass the arguments.
-srun python3 pytorch-DDP-Sentinel-2_SSL_pretraining.py \
+srun python3 pytorch-Sentinel-2_SSL_pretraining.py \
 ${model} \
 --input_data=${input_data} \
 --backbone_name=${backbone_name} \

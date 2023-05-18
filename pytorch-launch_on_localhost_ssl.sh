@@ -18,8 +18,8 @@ options="${model} \
 ##--reduced_dataset"
 
 echo "---------------------"
-echo "Command executed: python3 pytorch-DDP-Sentinel-2_SSL_pretraining.py $options"
+echo "Command executed: python3 pytorch-Sentinel-2_SSL_pretraining.py $options"
 echo "---------------------"
 
 ## Execute the Python script and pass the arguments.
-python3 pytorch-DDP-Sentinel-2_SSL_pretraining.py $options
+python3 pytorch-Sentinel-2_SSL_pretraining.py $options
