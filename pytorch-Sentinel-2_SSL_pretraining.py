@@ -25,6 +25,12 @@ from torchvision.models import (
 from torchvision import transforms
 from torchinfo import summary
 
+# PyTorch DDP.
+import torch.multiprocessing as mp
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.distributed import init_process_group, destroy_process_group
+
 # Data management.
 import numpy as np
 import pandas as pd

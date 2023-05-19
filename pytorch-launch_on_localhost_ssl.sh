@@ -51,7 +51,7 @@ num_workers=4
 ini_weights="random"
 
 ## Python script to be executed with the options and flags.
-script="pytorch-Sentinel-2_SSL_pretraining.py $model \
+script="--standalone --nproc_per_node=1 pytorch-Sentinel-2_SSL_pretraining.py $model \
 --backbone_name=$backbone_name \
 --dataset_name=$dataset_name \
 --dataset_ratio=$dataset_ratio \
@@ -67,8 +67,8 @@ $exp_options"
 echo "---------------------"
 echo "Specific options of the current experiment: $model $backbone_name $exp_options"
 echo "Command executed:"
-echo ">> python3 $script"
+echo ">> torchrun $script"
 echo "---------------------"
 
 ## Execute the script.
-python3 $script
+torchrun $script
