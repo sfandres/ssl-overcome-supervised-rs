@@ -509,6 +509,7 @@ def main():
     #--------------------------
     # Retrieve the path, mean and std values of each split from
     # a .txt file previously generated using a custom script.
+    print()
     paths[args.dataset_name], mean, std = load_dataset_based_on_ratio(
         paths['datasets'],
         args.dataset_name,
