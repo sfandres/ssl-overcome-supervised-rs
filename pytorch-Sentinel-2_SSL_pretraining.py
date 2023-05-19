@@ -50,6 +50,12 @@ SEED = 42
 
 
 def get_args() -> argparse.Namespace:
+    """
+    Parse and retrieve command-line arguments.
+
+    Returns:
+        An 'argparse.Namespace' object containing the parsed arguments.
+    """
 
     # Get arguments.
     parser = argparse.ArgumentParser(
