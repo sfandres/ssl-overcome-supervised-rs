@@ -49,6 +49,83 @@ AVAIL_SSL_MODELS = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins', 'MoCov2']
 SEED = 42
 
 
+def get_args() -> argparse.Namespace:
+
+    # Get arguments.
+    parser = argparse.ArgumentParser(
+        description="Script for training the self-supervised learning models."
+    )
+
+    # General arguments.
+    parser.add_argument('model_name', type=str,
+                        choices=AVAIL_SSL_MODELS,
+                        help="target SSL model.")
+
+    parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
+                        choices=['resnet18', 'resnet50'],
+                        help="backbone model name (default: resnet18).")
+
+    parser.add_argument('--input_data', '-id', type=str,
+                        help="path to the input directory (if necessary).")
+
+    parser.add_argument('--dataset_name', '-dn', type=str,
+                        default='Sentinel2GlobalLULC_SSL',
+                        help='dataset name for training '
+                            '(default: Sentinel2GlobalLULC_SSL).')
+
+    parser.add_argument('--dataset_ratio', '-dr', type=str,
+                        default='(0.900,0.0250,0.0750)',
+                        help='dataset ratio for evaluation '
+                            '(default: (0.900,0.0250,0.0750)).')
+
+    parser.add_argument('--epochs', '-e', type=int, default=25,
+                        help='number of epochs for training (default: 25).')
+
+    parser.add_argument('--batch_size', '-bs', type=int, default=64,
+                        help='number of images in a batch during training '
+                            '(default: 64).')
+
+    parser.add_argument('--num_workers', '-nw', type=int, default=1,
+                        help='number of subprocesses to use for data loading. '
+                            '0 means that the data will be loaded in the '
+                            'main process (default: 1).')
+
+    parser.add_argument('--ini_weights', '-iw', type=str, default='random',
+                        choices=['random', 'imagenet'],
+                        help="initial weights (default: random).")
+
+    parser.add_argument('--show', '-s', action='store_true',
+                        help='the images should appear.')
+
+    parser.add_argument('--balanced_dataset', '-bd', action='store_true',
+                        help='whether the dataset should be balanced.')
+
+    parser.add_argument('--reduced_dataset', '-rd', action='store_true',
+                        help='whether the dataset should be reduced.')
+
+    parser.add_argument('--cluster', '-c', action='store_true',
+                        help='the script runs on a cluster (large mem. space).')
+
+    parser.add_argument('--torch_compile', '-tc', action='store_true',
+                        help='PyTorch 2.0 compile enabled.')
+
+    parser.add_argument('--resume_training', '-r', action='store_true',
+                        help='training is resumed from the latest checkpoint.')
+
+    # Specific arguments for Ray Tune.
+    parser.add_argument('--ray_tune', '-rt', type=str,
+                        choices=['gridsearch', 'loguniform'],
+                        help='enables Ray Tune (tunes everything or only lr).')
+
+    parser.add_argument('--grace_period', '-gp', type=int,
+                        help='only stop trials at least this old in time.')
+
+    parser.add_argument('--num_samples_trials', '-nst', type=int,
+                        help='number of samples to tune the hyperparameters.')
+
+    return parser.parse_args(sys.argv[1:])
+
+
 def show_batch(
     batch: torch.Tensor = None,
     batch_id: int = None
@@ -349,7 +426,10 @@ def train(
             tune.report(loss=epoch_train_loss)
 
 
-def main(args):
+def main():
+
+    # Get arguments.
+    args = get_args()
 
     # Enable reproducibility.
     print(f"\n{'torch initial seed:'.ljust(20)} {torch.initial_seed()}")
@@ -769,79 +849,5 @@ def main(args):
 
 if __name__ == "__main__":
 
-    # Get arguments.
-    parser = argparse.ArgumentParser(
-        description="Script for training the self-supervised learning models."
-    )
-
-    # General arguments.
-    parser.add_argument('model_name', type=str,
-                        choices=AVAIL_SSL_MODELS,
-                        help="target SSL model.")
-
-    parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
-                        choices=['resnet18', 'resnet50'],
-                        help="backbone model name (default: resnet18).")
-
-    parser.add_argument('--input_data', '-id', type=str,
-                        help="path to the input directory (if necessary).")
-
-    parser.add_argument('--dataset_name', '-dn', type=str,
-                        default='Sentinel2GlobalLULC_SSL',
-                        help='dataset name for training '
-                            '(default: Sentinel2GlobalLULC_SSL).')
-
-    parser.add_argument('--dataset_ratio', '-dr', type=str,
-                        default='(0.900,0.0250,0.0750)',
-                        help='dataset ratio for evaluation '
-                            '(default: (0.900,0.0250,0.0750)).')
-
-    parser.add_argument('--epochs', '-e', type=int, default=25,
-                        help='number of epochs for training (default: 25).')
-
-    parser.add_argument('--batch_size', '-bs', type=int, default=64,
-                        help='number of images in a batch during training '
-                            '(default: 64).')
-
-    parser.add_argument('--num_workers', '-nw', type=int, default=1,
-                        help='number of subprocesses to use for data loading. '
-                            '0 means that the data will be loaded in the '
-                            'main process (default: 1).')
-
-    parser.add_argument('--ini_weights', '-iw', type=str, default='random',
-                        choices=['random', 'imagenet'],
-                        help="initial weights (default: random).")
-
-    parser.add_argument('--show', '-s', action='store_true',
-                        help='the images should appear.')
-
-    parser.add_argument('--balanced_dataset', '-bd', action='store_true',
-                        help='whether the dataset should be balanced.')
-
-    parser.add_argument('--reduced_dataset', '-rd', action='store_true',
-                        help='whether the dataset should be reduced.')
-
-    parser.add_argument('--cluster', '-c', action='store_true',
-                        help='the script runs on a cluster (large mem. space).')
-
-    parser.add_argument('--torch_compile', '-tc', action='store_true',
-                        help='PyTorch 2.0 compile enabled.')
-
-    parser.add_argument('--resume_training', '-r', action='store_true',
-                        help='training is resumed from the latest checkpoint.')
-
-    # Specific arguments for Ray Tune.
-    parser.add_argument('--ray_tune', '-rt', type=str,
-                        choices=['gridsearch', 'loguniform'],
-                        help='enables Ray Tune (tunes everything or only lr).')
-
-    parser.add_argument('--grace_period', '-gp', type=int,
-                        help='only stop trials at least this old in time.')
-
-    parser.add_argument('--num_samples_trials', '-nst', type=int,
-                        help='number of samples to tune the hyperparameters.')
-
-    args = parser.parse_args(sys.argv[1:])
-
     # Main function.
-    sys.exit(main(args))
+    sys.exit(main())
