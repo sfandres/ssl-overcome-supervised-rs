@@ -141,6 +141,11 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args(sys.argv[1:])
 
 
+def ddp_setup():
+    init_process_group(backend="nccl")
+    torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
+
+
 def show_batch(
     batch: torch.Tensor = None,
     batch_id: int = None
@@ -185,6 +190,7 @@ def train(
 
     # Setting the device.
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = int(os.environ["LOCAL_RANK"])
     print(f"\n{'Device:'.ljust(18)} {device}")
 
     # ======================
@@ -257,7 +263,9 @@ def train(
         torch.set_float32_matmul_precision('high')
 
     # Device used for training.
-    model.to(device)
+    ## model.to(device)
+    gpu_id = int(os.environ["LOCAL_RANK"])
+    model = DDP(model.to(device), device_ids=[gpu_id])
 
     # ======================
     # CONFIGURE OPTIMIZER AND SCHEDULERS.
@@ -357,7 +365,7 @@ def train(
 
             # Forward + backward + optimize: Compute the loss, run
             # backpropagation, and update the parameters of the model.
-            loss = model.training_step((x0, x1), momentum_val=0.999)
+            loss = model.module.training_step((x0, x1), momentum_val=0.999)  # THIS WILL NOT WORK WITH MULTI-GPU
             loss.backward()
             optimizer.step()
 
@@ -441,10 +449,9 @@ def train(
             tune.report(loss=epoch_train_loss)
 
 
-def main():
+def main(args):
 
-    # Get arguments.
-    args = get_args()
+    ddp_setup()
 
     # Enable reproducibility.
     print(f"\n{'torch initial seed:'.ljust(20)} {torch.initial_seed()}")
@@ -674,6 +681,9 @@ def main():
         generator=g if not args.ray_tune else None
     ) for x in splits[1:]}
 
+    shuffle=False
+    sampler=DistributedSampler(dataset['train'])
+
     # Dataloader for training.
     dataloader['train'] = torch.utils.data.DataLoader(
         lightly_dataset['train'],
@@ -860,10 +870,15 @@ def main():
 
         train(config)
 
+    destroy_process_group()
+
     return 0
 
 
 if __name__ == "__main__":
 
+    # Get arguments.
+    args = get_args()
+
     # Main function.
-    sys.exit(main())
+    sys.exit(main(args))
