@@ -41,6 +41,7 @@ backbone_name=$3
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=300
+save_every=3
 if [ "${backbone_name}" == "resnet50" ]; then
     batch_size=32  ##128
 else
@@ -55,6 +56,7 @@ script="pytorch-Sentinel-2_SSL_pretraining.py $model \
 --dataset_name=$dataset_name \
 --dataset_ratio=$dataset_ratio \
 --epochs=$epochs \
+--save_every=$save_every \
 --batch_size=$batch_size \
 --num_workers=$num_workers \
 --ini_weights=$ini_weights \

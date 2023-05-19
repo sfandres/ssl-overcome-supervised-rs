@@ -87,6 +87,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--epochs', '-e', type=int, default=25,
                         help='number of epochs for training (default: 25).')
 
+    parser.add_argument('--save_every', '-se', type=int, default=5,
+                        help='save model checkpoint every n epochs (default: 5).')
+
     parser.add_argument('--batch_size', '-bs', type=int, default=64,
                         help='number of images in a batch during training '
                             '(default: 64).')
@@ -315,7 +318,7 @@ def train(
     print(f'Optimizer:\n{optimizer}')
     print(f'Warmup scheduler: {warmup_scheduler}')
     print(f'Cosine scheduler: {cosine_scheduler}')
-    save_interval = 5
+    save_interval = args.save_every
     total_train_batches = len(config['dataloader']['train'])
     total_val_batches = len(config['dataloader']['val'])
     collapse_level = 0.
