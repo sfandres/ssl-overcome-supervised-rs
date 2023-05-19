@@ -57,73 +57,61 @@ def build_paths(cwd: str, model_name: str) -> dict:
         paths (dict): all the generated paths in a dictionary.
     """
 
-    # Create main paths.
-    input_path = os.path.join(cwd, 'input')
-    output_path = os.path.join(cwd, 'output')
+    paths = {}
 
-    # Create directories if they don't exist.
-    if not os.path.exists(input_path):
-        os.makedirs(input_path)
-        print(f'Dir created: {input_path}')
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-        print(f'Dir created: {output_path}')
+    try:
+        # Create main paths.
+        input_path = os.path.join(cwd, 'input')
+        output_path = os.path.join(cwd, 'output')
 
-    # Second level paths within input.
-    datasets_path = os.path.join(input_path, 'datasets')
+        # Create directories if they don't exist.
+        os.makedirs(input_path, exist_ok=True)
+        os.makedirs(output_path, exist_ok=True)
 
-    # Create directories if they don't exist.
-    if not os.path.exists(datasets_path):
-        os.makedirs(datasets_path)
-        print(f'Dir created: {datasets_path}')
+        # Second level paths within input.
+        datasets_path = os.path.join(input_path, 'datasets')
+        best_configs_path = os.path.join(input_path, 'best_configs')
+    
+        # Create directories if they don't exist.
+        os.makedirs(datasets_path, exist_ok=True)
+        os.makedirs(best_configs_path, exist_ok=True)
 
-    # Second level paths within output.
-    checkpoints_path = os.path.join(output_path, 'model_checkpoints')
-    images_path = os.path.join(output_path, 'images')
-    runs_path = os.path.join(output_path, 'runs')
+        # Second level paths within output.
+        checkpoints_path = os.path.join(output_path, 'model_checkpoints')
+        images_path = os.path.join(output_path, 'images')
+        runs_path = os.path.join(output_path, 'runs')
 
-    # Create directories if they don't exist.
-    if not os.path.exists(checkpoints_path):
-        os.makedirs(checkpoints_path)
-        print(f'Dir created: {checkpoints_path}')
-    if not os.path.exists(images_path):
-        os.makedirs(images_path)
-        print(f'Dir created: {images_path}')
-    if not os.path.exists(runs_path):
-        os.makedirs(runs_path)
-        print(f'Dir created: {runs_path}')
+        # Create directories if they don't exist.
+        os.makedirs(checkpoints_path, exist_ok=True)
+        os.makedirs(images_path, exist_ok=True)
+        os.makedirs(runs_path, exist_ok=True)
 
-    # Third level paths within checkpoints.
-    checkpoints_logs_path = os.path.join(checkpoints_path, '0_history_logs')
-    if not os.path.exists(checkpoints_logs_path):
-        os.makedirs(checkpoints_logs_path)
-        print(f'Dir created: {checkpoints_logs_path}')
+        # Third level paths within checkpoints.
+        checkpoints_logs_path = os.path.join(checkpoints_path, '0_history_logs')
+        os.makedirs(checkpoints_logs_path, exist_ok=True)
 
-    checkpoints_model_path = os.path.join(checkpoints_path, model_name)
-    if not os.path.exists(checkpoints_model_path):
-        os.makedirs(checkpoints_model_path)
-        print(f'Dir created: {checkpoints_model_path}')
+        checkpoints_model_path = os.path.join(checkpoints_path, model_name)
+        os.makedirs(checkpoints_model_path, exist_ok=True)
 
-    # Third level paths within images.
-    images_logs_path = os.path.join(images_path, '0_history_logs')
-    if not os.path.exists(images_logs_path):
-        os.makedirs(images_logs_path)
-        print(f'Dir created: {images_logs_path}')
+        # Third level paths within images.
+        images_logs_path = os.path.join(images_path, '0_history_logs')
+        os.makedirs(images_logs_path, exist_ok=True)
 
-    images_model_path = os.path.join(images_path, model_name)
-    if not os.path.exists(images_model_path):
-        os.makedirs(images_model_path)
-        print(f'Dir created: {images_model_path}')
+        images_model_path = os.path.join(images_path, model_name)
+        os.makedirs(images_model_path, exist_ok=True)
 
-    # Create dictionary.
-    paths = {
-        'input': input_path,
-        'datasets': datasets_path,
-        'output': output_path,
-        'runs': runs_path,
-        'log_checkpoints': checkpoints_logs_path,
-        'checkpoints': checkpoints_model_path,
-        'images': images_model_path        
-    }
+        # Create dictionary.
+        paths = {
+            'input': input_path,
+            'datasets': datasets_path,
+            'output': output_path,
+            'runs': runs_path,
+            'log_checkpoints': checkpoints_logs_path,
+            'checkpoints': checkpoints_model_path,
+            'images': images_model_path        
+        }
+
+    except OSError as e:
+        print(f"Error occurred while creating directories: {e}")
 
     return paths
