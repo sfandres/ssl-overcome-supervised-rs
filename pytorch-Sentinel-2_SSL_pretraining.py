@@ -332,7 +332,6 @@ def train(
     print(f'Optimizer:\n{optimizer}')
     print(f'Warmup scheduler: {warmup_scheduler}')
     print(f'Cosine scheduler: {cosine_scheduler}')
-    save_interval = args.save_every
     total_train_batches = len(config['dataloader']['train'])
     total_val_batches = len(config['dataloader']['val'])
     collapse_level = 0.
@@ -365,16 +364,17 @@ def train(
 
             # Forward + backward + optimize: Compute the loss, run
             # backpropagation, and update the parameters of the model.
-            loss = model.module.training_step((x0, x1), momentum_val=0.999)  # THIS WILL NOT WORK WITH MULTI-GPU
+            # loss = model.module.training_step((x0, x1), momentum_val=0.999)  # THIS WILL NOT WORK WITH MULTI-GPU
+            loss = model(x0, x1)
             loss.backward()
             optimizer.step()
 
             if args.model_name == 'SimSiam':
-                model.check_collapse(loss.item())
+                model.check_collapse(loss.detach())
 
             # Print statistics.
             # Averaged loss across all training examples * batch_size.
-            running_train_loss += loss.item() * args.batch_size
+            running_train_loss += loss.detach() * args.batch_size
 
             # Show partial stats.
             if b % (total_train_batches//4) == (total_train_batches//4-1):
@@ -411,10 +411,9 @@ def train(
         # Move the model to CPU before saving it
         # to make it more platform-independent.
         # Problems with resuming training.
-        # model.to('cpu')
-        if epoch % save_interval == 0:
+        if gpu_id == 0 and epoch % args.save_every == 0:
 
-            model.save(
+            model.module.save(                   ## THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
                 args.backbone_name,
                 epoch,
                 epoch_train_loss,
@@ -426,13 +425,12 @@ def train(
 
             torch.save({
                 'epoch': epoch,
-                'model_state_dict': model.backbone.state_dict(),
+                'model_state_dict': model.module.backbone.state_dict(),  # .MODULE. ADDED
                 'optimizer_state_dict': optimizer.state_dict(),
                 'warmup_scheduler_state_dict': warmup_scheduler.state_dict(),
                 'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
                 'loss': epoch_train_loss
-            }, os.path.join(config['paths']['checkpoints'], 'ckpt_' + str(model)))
-        # model.to(device)
+            }, os.path.join(config['paths']['checkpoints'], 'ckpt_' + str(model.module)))
 
         # ======================
         # EPOCH STATISTICS.
