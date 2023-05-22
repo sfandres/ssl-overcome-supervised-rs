@@ -66,48 +66,27 @@ class BarlowTwins(BaseModel):
 
     def forward(
         self,
-        x: torch.Tensor
+        x0: torch.Tensor,
+        x1: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Computes the forward pass.
+        Computes the forward pass and returns loss.
 
         Args:
-            x (torch.Tensor): Batch of input images.
+            x0 (torch.Tensor): Batch of input images.
+            x1 (torch.Tensor): Batch of input images.
 
         Returns:
-            torch.Tensor: Tensor of feature embeddings produced by the projection head network.
+            torch.Tensor: Loss computed after the forward pass in the projection head.
         """
 
         # Feature extraction using the ResNet backbone.
-        x = self.backbone(x).flatten(start_dim=1)
+        x0 = self.backbone(x0).flatten(start_dim=1)
+        x1 = self.backbone(x1).flatten(start_dim=1)
 
         # Feature embeddings.
-        z = self.projection_head(x)
-
-        return z
-
-    def training_step(
-        self,
-        two_batches: tuple[torch.Tensor, torch.Tensor],
-        **kwargs
-    ) -> float:
-        """
-        Performs a single training step on a batch of transformed images.
-
-        Args:
-            two_batches (tuple): Tuple of two batches of transformed images,
-            where each batch is a tensor of size (batch_size, C, H, W).
-
-        Returns:
-            float: The loss value for the current batch.
-        """
-
-        # Two batches of transformed images.
-        x0, x1 = two_batches
-
-        # Output projections of both transformed batches.
-        z0 = self.forward(x0)
-        z1 = self.forward(x1)
+        z0 = self.projection_head(x0)
+        z1 = self.projection_head(x1)
 
         # Contrastive BarlowTwinsLoss.
         loss = self.criterion(z0, z1)
