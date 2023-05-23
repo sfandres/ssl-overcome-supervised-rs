@@ -83,12 +83,12 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--dataset_name', '-dn', type=str,
                         default='Sentinel2GlobalLULC_SSL',
                         help='dataset name for training '
-                            '(default: Sentinel2GlobalLULC_SSL).')
+                             '(default: Sentinel2GlobalLULC_SSL).')
 
     parser.add_argument('--dataset_ratio', '-dr', type=str,
                         default='(0.900,0.0250,0.0750)',
                         help='dataset ratio for evaluation '
-                            '(default: (0.900,0.0250,0.0750)).')
+                             '(default: (0.900,0.0250,0.0750)).')
 
     parser.add_argument('--epochs', '-e', type=int, default=25,
                         help='number of epochs for training (default: 25).')
@@ -98,16 +98,16 @@ def get_args() -> argparse.Namespace:
 
     parser.add_argument('--batch_size', '-bs', type=int, default=64,
                         help='number of images in a batch during training '
-                            '(default: 64).')
+                             '(default: 64).')
 
     parser.add_argument('--num_workers', '-nw', type=int, default=1,
                         help='number of subprocesses to use for data loading. '
-                            '0 means that the data will be loaded in the '
-                            'main process (default: 1).')
+                             '0 means that the data will be loaded in the '
+                             'main process (default: 1).')
 
     parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                         choices=['random', 'imagenet'],
-                        help="initial weights (default: random).")
+                        help='initial weights (default: random).')
 
     parser.add_argument('--show', '-s', action='store_true',
                         help='the images should appear.')
@@ -118,16 +118,16 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--reduced_dataset', '-rd', action='store_true',
                         help='whether the dataset should be reduced.')
 
-    parser.add_argument('--cluster', '-c', action='store_true',
-                        help='the script runs on a cluster (large mem. space).')
-
     parser.add_argument('--torch_compile', '-tc', action='store_true',
                         help='PyTorch 2.0 compile enabled.')
 
     parser.add_argument('--resume_training', '-r', action='store_true',
                         help='training is resumed from the latest checkpoint.')
 
-    # Specific arguments for Ray Tune.
+    parser.add_argument('--distributed', '-d', action='store_true',
+                        help='training uses multi-node training.')
+
+    # Specific for Ray Tune.
     parser.add_argument('--ray_tune', '-rt', type=str,
                         choices=['gridsearch', 'loguniform'],
                         help='enables Ray Tune (tunes everything or only lr).')
@@ -226,7 +226,7 @@ def train(
             )
 
     # Show model's backbone structure.
-    if args.show and not args.cluster:
+    if args.show:
         print(summary(
             resnet,
             input_size=(args.batch_size, 3,
@@ -491,15 +491,6 @@ def main(args):
         arg_name_col = f'{arg_name}:'
         print(f'{arg_name_col.ljust(20)} {args_dict[arg_name]}')
 
-    # Avoiding the runtimeError: "Too many open files.
-    # Communication with the workers is no longer possible."
-    if is_notebook() or args.cluster:
-        print(' - Torch sharing strategy set to file_descriptor (default)')
-        torch.multiprocessing.set_sharing_strategy('file_descriptor')
-    else:
-        print(' - Torch sharing strategy set to file_system (less memory)')
-        torch.multiprocessing.set_sharing_strategy('file_system')
-
     # Build paths.
     print()
     cwd = os.getcwd()
@@ -643,6 +634,13 @@ def main(args):
         shuffle = True
 
     #--------------------------
+    # If distributed (option).
+    #--------------------------
+    if args.distributed:
+        shuffle=False
+        sampler=DistributedSampler(dataset['train'])
+
+    #--------------------------
     # Cast to Lightly dataset.
     #--------------------------
     # Builds a LightlyDataset from a PyTorch (or torchvision) dataset.
@@ -685,9 +683,6 @@ def main(args):
         worker_init_fn=seed_worker if not args.ray_tune else None,
         generator=g if not args.ray_tune else None
     ) for x in splits[1:]}
-
-    shuffle=False
-    sampler=DistributedSampler(dataset['train'])
 
     # Dataloader for training.
     dataloader['train'] = torch.utils.data.DataLoader(

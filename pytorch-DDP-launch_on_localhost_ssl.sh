@@ -60,7 +60,7 @@ script="--standalone --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pretraining.p
 --batch_size=$batch_size \
 --num_workers=$num_workers \
 --ini_weights=$ini_weights \
---cluster \
+--distributed \
 $exp_options"
 
 ## Show the chosen options.
