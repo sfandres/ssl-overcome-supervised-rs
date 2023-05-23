@@ -1,11 +1,12 @@
 #!/bin/bash
 
 
-#SBATCH --job-name=multinode-example
-#SBATCH --nodes=2
-#SBATCH --ntasks=2
+#SBATCH --nodes=3
+#SBATCH --ntasks=3
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=1
+#SBATCH --job-name=ddp
+#SBATCH --output=ddp_%j.out
 
 
 function show_help {
@@ -72,7 +73,7 @@ num_workers=1
 ini_weights="random"
 
 srun torchrun \
---nnodes 2 \
+--nnodes 3 \
 --nproc_per_node 1 \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
