@@ -2,10 +2,10 @@
 
 
 #SBATCH --job-name=multinode-example
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --ntasks=2
 #SBATCH --gpus-per-task=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 
 
 function show_help {
@@ -18,8 +18,10 @@ function show_help {
 
 nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) )
 nodes_array=($nodes)
+echo $nodes_array
 head_node=${nodes_array[0]}
 head_node_ip=$(srun --nodes=1 --ntasks=1 -w "$head_node" hostname --ip-address)
+echo $head_node
 
 echo Node IP: $head_node_ip
 export LOGLEVEL=INFO
@@ -63,11 +65,11 @@ if [ "${backbone_name}" == "resnet50" ]; then
 else
     batch_size=64  ##512
 fi
-num_workers=4
+num_workers=1
 ini_weights="random"
 
 srun torchrun \
---nnodes 1 \
+--nnodes 2 \
 --nproc_per_node 2 \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
