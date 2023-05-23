@@ -51,6 +51,9 @@ if [ -z "$2" ] || [ -z "$3" ]; then
     exit 0
 fi
 
+## Load virtual environment.
+source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
+conda activate lulc2-conda
 
 ## Define settings for the experiments.
 model=$2
