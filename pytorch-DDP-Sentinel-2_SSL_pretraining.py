@@ -191,9 +191,13 @@ def train(
     # Setting the device.
     # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     # device = int(os.environ["LOCAL_RANK"])
-    gpu_id = int(os.environ["LOCAL_RANK"])
+    # gpu_id = int(os.environ["LOCAL_RANK"])  # WORKS.
+    global_rank = int(os.environ["RANK"])
+    local_rank = int(os.environ["LOCAL_RANK"])
 
-    print(f"\n{'Device:'.ljust(18)} {gpu_id}")
+    # print(f"\n{'Device:'.ljust(18)} {gpu_id}")
+    print(f"{'Global_rank:'.ljust(18)} {global_rank}\n")
+    print(f"\n{'Local_rank:'.ljust(18)} {local_rank}")
 
     # ======================
     # DEFINE MODELS.
@@ -228,7 +232,7 @@ def train(
             input_size=(args.batch_size, 3,
                         config['input_size'],
                         config['input_size']),
-            device=gpu_id)
+            device=local_rank)
         )
 
     # Removing head from resnet. Embedding.
@@ -266,7 +270,7 @@ def train(
 
     # Device used for training.
     ## model.to(device)
-    model = DDP(model.to(gpu_id), device_ids=[gpu_id])
+    model = DDP(model.to(local_rank), device_ids=[local_rank])    # MODEL.TO ADDED (I SHOW IT ON BLOG)
 
     # ======================
     # CONFIGURE OPTIMIZER AND SCHEDULERS.
@@ -357,8 +361,8 @@ def train(
         for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
 
             # Move images to the GPU (same batch two transformations).
-            x0 = x0.to(gpu_id)
-            x1 = x1.to(gpu_id)
+            x0 = x0.to(local_rank)
+            x1 = x1.to(local_rank)
 
             # Zero the parameter gradients.
             optimizer.zero_grad()
@@ -379,7 +383,7 @@ def train(
 
             # Show partial stats.
             if b % (total_train_batches//4) == (total_train_batches//4-1):
-                print(f'[GPU{gpu_id}] | '
+                print(f'[GPU{global_rank}] | '
                       f'T[{epoch}, {b + 1:5d}] | '
                       f'Running train loss: '
                       f'{running_train_loss/(b*args.batch_size):.4f}')
@@ -413,7 +417,7 @@ def train(
         # Move the model to CPU before saving it
         # to make it more platform-independent.
         # Problems with resuming training.
-        if gpu_id == 0 and epoch % args.save_every == 0:
+        if local_rank == 0 and epoch % args.save_every == 0:
 
             model.module.save(                   ## THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
                 args.backbone_name,
@@ -437,7 +441,7 @@ def train(
         # ======================
         # EPOCH STATISTICS.
         # Show some stats per epoch completed.
-        print(f'[GPU{gpu_id}] | '
+        print(f'[GPU{global_rank}] | '
               f'[Epoch {epoch:3d}] | '
               f'Train loss: {epoch_train_loss:.4f} | '
               # f'Val loss: {epoch_val_loss:.4f} | '
