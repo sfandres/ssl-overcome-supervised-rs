@@ -378,7 +378,8 @@ def train(
 
             # Show partial stats.
             if b % (total_train_batches//4) == (total_train_batches//4-1):
-                print(f'T[{epoch}, {b + 1:5d}] | '
+                print(f'[GPU{gpu_id}] | '
+                      'T[{epoch}, {b + 1:5d}] | '
                       f'Running train loss: '
                       f'{running_train_loss/(b*args.batch_size):.4f}')
 
@@ -435,7 +436,8 @@ def train(
         # ======================
         # EPOCH STATISTICS.
         # Show some stats per epoch completed.
-        print(f'[Epoch {epoch:3d}] | '
+        print(f'[GPU{gpu_id}] | '
+              '[Epoch {epoch:3d}] | '
               f'Train loss: {epoch_train_loss:.4f} | '
               # f'Val loss: {epoch_val_loss:.4f} | '
               f'Duration: {(time.time()-t0):.2f} s | '
