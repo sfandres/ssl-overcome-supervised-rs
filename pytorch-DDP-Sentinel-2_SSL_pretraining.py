@@ -347,7 +347,6 @@ def train(
     # INITIAL PARAMETERS AND INFO.
     total_train_batches = len(config['dataloader']['train'])
     total_val_batches = len(config['dataloader']['val'])
-    collapse_level = 0.
     if args.verbose:
         print(f'\nOptimizer:\n{optimizer}')
         print(f'Warmup scheduler: {warmup_scheduler}')
@@ -366,9 +365,10 @@ def train(
         # ======================
         # TRAINING COMPUTATION.
         # Iterating through the dataloader (lightly dataset is different).
-        model.train()
         print(f"\nLearning rate: {optimizer.param_groups[0]['lr']}")
+        collapse_level = 0.
         running_train_loss = 0.
+        model.train()
         for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
 
             # Move images to the GPU (same batch two transformations).
@@ -460,7 +460,7 @@ def train(
               f'Collapse Level (SimSiam only): {collapse_level:.4f}/1.0\n')
 
         # ======================
-        # RAY TUNE.
+        # RAY TUNE REPORTING STAGE.
         if args.ray_tune:
             tune.report(loss=epoch_train_loss)
 
@@ -470,28 +470,28 @@ def main(args):
     ddp_setup()
 
     # Enable reproducibility.
-    print(f"\n{'torch initial seed:'.ljust(20)} {torch.initial_seed()}")
+    print(f"\n{'torch initial seed:'.ljust(33)} {torch.initial_seed()}")
     g = set_seed(SEED)
-    print(f"{'torch current seed:'.ljust(20)} {torch.initial_seed()}")
+    print(f"{'torch current seed:'.ljust(33)} {torch.initial_seed()}")
 
     # Check torch CUDA
-    print(f"\n{'torch.cuda.is_available():'.ljust(32)}"
+    print(f"{'torch.cuda.is_available():'.ljust(33)}"
           f"{torch.cuda.is_available()}")
-    print(f"{'torch.cuda.device_count():'.ljust(32)}"
+    print(f"{'torch.cuda.device_count():'.ljust(33)}"
           f"{torch.cuda.device_count()}")
-    print(f"{'torch.cuda.current_device():'.ljust(32)}"
+    print(f"{'torch.cuda.current_device():'.ljust(33)}"
           f"{torch.cuda.current_device()}")
-    print(f"{'torch.cuda.device(0):'.ljust(32)}"
+    print(f"{'torch.cuda.device(0):'.ljust(33)}"
           f"{torch.cuda.device(0)}")
-    print(f"{'torch.cuda.get_device_name(0):'.ljust(32)}"
+    print(f"{'torch.cuda.get_device_name(0):'.ljust(33)}"
           f"{torch.cuda.get_device_name(0)}")
-    print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)}"
+    print(f"{'torch.backends.cudnn.benchmark:'.ljust(33)}"
           f"{torch.backends.cudnn.benchmark}")
 
     # Check CPUs available (for num_workers).
-    print(f"\n{'os.sched_getaffinity:'.ljust(32)}"
+    print(f"{'os.sched_getaffinity:'.ljust(33)}"
           f"{len(os.sched_getaffinity(0))}")
-    print(f"{'os.cpu_count():'.ljust(32)}"
+    print(f"{'os.cpu_count():'.ljust(33)}"
           f"{os.cpu_count()}")
 
     # Convert the parsed arguments into a dictionary and declare
