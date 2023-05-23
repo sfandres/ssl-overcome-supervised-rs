@@ -2,8 +2,8 @@
 
 
 #SBATCH --job-name=multinode-example
-#SBATCH --nodes=1
-#SBATCH --ntasks=2
+#SBATCH --nodes=2
+#SBATCH --ntasks=1
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=1
 
@@ -16,15 +16,15 @@ function show_help {
 }
 
 
-## nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) )
-## nodes_array=($nodes)
-## echo $nodes_array
-## head_node=${nodes_array[0]}
-## head_node_ip=$(srun --nodes=1 --ntasks=1 -w "$head_node" hostname --ip-address)
-## echo $head_node
+nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) )
+nodes_array=($nodes)
+echo $nodes_array
+head_node=${nodes_array[0]}
+head_node_ip=$(srun --nodes=1 --ntasks=1 -w "$head_node" hostname --ip-address)
+echo $head_node
 
-## echo Node IP: $head_node_ip
-## export LOGLEVEL=INFO
+echo Node IP: $head_node_ip
+export LOGLEVEL=INFO
 
 
 ## Catch the arguments.
@@ -68,28 +68,12 @@ fi
 num_workers=1
 ini_weights="random"
 
-# srun torchrun \
-# --nnodes 2 \
-# --nproc_per_node 2 \
-# --rdzv_id $RANDOM \
-# --rdzv_backend c10d \
-# --rdzv_endpoint $head_node_ip:29500 \
-# pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
-# --input_data $input_data \
-# --backbone_name $backbone_name \
-# --dataset_name $dataset_name \
-# --dataset_ratio $dataset_ratio \
-# --epochs $epochs \
-# --save_every $save_every \
-# --batch_size $batch_size \
-# --num_workers $num_workers \
-# --ini_weights $ini_weights \
-# --cluster \
-# $exp_options
-
 srun torchrun \
---standalone \
---nproc_per_node 2 \
+--nnodes 2 \
+--nproc_per_node 1 \
+--rdzv_id $RANDOM \
+--rdzv_backend c10d \
+--rdzv_endpoint $head_node_ip:29500 \
 pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --input_data $input_data \
 --backbone_name $backbone_name \
@@ -102,3 +86,7 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --ini_weights $ini_weights \
 --cluster \
 $exp_options
+
+## srun torchrun \
+## --standalone \
+## --nproc_per_node 2 \
