@@ -189,9 +189,11 @@ def train(
     args = config['args']
 
     # Setting the device.
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    device = int(os.environ["LOCAL_RANK"])
-    print(f"\n{'Device:'.ljust(18)} {device}")
+    # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    # device = int(os.environ["LOCAL_RANK"])
+    gpu_id = int(os.environ["LOCAL_RANK"])
+
+    print(f"\n{'Device:'.ljust(18)} {gpu_id}")
 
     # ======================
     # DEFINE MODELS.
@@ -226,7 +228,7 @@ def train(
             input_size=(args.batch_size, 3,
                         config['input_size'],
                         config['input_size']),
-            device=device)
+            device=gpu_id)
         )
 
     # Removing head from resnet. Embedding.
@@ -264,8 +266,7 @@ def train(
 
     # Device used for training.
     ## model.to(device)
-    gpu_id = int(os.environ["LOCAL_RANK"])
-    model = DDP(model.to(device), device_ids=[gpu_id])
+    model = DDP(model.to(gpu_id), device_ids=[gpu_id])
 
     # ======================
     # CONFIGURE OPTIMIZER AND SCHEDULERS.
@@ -356,8 +357,8 @@ def train(
         for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
 
             # Move images to the GPU (same batch two transformations).
-            x0 = x0.to(device)
-            x1 = x1.to(device)
+            x0 = x0.to(gpu_id)
+            x1 = x1.to(gpu_id)
 
             # Zero the parameter gradients.
             optimizer.zero_grad()
@@ -379,7 +380,7 @@ def train(
             # Show partial stats.
             if b % (total_train_batches//4) == (total_train_batches//4-1):
                 print(f'[GPU{gpu_id}] | '
-                      'T[{epoch}, {b + 1:5d}] | '
+                      f'T[{epoch}, {b + 1:5d}] | '
                       f'Running train loss: '
                       f'{running_train_loss/(b*args.batch_size):.4f}')
 
@@ -437,7 +438,7 @@ def train(
         # EPOCH STATISTICS.
         # Show some stats per epoch completed.
         print(f'[GPU{gpu_id}] | '
-              '[Epoch {epoch:3d}] | '
+              f'[Epoch {epoch:3d}] | '
               f'Train loss: {epoch_train_loss:.4f} | '
               # f'Val loss: {epoch_val_loss:.4f} | '
               f'Duration: {(time.time()-t0):.2f} s | '

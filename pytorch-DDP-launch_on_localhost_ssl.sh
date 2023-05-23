@@ -51,7 +51,7 @@ num_workers=4
 ini_weights="random"
 
 ## Python script to be executed with the options and flags.
-script="--standalone --nproc_per_node=1 pytorch-Sentinel-2_SSL_pretraining.py $model \
+script="--standalone --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --backbone_name=$backbone_name \
 --dataset_name=$dataset_name \
 --dataset_ratio=$dataset_ratio \
