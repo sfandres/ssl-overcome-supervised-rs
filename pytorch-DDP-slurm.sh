@@ -73,14 +73,14 @@ srun torchrun \
 --rdzv_backend c10d \
 --rdzv_endpoint $head_node_ip:29500 \
 pytorch-Sentinel-2_SSL_pretraining.py $model \
---input_data=$input_data \
---backbone_name=$backbone_name \
---dataset_name=$dataset_name \
---dataset_ratio=$dataset_ratio \
---epochs=$epochs \
---save_every=$save_every \
---batch_size=$batch_size \
---num_workers=$num_workers \
---ini_weights=$ini_weights \
+--input_data $input_data \
+--backbone_name $backbone_name \
+--dataset_name $dataset_name \
+--dataset_ratio $dataset_ratio \
+--epochs $epochs \
+--save_every $save_every \
+--batch_size $batch_size \
+--num_workers $num_workers \
+--ini_weights $ini_weights \
 --cluster \
-$exp_options"
+$exp_options
