@@ -238,7 +238,7 @@ def load_mean_std_values(input_path):
     return mean, std
 
 
-def load_dataset_based_on_ratio(input_path, name, ratio):
+def load_dataset_based_on_ratio(input_path, name, ratio, verbose):
     """
     Takes the "input_path", as well as the target "name"
     and "ratio" of the dataset and returns the full path,
@@ -248,6 +248,7 @@ def load_dataset_based_on_ratio(input_path, name, ratio):
         input_path (str): directory where the datasets are stored.
         name (str): name of the target dataset (directory's name as well).
         ratio (str): ratio of the target dataset according to train, val, and test.
+        verbose (bool): prints additional information.
 
     Returns:
         split_path (str): full path to the target split.
@@ -286,8 +287,9 @@ def load_dataset_based_on_ratio(input_path, name, ratio):
     # Handling errors: loading mean and std from file.
     try:
         mean, std = load_mean_std_values(split_path)
-        print(f'Mean loaded from .txt: {mean}')
-        print(f'Std loaded from .txt:  {std}')
+        if verbose:
+            print(f'Mean loaded from .txt: {mean}')
+            print(f'Std loaded from .txt:  {std}')
     except:
         raise Exception('Error loading the mean and std files for the target dataset. '
                         'Please check the files.')

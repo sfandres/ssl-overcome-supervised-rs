@@ -1,5 +1,5 @@
 # Custom modules.
-from utils.other import is_notebook, build_paths
+from utils.other import build_paths
 from utils.reproducibility import set_seed, seed_worker
 from utils.dataset import load_dataset_based_on_ratio, GaussianBlur
 from utils.simsiam import SimSiam
@@ -65,20 +65,20 @@ def get_args() -> argparse.Namespace:
 
     # Get arguments.
     parser = argparse.ArgumentParser(
-        description="Script for training the self-supervised learning models."
+        description='Script for training the self-supervised learning models.'
     )
 
     # General arguments.
     parser.add_argument('model_name', type=str,
                         choices=AVAIL_SSL_MODELS,
-                        help="target SSL model.")
+                        help='target SSL model.')
 
     parser.add_argument('--backbone_name', '-bn', type=str, default='resnet18',
                         choices=['resnet18', 'resnet50'],
-                        help="backbone model name (default: resnet18).")
+                        help='backbone model name (default: resnet18).')
 
     parser.add_argument('--input_data', '-id', type=str,
-                        help="path to the input directory (if necessary).")
+                        help='path to the input directory (if necessary).')
 
     parser.add_argument('--dataset_name', '-dn', type=str,
                         default='Sentinel2GlobalLULC_SSL',
@@ -110,7 +110,10 @@ def get_args() -> argparse.Namespace:
                         help='initial weights (default: random).')
 
     parser.add_argument('--show', '-s', action='store_true',
-                        help='the images should appear.')
+                        help='the images pops up.')
+
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='provides additional details for debugging purposes.')
 
     parser.add_argument('--balanced_dataset', '-bd', action='store_true',
                         help='whether the dataset should be balanced.')
@@ -125,7 +128,7 @@ def get_args() -> argparse.Namespace:
                         help='training is resumed from the latest checkpoint.')
 
     parser.add_argument('--distributed', '-d', action='store_true',
-                        help='training uses multi-node training.')
+                        help='enables distributed training.')
 
     # Specific for Ray Tune.
     parser.add_argument('--ray_tune', '-rt', type=str,
@@ -142,6 +145,10 @@ def get_args() -> argparse.Namespace:
 
 
 def ddp_setup():
+    """
+    Initializes the default distributed process group,
+    and this will also initialize the distributed package.
+    """
     init_process_group(backend="nccl")
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
 
@@ -188,16 +195,21 @@ def train(
     # Retrieve arguments from the dictionary (clean code).
     args = config['args']
 
+    # ======================
+    # DEVICES.
     # Setting the device.
     # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     # device = int(os.environ["LOCAL_RANK"])
     # gpu_id = int(os.environ["LOCAL_RANK"])  # WORKS.
-    global_rank = int(os.environ["RANK"])
-    local_rank = int(os.environ["LOCAL_RANK"])
-
     # print(f"\n{'Device:'.ljust(18)} {gpu_id}")
-    print(f"{'Global_rank:'.ljust(18)} {global_rank}\n")
-    print(f"\n{'Local_rank:'.ljust(18)} {local_rank}")
+
+    # Unique identifier across all the nodes.
+    global_rank = int(os.environ["RANK"])
+    print(f"\n{'Global_rank:'.ljust(18)} {global_rank}")
+
+    # Uniquely identifies each GPU-process on a node
+    local_rank = int(os.environ["LOCAL_RANK"])
+    print(f"{'Local_rank:'.ljust(18)} {local_rank}\n")
 
     # ======================
     # DEFINE MODELS.
@@ -269,8 +281,7 @@ def train(
         torch.set_float32_matmul_precision('high')
 
     # Device used for training.
-    ## model.to(device)
-    model = DDP(model.to(local_rank), device_ids=[local_rank])    # MODEL.TO ADDED (I SHOW IT ON BLOG)
+    model = DDP(model.to(local_rank), device_ids=[local_rank])  ## model.to(device)
 
     # ======================
     # CONFIGURE OPTIMIZER AND SCHEDULERS.
@@ -334,15 +345,15 @@ def train(
 
     # ======================
     # INITIAL PARAMETERS AND INFO.
-    print(f'Optimizer:\n{optimizer}')
-    print(f'Warmup scheduler: {warmup_scheduler}')
-    print(f'Cosine scheduler: {cosine_scheduler}')
     total_train_batches = len(config['dataloader']['train'])
     total_val_batches = len(config['dataloader']['val'])
     collapse_level = 0.
-    # momentum_val = None  # only for moco.
-    print(f'\nBatches in (train, val) datasets: '
-          f'({total_train_batches}, {total_val_batches})\n')
+    if args.verbose:
+        print(f'\nOptimizer:\n{optimizer}')
+        print(f'Warmup scheduler: {warmup_scheduler}')
+        print(f'Cosine scheduler: {cosine_scheduler}')
+        print(f'Batches in (train, val) datasets: '
+              f'({total_train_batches}, {total_val_batches})')
 
     # ======================
     # TRAINING LOOP.
@@ -356,7 +367,7 @@ def train(
         # TRAINING COMPUTATION.
         # Iterating through the dataloader (lightly dataset is different).
         model.train()
-        print(f"Learning rate: {optimizer.param_groups[0]['lr']}")
+        print(f"\nLearning rate: {optimizer.param_groups[0]['lr']}")
         running_train_loss = 0.
         for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
 
@@ -419,7 +430,7 @@ def train(
         # Problems with resuming training.
         if local_rank == 0 and epoch % args.save_every == 0:
 
-            model.module.save(                   ## THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
+            model.module.save(                   # THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
                 args.backbone_name,
                 epoch,
                 epoch_train_loss,
@@ -465,17 +476,17 @@ def main(args):
 
     # Check torch CUDA
     print(f"\n{'torch.cuda.is_available():'.ljust(32)}"
-      f"{torch.cuda.is_available()}")
+          f"{torch.cuda.is_available()}")
     print(f"{'torch.cuda.device_count():'.ljust(32)}"
-        f"{torch.cuda.device_count()}")
+          f"{torch.cuda.device_count()}")
     print(f"{'torch.cuda.current_device():'.ljust(32)}"
-        f"{torch.cuda.current_device()}")
+          f"{torch.cuda.current_device()}")
     print(f"{'torch.cuda.device(0):'.ljust(32)}"
-        f"{torch.cuda.device(0)}")
+          f"{torch.cuda.device(0)}")
     print(f"{'torch.cuda.get_device_name(0):'.ljust(32)}"
-        f"{torch.cuda.get_device_name(0)}")
+          f"{torch.cuda.get_device_name(0)}")
     print(f"{'torch.backends.cudnn.benchmark:'.ljust(32)}"
-        f"{torch.backends.cudnn.benchmark}")
+          f"{torch.backends.cudnn.benchmark}")
 
     # Check CPUs available (for num_workers).
     print(f"\n{'os.sched_getaffinity:'.ljust(32)}"
@@ -499,30 +510,31 @@ def main(args):
         paths['datasets'] = args.input_data
 
     # Show built paths.
-    for path in paths:
-        path_name_col = f'{path}:'
-        print(f'{path_name_col.ljust(20)} {paths[path]}')
+    if args.verbose:
+        for path in paths:
+            path_name_col = f'{path}:'
+            print(f'{path_name_col.ljust(20)} {paths[path]}')
 
     # Size of the images.
     input_size = 224
 
-    # Format of the saved images.
-    fig_format = '.png'
-
     # ======================
     # DATASET.
     # ======================
+
+    sampler = None
+    shuffle = True
 
     #--------------------------
     # Load normalization values.
     #--------------------------
     # Retrieve the path, mean and std values of each split from
     # a .txt file previously generated using a custom script.
-    print()
     paths[args.dataset_name], mean, std = load_dataset_based_on_ratio(
         paths['datasets'],
         args.dataset_name,
-        args.dataset_ratio
+        args.dataset_ratio,
+        args.verbose
     )
 
     #--------------------------
@@ -555,8 +567,9 @@ def main(args):
                             std['train'])
     ])
 
-    # for t in transform:
-    #     print(f'\n{t}: {transform[t]}')
+    if args.verbose:
+        for t in transform:
+            print(f'\n{t}: {transform[t]}')
 
     #--------------------------
     # ImageFolder.
@@ -565,8 +578,9 @@ def main(args):
     dataset = {x: torchvision.datasets.ImageFolder(
         os.path.join(paths[args.dataset_name], x)) for x in splits}
 
-    # for d in dataset:
-    #     print(f'\n{d}: {dataset[d]}')
+    if args.verbose:
+        for d in dataset:
+            print(f'\n{d}: {dataset[d]}')
 
     #--------------------------
     # Dealing with imbalanced data (option).
@@ -595,10 +609,6 @@ def main(args):
             len(samples_weight)
         )
         shuffle = False
-
-    else:
-        sampler = None
-        shuffle = True
 
     #--------------------------
     # Creating a reduced subset (option).
@@ -629,16 +639,12 @@ def main(args):
         sampler = torch.utils.data.SubsetRandomSampler(keep_indices)
         shuffle = False
 
-    else:
-        sampler = None
-        shuffle = True
-
     #--------------------------
     # If distributed (option).
     #--------------------------
     if args.distributed:
-        shuffle=False
         sampler=DistributedSampler(dataset['train'])
+        shuffle=False
 
     #--------------------------
     # Cast to Lightly dataset.
@@ -648,9 +654,9 @@ def main(args):
     lightly_dataset = {x: lightly.data.LightlyDataset.from_torch_dataset(
         dataset[x]) for x in splits}
 
-    # print()
-    # for d in lightly_dataset:
-    #     print(f'{d}:\t{lightly_dataset[d]}')
+    if args.verbose:
+        for d in lightly_dataset:
+            print(f'\n{d}: {lightly_dataset[d]}')
 
     #--------------------------
     # Collate functions.
@@ -660,9 +666,9 @@ def main(args):
     collate_fn = {x: lightly.data.collate.BaseCollateFunction(
         transform[x]) for x in splits}
 
-    # print()
-    # for c in collate_fn:
-    #     print(f'{c}:\t{collate_fn[c]}')
+    if args.verbose:
+        for c in collate_fn:
+            print(f'\n{c}: {collate_fn[c]}')
 
     #--------------------------
     # PyTorch dataloaders.
@@ -698,27 +704,23 @@ def main(args):
         generator=g if not args.ray_tune else None
     )
 
-    # Check if shuffle is enabled.
-    if isinstance(dataloader['train'].sampler, torch.utils.data.RandomSampler):
-        print('\nShuffle enabled in training!')
-    else:
-        print('\nShuffle disabled in training!')
-
-    # for d in dataloader:
-    #     print(f"\n{d}:\t{vars(dataloader[d])}")
+    if args.verbose:
+        for d in dataloader:
+            print(f'\n{d}: {vars(dataloader[d])}')
 
     #--------------------------
     # Check the balance and size of the dataset.
     #--------------------------
 
     # Check samples per class, total samples and batches of each dataset.
-    for d in dataset:
-        samples = np.unique(dataset[d].targets, return_counts=True)[1]
-        print(f'\n{d}:')
-        # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
-        print(f'  - #Samples/class (from dataset):\n{samples}')
-        print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
-        print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
+    if args.verbose:
+        for d in dataset:
+            samples = np.unique(dataset[d].targets, return_counts=True)[1]
+            print(f'\n{d}:')
+            # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
+            print(f'  - #Samples/class (from dataset):\n{samples}')
+            print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
+            print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
 
     #--------------------------
     # Check the distribution of samples in the dataloader (lightly dataset).
@@ -856,7 +858,7 @@ def main(args):
                             or col.startswith('config/'))
 
         # Configuration.
-        print(f'\nSetting the best configuration for the model from file: {filename_lr}')
+        print(f'Setting the best configuration for the model from file: {filename_lr}')
         config = {
             'args': args,
             'input_size': input_size,
