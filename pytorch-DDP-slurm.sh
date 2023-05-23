@@ -3,7 +3,7 @@
 
 #SBATCH --job-name=multinode-example
 #SBATCH --nodes=2
-#SBATCH --ntasks=1
+#SBATCH --ntasks=2
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=1
 
