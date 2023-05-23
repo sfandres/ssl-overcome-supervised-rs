@@ -74,7 +74,7 @@ srun torchrun \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
 --rdzv_endpoint $head_node_ip:29500 \
-pytorch-Sentinel-2_SSL_pretraining.py $model \
+pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --input_data $input_data \
 --backbone_name $backbone_name \
 --dataset_name $dataset_name \
