@@ -39,9 +39,9 @@ model=$2
 backbone_name=$3
 ## input_data=""
 dataset_name="Sentinel2GlobalLULC_SSL"
-dataset_ratio="(0.900,0.0250,0.0750)"
+dataset_ratio="(0.020,0.0196,0.9604)"
 epochs=300
-save_every=3
+save_every=2
 if [ "${backbone_name}" == "resnet50" ]; then
     batch_size=32  ##128
 else
@@ -51,7 +51,7 @@ num_workers=4
 ini_weights="random"
 
 ## Python script to be executed with the options and flags.
-script="--standalone --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
+script="--standalone --nnodes=1 --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --backbone_name=$backbone_name \
 --dataset_name=$dataset_name \
 --dataset_ratio=$dataset_ratio \
@@ -60,7 +60,7 @@ script="--standalone --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pretraining.p
 --batch_size=$batch_size \
 --num_workers=$num_workers \
 --ini_weights=$ini_weights \
---distributed -v \
+--distributed \
 $exp_options"
 
 ## Show the chosen options.
