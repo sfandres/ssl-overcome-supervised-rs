@@ -191,7 +191,7 @@ def save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosi
         "COSINE_SCHEDULER": cosine_scheduler.state_dict()
     }
     torch.save(snapshot, snapshot_path)
-    print(f"Epoch {epoch} | Training snapshot saved!")
+    print(f"Training snapshot saved --> {snapshot_path.rsplit('/', 1)[-1]}")
 
 
 def load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler, cosine_scheduler):
@@ -202,7 +202,7 @@ def load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler,
     optimizer.load_state_dict(snapshot['OPTIMIZER'])
     warmup_scheduler.load_state_dict(snapshot['WARMUP_SCHEDULER'])
     cosine_scheduler.load_state_dict(snapshot['COSINE_SCHEDULER'])
-    print(f'Resuming training from snapshot at Epoch {epoch}')
+    print(f"Resuming training from snapshot at Epoch {epoch} <-- {snapshot_path.rsplit('/', 1)[-1]}")
     return epoch, model, optimizer, warmup_scheduler, cosine_scheduler
 
 
