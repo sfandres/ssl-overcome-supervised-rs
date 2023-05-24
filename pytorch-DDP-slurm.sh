@@ -17,6 +17,7 @@ function show_help {
 }
 
 
+# Torchrun configuration for Slurm.
 nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) )
 nodes_array=($nodes)
 head_node=${nodes_array[0]}
@@ -73,9 +74,10 @@ fi
 num_workers=1
 ini_weights="random"
 
+# Run experiment.
 srun torchrun \
---nnodes 4 \
---nproc_per_node 1 \
+--nnodes $SLURM_JOB_NUM_NODES \
+--nproc_per_node $SLURM_NTASKS \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
 --rdzv_endpoint $head_node_ip:29500 \
@@ -91,7 +93,3 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --ini_weights $ini_weights \
 --distributed \
 $exp_options
-
-# srun torchrun \
-# --standalone \
-# --nproc_per_node 2 \
