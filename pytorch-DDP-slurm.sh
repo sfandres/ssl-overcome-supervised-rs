@@ -5,7 +5,7 @@
 #SBATCH --ntasks=4
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=1
-#SBATCH --job-name=ddp
+#SBATCH --job-name=ddp_%j
 #SBATCH --output=ddp_%j.out
 
 
@@ -64,7 +64,7 @@ input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=10
-save_every=3
+save_every=1
 if [ "${backbone_name}" == "resnet50" ]; then
     batch_size=32  ##128
 else
