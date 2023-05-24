@@ -499,7 +499,7 @@ def train(
         print(f"[GPU:{global_rank}] | "
               f"[Epoch: {epoch}] | "
               f"Train loss: {epoch_train_loss:.4f} | "
-              f"Steps (bz): {len(config['dataloader']['train'])} | "
+              f"Steps (nb): {len(config['dataloader']['train'])} | "
               # f"Val loss: {epoch_val_loss:.4f} | "
               f"Duration: {(time.time()-t0):.2f} s | "
               f"Collapse (SimSiam): {collapse_level:.4f}/1.0\n")
