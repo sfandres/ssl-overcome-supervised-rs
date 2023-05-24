@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-#SBATCH --nodes=3
-#SBATCH --ntasks=3
+#SBATCH --nodes=4
+#SBATCH --ntasks=4
 #SBATCH --gpus-per-task=1
 #SBATCH --cpus-per-task=1
 #SBATCH --job-name=ddp
@@ -63,7 +63,7 @@ backbone_name=$3
 input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
-epochs=5
+epochs=10
 save_every=3
 if [ "${backbone_name}" == "resnet50" ]; then
     batch_size=32  ##128
@@ -74,7 +74,7 @@ num_workers=1
 ini_weights="random"
 
 srun torchrun \
---nnodes 3 \
+--nnodes 4 \
 --nproc_per_node 1 \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
