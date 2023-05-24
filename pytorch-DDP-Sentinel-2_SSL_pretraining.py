@@ -182,21 +182,22 @@ def show_batch(
     plt.show()
 
 
-def save_snapshot(epoch, model, paths):
-    snapshot = {}
-    snapshot["MODEL_STATE"] = model.module.state_dict()
-    snapshot["EPOCHS_RUN"] = epoch
-    snapshot_path = os.path.join(paths['output'], 'snapshots')
+def save_snapshot(snapshot_path, model, epoch):
+    snapshot = {
+        "MODEL_STATE": model.module.state_dict(),
+        "EPOCHS_RUN": epoch,
+    }
     torch.save(snapshot, os.path.join(snapshot_path, 'snapshot.pt'))
-    print(f'Epoch {epoch} | Training snapshot saved at {snapshot_path}')
+    print(f"Epoch {epoch} | Training snapshot saved at {snapshot_path}")
 
 
-def load_snapshot(snapshot_path, model):
-    snapshot = torch.load(snapshot_path)
-    model = model.load_state_dict(snapshot['MODEL_STATE'])
-    epochs_run = snapshot['EPOCHS_RUN']
-    print(f'Resuming training from snapshot at Epoch {epochs_run}')
-    return model, epochs_run
+def load_snapshot(snapshot_path, model, local_rank):
+    loc = f"cuda:{local_rank}"
+    snapshot = torch.load(os.path.join(snapshot_path, 'snapshot.pt'), map_location=loc)
+    model.load_state_dict(snapshot["MODEL_STATE"])
+    epoch = snapshot["EPOCHS_RUN"]
+    print(f'Resuming training from snapshot at Epoch {epoch}')
+    return model, epoch
 
 
 def train(
@@ -289,6 +290,8 @@ def train(
     elif args.model_name == 'MoCov2':
         model = MoCov2(backbone=backbone, input_dim=input_dim,
                        hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
+    # Send to GPU.
+    model = model.to(local_rank)
 
     # ======================
     # CONFIGURE OPTIMIZER AND SCHEDULERS.
@@ -356,8 +359,8 @@ def train(
     # LOADING SNAPSHOT (IF EXISTS).
     snapshot_path = os.path.join(config['paths']['output'], 'snapshots')
     if os.path.exists(snapshot_path):
-        print('EXIIIIIIIIIIIIIIIIIIIIIIISTS')
-        load_snapshot(snapshot_path)
+        print("Loading snapshot")
+        model, epoch = load_snapshot(snapshot_path, model, local_rank)
 
     # ======================
     # COMPILING (IF ENABLED) AND GPU SUPPORT.
@@ -367,7 +370,7 @@ def train(
         torch.set_float32_matmul_precision('high')
 
     # Device used for training.
-    model = DDP(model.to(local_rank), device_ids=[local_rank])  ## model.to(device)
+    model = DDP(model, device_ids=[local_rank])  ## model.to(device)
 
     # ======================
     # INITIAL PARAMETERS AND INFO.
@@ -450,8 +453,11 @@ def train(
 
         # ======================
         # SAVING CHECKPOINT.
-        # # Custom functions for saving the checkpoints.
-        # if local_rank == 0 and epoch % args.save_every == 0:
+        # Custom functions for saving the checkpoints.
+        if local_rank == 0 and epoch % args.save_every == 0:
+            os.makedirs(snapshot_path, exist_ok=True)
+            save_snapshot(snapshot_path, model, epoch)
+
 
         #     model.module.save(                   # THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
         #         args.backbone_name,
