@@ -66,9 +66,9 @@ dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=10
 save_every=1
 if [ "${backbone_name}" == "resnet50" ]; then
-    batch_size=32  ##128
+    batch_size=128  #16
 else
-    batch_size=64  ##512
+    batch_size=512  #64
 fi
 num_workers=1
 ini_weights="random"
