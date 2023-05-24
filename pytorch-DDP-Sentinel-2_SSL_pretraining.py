@@ -182,6 +182,23 @@ def show_batch(
     plt.show()
 
 
+def save_snapshot(epoch, model, paths):
+    snapshot = {}
+    snapshot["MODEL_STATE"] = model.module.state_dict()
+    snapshot["EPOCHS_RUN"] = epoch
+    snapshot_path = os.path.join(paths['output'], 'snapshots')
+    torch.save(snapshot, os.path.join(snapshot_path, 'snapshot.pt'))
+    print(f'Epoch {epoch} | Training snapshot saved at {snapshot_path}')
+
+
+def load_snapshot(snapshot_path, model):
+    snapshot = torch.load(snapshot_path)
+    model = model.load_state_dict(snapshot['MODEL_STATE'])
+    epochs_run = snapshot['EPOCHS_RUN']
+    print(f'Resuming training from snapshot at Epoch {epochs_run}')
+    return model, epochs_run
+
+
 def train(
     config: dict = None
 ) -> None:
@@ -274,16 +291,6 @@ def train(
                        hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
 
     # ======================
-    # ADDING GPU SUPPORT.
-    # Compile model (only for PT2.0).
-    if args.torch_compile:
-        model = torch.compile(model)
-        torch.set_float32_matmul_precision('high')
-
-    # Device used for training.
-    model = DDP(model.to(local_rank), device_ids=[local_rank])  ## model.to(device)
-
-    # ======================
     # CONFIGURE OPTIMIZER AND SCHEDULERS.
     # Set the initial learning rate.
     lr_init = config["lr"]
@@ -344,6 +351,23 @@ def train(
     #     epoch = 0  # start training from scratch.
 
     epoch = 0
+
+    # ======================
+    # LOADING SNAPSHOT (IF EXISTS).
+    snapshot_path = os.path.join(config['paths']['output'], 'snapshots')
+    if os.path.exists(snapshot_path):
+        print('EXIIIIIIIIIIIIIIIIIIIIIIISTS')
+        load_snapshot(snapshot_path)
+
+    # ======================
+    # COMPILING (IF ENABLED) AND GPU SUPPORT.
+    # Compile model (only for PT2.0).
+    if args.torch_compile:
+        model = torch.compile(model)
+        torch.set_float32_matmul_precision('high')
+
+    # Device used for training.
+    model = DDP(model.to(local_rank), device_ids=[local_rank])  ## model.to(device)
 
     # ======================
     # INITIAL PARAMETERS AND INFO.
