@@ -190,13 +190,13 @@ def save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosi
         "WARMUP_SCHEDULER": warmup_scheduler.state_dict(),
         "COSINE_SCHEDULER": cosine_scheduler.state_dict()
     }
-    torch.save(snapshot, os.path.join(snapshot_path, 'snapshot.pt'))
-    print(f"Epoch {epoch} | Training snapshot saved at {snapshot_path}")
+    torch.save(snapshot, snapshot_path)
+    print(f"Epoch {epoch} | Training snapshot saved!")
 
 
 def load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler, cosine_scheduler):
     loc = f"cuda:{local_rank}"
-    snapshot = torch.load(os.path.join(snapshot_path, 'snapshot.pt'), map_location=loc)
+    snapshot = torch.load(snapshot_path, map_location=loc)
     epoch = snapshot["EPOCH"]
     model.load_state_dict(snapshot["MODEL"])
     optimizer.load_state_dict(snapshot['OPTIMIZER'])
@@ -322,14 +322,14 @@ def train(
     warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
         optimizer,
         lambda epoch: min(1, epoch / warmup_epochs),
-        verbose=True
+        verbose=args.verbose
     )
 
     # Cosine decay afterwards.
     cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
         T_max=args.epochs-warmup_epochs,
-        verbose=True
+        verbose=args.verbose
     )
 
     # # ======================
@@ -363,14 +363,16 @@ def train(
 
     # ======================
     # LOADING SNAPSHOT (IF EXISTS).
-    snapshot_path = os.path.join(config['paths']['output'], 'snapshots')
-    if os.path.exists(snapshot_path):
-        try:
-            print("\nLoading snapshot...")
-            epoch, model, optimizer, warmup_scheduler, cosine_scheduler = load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler, cosine_scheduler)
-        except FileNotFoundError as e:
-            print(f"Snapshots folder empty: {e}")
-            return 1
+    # Path to folder and file.
+    config['paths']['snapshots'] = os.path.join(config['paths']['output'], 'snapshots')
+    snapshot_path = os.path.join(
+        config['paths']['snapshots'],
+        f'snapshot_{args.model_name}_{args.backbone_name}.pt'
+    )
+    # Load if exists a previous snapshot.
+    if os.path.isfile(snapshot_path):
+        print("\nLoading snapshot...")
+        epoch, model, optimizer, warmup_scheduler, cosine_scheduler = load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler, cosine_scheduler)
 
     # ======================
     # COMPILING (IF ENABLED) AND GPU SUPPORT.
@@ -434,11 +436,12 @@ def train(
             running_train_loss += loss.detach() * args.batch_size
 
             # Show partial stats.
-            if b % (total_train_batches//4) == (total_train_batches//4-1):
-                print(f'[GPU:{global_rank}] | '
-                      f'T[{epoch},{b+1:5d}] | '
-                      f'Averaged loss: '
-                      f'{running_train_loss/(b*args.batch_size):.4f}')
+            if args.verbose:
+                if b % (total_train_batches//4) == (total_train_batches//4-1):
+                    print(f'[GPU:{global_rank}] | '
+                        f'T[{epoch},{b+1:5d}] | '
+                        f'Averaged loss: '
+                        f'{running_train_loss/(b*args.batch_size):.4f}')
 
         # The level of collapse is large if the standard deviation of
         # the l2 normalized output is much smaller than 1 / sqrt(dim).
@@ -467,7 +470,7 @@ def train(
         # SAVING CHECKPOINT.
         # Custom functions for saving the checkpoints.
         if local_rank == 0 and epoch % args.save_every == 0:
-            os.makedirs(snapshot_path, exist_ok=True)
+            os.makedirs(config['paths']['snapshots'], exist_ok=True)
             save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosine_scheduler)
 
 
