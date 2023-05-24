@@ -19,16 +19,17 @@ function show_help {
 
 nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) )
 nodes_array=($nodes)
-echo $nodes_array
 head_node=${nodes_array[0]}
 head_node_ip=$(srun --nodes=1 --ntasks=1 -w "$head_node" hostname --ip-address)
-echo $head_node
+echo Nodes array:  $nodes_array
+echo Head node:    $head_node
+echo Head node IP: $head_node_ip
 
-echo Node IP: $head_node_ip
+# Troubleshooting.
 export LOGLEVEL=INFO
+export NCCL_DEBUG=INFO
 
-
-## Catch the arguments.
+# Catch the arguments.
 if [[ "$1" == "-t" ]] || [[ "$1" == "--training" ]]; then
     echo "You chose normal training"
     exp_options=""
@@ -52,11 +53,11 @@ if [ -z "$2" ] || [ -z "$3" ]; then
     exit 0
 fi
 
-## Load virtual environment.
+# Load virtual environment.
 source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
-## Define settings for the experiments.
+# Define settings for the experiments.
 model=$2
 backbone_name=$3
 input_data="/p/project/prcoe12"
@@ -91,6 +92,6 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --distributed \
 $exp_options
 
-## srun torchrun \
-## --standalone \
-## --nproc_per_node 2 \
+# srun torchrun \
+# --standalone \
+# --nproc_per_node 2 \
