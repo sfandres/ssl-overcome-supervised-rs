@@ -209,7 +209,7 @@ def train(
 
     # Uniquely identifies each GPU-process on a node
     local_rank = int(os.environ["LOCAL_RANK"])
-    print(f"{'Local_rank:'.ljust(18)} {local_rank}\n")
+    print(f"{'Local_rank:'.ljust(18)} {local_rank}")
 
     # ======================
     # DEFINE MODELS.
@@ -316,32 +316,34 @@ def train(
         verbose=True
     )
 
-    # ======================
-    # LOAD CHECKPOINTS (IF ENABLED).
-    if args.resume_training:
+    # # ======================
+    # # LOAD CHECKPOINTS (IF ENABLED).
+    # if args.resume_training:
 
-        # List of checkpoints.
-        ckpt_list = []
-        print()
-        for root, dirs, files in os.walk(config['paths']['checkpoints']):
-            for i, filename in enumerate(sorted(files, reverse=True)):
-                if filename[:4] == 'ckpt' and args.backbone_name in filename:
-                    ckpt_list.append(os.path.join(root, filename))
-                    print(f'{i:02} --> {filename}')
+    #     # List of checkpoints.
+    #     ckpt_list = []
+    #     print()
+    #     for root, dirs, files in os.walk(config['paths']['checkpoints']):
+    #         for i, filename in enumerate(sorted(files, reverse=True)):
+    #             if filename[:4] == 'ckpt' and args.backbone_name in filename:
+    #                 ckpt_list.append(os.path.join(root, filename))
+    #                 print(f'{i:02} --> {filename}')
 
-        # Load the best checkpoint.
-        print(f'\nLoaded: {ckpt_list[0]}')
-        ckpt = torch.load(ckpt_list[0])
+    #     # Load the best checkpoint.
+    #     print(f'\nLoaded: {ckpt_list[0]}')
+    #     ckpt = torch.load(ckpt_list[0])
 
-        # Load from dict.
-        epoch = ckpt['epoch'] + 1
-        model.backbone.load_state_dict(ckpt['model_state_dict'])
-        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        warmup_scheduler.load_state_dict(ckpt['warmup_scheduler_state_dict'])
-        cosine_scheduler.load_state_dict(ckpt['cosine_scheduler_state_dict'])
+    #     # Load from dict.
+    #     epoch = ckpt['epoch'] + 1
+    #     model.backbone.load_state_dict(ckpt['model_state_dict'])
+    #     optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+    #     warmup_scheduler.load_state_dict(ckpt['warmup_scheduler_state_dict'])
+    #     cosine_scheduler.load_state_dict(ckpt['cosine_scheduler_state_dict'])
 
-    else:
-        epoch = 0  # start training from scratch.
+    # else:
+    #     epoch = 0  # start training from scratch.
+
+    epoch = 0
 
     # ======================
     # INITIAL PARAMETERS AND INFO.
@@ -417,7 +419,6 @@ def train(
 
         # ======================
         # UPDATE LEARNING RATE SCHEDULER.
-        # scheduler.step()
         if (epoch < warmup_epochs):
             warmup_scheduler.step()
         else:
@@ -425,29 +426,27 @@ def train(
 
         # ======================
         # SAVING CHECKPOINT.
-        # Move the model to CPU before saving it
-        # to make it more platform-independent.
-        # Problems with resuming training.
-        if local_rank == 0 and epoch % args.save_every == 0:
+        # # Custom functions for saving the checkpoints.
+        # if local_rank == 0 and epoch % args.save_every == 0:
 
-            model.module.save(                   # THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
-                args.backbone_name,
-                epoch,
-                epoch_train_loss,
-                args.dataset_ratio,
-                args.balanced_dataset,
-                config['paths']['checkpoints'],
-                collapse_level=collapse_level if args.model_name == 'SimSiam' else 0.
-            )
+        #     model.module.save(                   # THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
+        #         args.backbone_name,
+        #         epoch,
+        #         epoch_train_loss,
+        #         args.dataset_ratio,
+        #         args.balanced_dataset,
+        #         config['paths']['checkpoints'],
+        #         collapse_level=collapse_level if args.model_name == 'SimSiam' else 0.
+        #     )
 
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.module.backbone.state_dict(),  # .MODULE. ADDED
-                'optimizer_state_dict': optimizer.state_dict(),
-                'warmup_scheduler_state_dict': warmup_scheduler.state_dict(),
-                'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
-                'loss': epoch_train_loss
-            }, os.path.join(config['paths']['checkpoints'], 'ckpt_' + str(model.module)))
+        #     torch.save({
+        #         'epoch': epoch,
+        #         'model_state_dict': model.module.backbone.state_dict(),  # .MODULE. ADDED
+        #         'optimizer_state_dict': optimizer.state_dict(),
+        #         'warmup_scheduler_state_dict': warmup_scheduler.state_dict(),
+        #         'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
+        #         'loss': epoch_train_loss
+        #     }, os.path.join(config['paths']['checkpoints'], 'ckpt_' + str(model.module)))
 
         # ======================
         # EPOCH STATISTICS.
@@ -470,11 +469,11 @@ def main(args):
     ddp_setup()
 
     # Enable reproducibility.
-    print(f"\n{'torch initial seed:'.ljust(33)} {torch.initial_seed()}")
+    print(f"\n{'torch initial seed:'.ljust(33)}{torch.initial_seed()}")
     g = set_seed(SEED)
-    print(f"{'torch current seed:'.ljust(33)} {torch.initial_seed()}")
+    print(f"{'torch current seed:'.ljust(33)}{torch.initial_seed()}")
 
-    # Check torch CUDA
+    # Check torch CUDA and CPUs available (for num_workers).
     print(f"{'torch.cuda.is_available():'.ljust(33)}"
           f"{torch.cuda.is_available()}")
     print(f"{'torch.cuda.device_count():'.ljust(33)}"
@@ -487,8 +486,6 @@ def main(args):
           f"{torch.cuda.get_device_name(0)}")
     print(f"{'torch.backends.cudnn.benchmark:'.ljust(33)}"
           f"{torch.backends.cudnn.benchmark}")
-
-    # Check CPUs available (for num_workers).
     print(f"{'os.sched_getaffinity:'.ljust(33)}"
           f"{len(os.sched_getaffinity(0))}")
     print(f"{'os.cpu_count():'.ljust(33)}"
@@ -521,7 +518,7 @@ def main(args):
     # ======================
     # DATASET.
     # ======================
-
+    # Default values.
     sampler = None
     shuffle = True
 
@@ -662,7 +659,6 @@ def main(args):
     # Collate functions.
     #--------------------------
     # Base class for other collate implementations.
-    # This allows training.
     collate_fn = {x: lightly.data.collate.BaseCollateFunction(
         transform[x]) for x in splits}
 
@@ -673,7 +669,6 @@ def main(args):
     #--------------------------
     # PyTorch dataloaders.
     #--------------------------
-
     print(f'\nSampler: {sampler}')
     print(f'Shuffle: {shuffle}')
 
@@ -711,7 +706,6 @@ def main(args):
     #--------------------------
     # Check the balance and size of the dataset.
     #--------------------------
-
     # Check samples per class, total samples and batches of each dataset.
     if args.verbose:
         for d in dataset:
@@ -730,7 +724,6 @@ def main(args):
     #--------------------------
     # Look at some training samples (lightly dataset).
     #--------------------------
-
     # Accessing Data and Targets in a PyTorch DataLoader.
     if args.show:
         for i, (images, labels, names) in enumerate(dataloader['train']):
@@ -744,7 +737,7 @@ def main(args):
             if i == 0:
                 break  # Only a few batches.
 
-    # Train loop.
+    # Show batches.
     if args.show:
         for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
             show_batch(x0, 0)  # Show the images within the first batch.
@@ -758,7 +751,6 @@ def main(args):
     #--------------------------
     # Training (also with hyperparameter tuning using Ray Tune)
     #--------------------------
-
     if args.ray_tune:
 
         max_num_epochs = args.epochs
