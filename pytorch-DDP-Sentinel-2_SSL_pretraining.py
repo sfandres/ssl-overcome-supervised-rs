@@ -182,22 +182,28 @@ def show_batch(
     plt.show()
 
 
-def save_snapshot(snapshot_path, model, epoch):
+def save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosine_scheduler):
     snapshot = {
-        "MODEL_STATE": model.module.state_dict(),
-        "EPOCHS_RUN": epoch,
+        "EPOCH": epoch + 1,  # +1 so that the training resumes at the same point.
+        "MODEL": model.module.state_dict(),
+        "OPTIMIZER": optimizer.state_dict(),
+        "WARMUP_SCHEDULER": warmup_scheduler.state_dict(),
+        "COSINE_SCHEDULER": cosine_scheduler.state_dict()
     }
     torch.save(snapshot, os.path.join(snapshot_path, 'snapshot.pt'))
     print(f"Epoch {epoch} | Training snapshot saved at {snapshot_path}")
 
 
-def load_snapshot(snapshot_path, model, local_rank):
+def load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler, cosine_scheduler):
     loc = f"cuda:{local_rank}"
     snapshot = torch.load(os.path.join(snapshot_path, 'snapshot.pt'), map_location=loc)
-    model.load_state_dict(snapshot["MODEL_STATE"])
-    epoch = snapshot["EPOCHS_RUN"]
+    epoch = snapshot["EPOCH"]
+    model.load_state_dict(snapshot["MODEL"])
+    optimizer.load_state_dict(snapshot['OPTIMIZER'])
+    warmup_scheduler.load_state_dict(snapshot['WARMUP_SCHEDULER'])
+    cosine_scheduler.load_state_dict(snapshot['COSINE_SCHEDULER'])
     print(f'Resuming training from snapshot at Epoch {epoch}')
-    return model, epoch
+    return epoch, model, optimizer, warmup_scheduler, cosine_scheduler
 
 
 def train(
@@ -359,8 +365,12 @@ def train(
     # LOADING SNAPSHOT (IF EXISTS).
     snapshot_path = os.path.join(config['paths']['output'], 'snapshots')
     if os.path.exists(snapshot_path):
-        print("Loading snapshot")
-        model, epoch = load_snapshot(snapshot_path, model, local_rank)
+        try:
+            print("\nLoading snapshot...")
+            epoch, model, optimizer, warmup_scheduler, cosine_scheduler = load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler, cosine_scheduler)
+        except FileNotFoundError as e:
+            print(f"Snapshots folder empty: {e}")
+            return 1
 
     # ======================
     # COMPILING (IF ENABLED) AND GPU SUPPORT.
@@ -370,7 +380,8 @@ def train(
         torch.set_float32_matmul_precision('high')
 
     # Device used for training.
-    model = DDP(model, device_ids=[local_rank])  ## model.to(device)
+    if args.distributed:
+        model = DDP(model, device_ids=[local_rank])  ## model.to(device)
 
     # ======================
     # INITIAL PARAMETERS AND INFO.
@@ -398,6 +409,7 @@ def train(
         collapse_level = 0.
         running_train_loss = 0.
         model.train()
+        config['dataloader']['train'].sampler.set_epoch(epoch)  # Important.
         for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
 
             # Move images to the GPU (same batch two transformations).
@@ -423,9 +435,9 @@ def train(
 
             # Show partial stats.
             if b % (total_train_batches//4) == (total_train_batches//4-1):
-                print(f'[GPU{global_rank}] | '
-                      f'T[{epoch}, {b + 1:5d}] | '
-                      f'Running train loss: '
+                print(f'[GPU:{global_rank}] | '
+                      f'T[{epoch},{b+1:5d}] | '
+                      f'Averaged loss: '
                       f'{running_train_loss/(b*args.batch_size):.4f}')
 
         # The level of collapse is large if the standard deviation of
@@ -456,7 +468,7 @@ def train(
         # Custom functions for saving the checkpoints.
         if local_rank == 0 and epoch % args.save_every == 0:
             os.makedirs(snapshot_path, exist_ok=True)
-            save_snapshot(snapshot_path, model, epoch)
+            save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosine_scheduler)
 
 
         #     model.module.save(                   # THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
@@ -481,12 +493,13 @@ def train(
         # ======================
         # EPOCH STATISTICS.
         # Show some stats per epoch completed.
-        print(f'[GPU{global_rank}] | '
-              f'[Epoch {epoch:3d}] | '
-              f'Train loss: {epoch_train_loss:.4f} | '
-              # f'Val loss: {epoch_val_loss:.4f} | '
-              f'Duration: {(time.time()-t0):.2f} s | '
-              f'Collapse Level (SimSiam only): {collapse_level:.4f}/1.0\n')
+        print(f"[GPU:{global_rank}] | "
+              f"[Epoch: {epoch}] | "
+              f"Train loss: {epoch_train_loss:.4f} | "
+              f"Steps (bz): {len(config['dataloader']['train'])} | "
+              # f"Val loss: {epoch_val_loss:.4f} | "
+              f"Duration: {(time.time()-t0):.2f} s | "
+              f"Collapse (SimSiam): {collapse_level:.4f}/1.0\n")
 
         # ======================
         # RAY TUNE REPORTING STAGE.
