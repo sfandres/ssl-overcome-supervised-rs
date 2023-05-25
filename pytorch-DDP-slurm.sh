@@ -1,12 +1,14 @@
 #!/bin/bash
 
-
-#SBATCH --nodes=4
-#SBATCH --ntasks=4
-#SBATCH --gpus-per-task=1
-#SBATCH --cpus-per-task=1
-#SBATCH --job-name=ddp_%j
-#SBATCH --output=ddp_%j.out
+# Resource request.
+#SBATCH --nodes=4                                   # Number of nodes.
+#SBATCH --ntasks=4                                  # Number of tasks.
+#SBATCH --cpus-per-task=1                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
+#SBATCH --gpus-per-task=1                           # Number of GPUs per task.
+#SBATCH --job-name=ddp_%j                           # Name of the job.
+#SBATCH --output=ddp_%j.out                         # Name of the output file.
+#SBATCH --mail-type=ALL                             # Type of notification via email.
+#SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
 
 
 function show_help {
