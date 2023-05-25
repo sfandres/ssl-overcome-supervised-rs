@@ -3,9 +3,11 @@
 
 """This module provides the MoCov2 class.
 
+https://docs.lightly.ai/self-supervised-learning/examples/moco.html
+
 Author: Andres J. Sanchez-Fernandez
 Email: sfandres@unex.es
-Date: 2023-04-10
+Date: 2023-05-25
 """
 
 
@@ -21,8 +23,6 @@ from .base_model import BaseModel
 class MoCov2(BaseModel):
     """
     MoCov2 self-supervised learning model.
-
-    Reference: https://docs.lightly.ai/self-supervised-learning/examples/moco.html
 
     Attributes:
         backbone (nn.Module): Backbone model.
@@ -75,72 +75,29 @@ class MoCov2(BaseModel):
 
     def forward(
         self,
-        x: torch.Tensor
+        x_q: torch.Tensor,
+        x_k: torch.Tensor,
+        momentum_val: float = 0.999
     ) -> torch.Tensor:
         """
-        Computes the forward pass.
+        Computes the forward pass and returns loss.
 
         Args:
-            x (torch.Tensor): Batch of input images.
+            x0 (torch.Tensor): Batch of input images.
+            x1 (torch.Tensor): Batch of input images.
+            momentum_val (float, optional): Momentum value according to the current epoch.
 
         Returns:
-            torch.Tensor: Tensor of feature embeddings produced by the projection head network.
+            torch.Tensor: Loss computed after the forward pass in the projection head.
         """
 
-        # Feature extraction using the ResNet backbone.
-        query = self.backbone(x).flatten(start_dim=1)
+        # Check if momentum is present in kwargs.
+        # if 'momentum_val' in kwargs:
+        #     momentum_val = kwargs['momentum_val']
+        # else:
+        #     momentum_val = None
 
-        # Feature embeddings.
-        query = self.projection_head(query)
-
-        return query
-
-    def forward_momentum(
-        self,
-        x: torch.Tensor
-    ) -> torch.Tensor:
-        """
-        Computes the forward pass.
-
-        Args:
-            x (torch.Tensor): Batch of input images.
-
-        Returns:
-            torch.Tensor: Tensor of feature embeddings produced by the projection head network.
-        """
-
-        # Feature extraction using the ResNet backbone.
-        key = self.backbone_momentum(x).flatten(start_dim=1)
-
-        # Feature embeddings.
-        key = self.projection_head_momentum(key)
-
-        return key
-    
-    
-    def training_step(
-        self,
-        two_batches: tuple[torch.Tensor, torch.Tensor],
-        **kwargs
-    ) -> float:
-        """
-        Performs a single training step on a batch of transformed images.
-
-        Args:
-            two_batches (tuple): Tuple of two batches of transformed images,
-            where each batch is a tensor of size (batch_size, C, H, W).
-            momentum_val (float) in kwargs: Momentum value according to the current epoch.
-
-        Returns:
-            float: The loss value for the current batch.
-        """
-
-        # check if momentum is present in kwargs
-        if 'momentum_val' in kwargs:
-            momentum_val = kwargs['momentum_val']
-        else:
-            momentum_val = None
-
+        # Update momentum.
         update_momentum(self.backbone,
                         self.backbone_momentum,
                         m=momentum_val)
@@ -149,14 +106,19 @@ class MoCov2(BaseModel):
                         self.projection_head_momentum,
                         m=momentum_val)
 
-        # Two batches of transformed images.
-        x_query, x_key = two_batches
+        # Query.
+        # Feature extraction using the ResNet backbone.
+        q = self.backbone(x_q).flatten(start_dim=1)
+        # Feature embeddings.
+        z_q = self.projection_head(q)
 
-        # Output projections of both transformed batches.
-        query = self.forward(x_query)
-        key = self.forward_momentum(x_key)
+        # Key.
+        # Feature extraction using the ResNet backbone.
+        k = self.backbone_momentum(x_k).flatten(start_dim=1)
+        # Feature embeddings.
+        z_k = self.projection_head_momentum(k).detach()
 
         # Contrastive Cross Entropy Loss.
-        loss = self.criterion(query, key)
+        loss = self.criterion(z_q, z_k)
 
         return loss
