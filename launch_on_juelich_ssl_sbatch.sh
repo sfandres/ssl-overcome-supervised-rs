@@ -7,9 +7,9 @@
 #SBATCH --ntasks=1                                  ## Number of tasks.
 #SBATCH --ntasks-per-node=1                         ## Number of tasks to be invoked on each node.
 #SBATCH --cpus-per-task=8                           ## Number of cpu-cores per task (>1 if multi-threaded tasks).
-#SBATCH --gpus-per-node=1                           ## Number of GPUs on each node (Sergio: 4).
-#SBATCH --mail-type=ALL                             ## (not working) Type of notification via email.
-#SBATCH --mail-user=sfandres@unex.es                ## (not working) User to receive the email notification.
+#SBATCH --gpus-per-node=1                           ## Number of GPUs on each node.
+#SBATCH --mail-type=ALL                             ## Type of notification via email.
+#SBATCH --mail-user=sfandres@unex.es                ## User to receive the email notification.
 
 
 function show_help {
