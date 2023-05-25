@@ -389,6 +389,7 @@ def train(
     # INITIAL PARAMETERS AND INFO.
     total_train_batches = len(config['dataloader']['train'])
     total_val_batches = len(config['dataloader']['val'])
+    no_collapse = 1./math.sqrt(config['out_dim'])
     if args.verbose:
         print(f'\nOptimizer:\n{optimizer}')
         print(f'Warmup scheduler: {warmup_scheduler}')
@@ -414,40 +415,39 @@ def train(
         config['dataloader']['train'].sampler.set_epoch(epoch)  # Important.
         for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
 
-            # Move images to the GPU (same batch two transformations).
+            # Move images to the GPU (same batch with two transformations).
             x0 = x0.to(local_rank)
             x1 = x1.to(local_rank)
 
-            # Zero the parameter gradients.
+            # Zero the parameter gradients; otherwise,
+            # they will be accumulated per batch.
             optimizer.zero_grad()
 
             # Forward + backward + optimize: Compute the loss, run
             # backpropagation, and update the parameters of the model.
-            # loss = model.module.training_step((x0, x1), momentum_val=0.999)  # THIS WILL NOT WORK WITH MULTI-GPU
             loss = model(x0, x1)
             loss.backward()
             optimizer.step()
 
+            # The level of collapse is large if the standard deviation of
+            # the l2 normalized output is much smaller than 1 / sqrt(out_dim).
+            # 0 means collapse; the closer to the upper value, the better.
             if args.model_name == 'SimSiam':
-                model.check_collapse(loss.detach())
+                collapse_level = model.module.check_collapse()
 
             # Print statistics.
             # Averaged loss across all training examples * batch_size.
             running_train_loss += loss.detach() * args.batch_size
 
-            # Show partial stats.
+            # Show partial stats (only four times per epoch).
             if args.verbose:
                 if b % (total_train_batches//4) == (total_train_batches//4-1):
-                    print(f'[GPU:{global_rank}] | '
+                    print(
+                        f'[GPU:{global_rank}] | '
                         f'T[{epoch},{b+1:5d}] | '
                         f'Averaged loss: '
-                        f'{running_train_loss/(b*args.batch_size):.4f}')
-
-        # The level of collapse is large if the standard deviation of
-        # the l2 normalized output is much smaller than 1 / sqrt(dim).
-        if args.model_name == 'SimSiam':
-            collapse_level = max(
-                0., 1 - math.sqrt(config['out_dim']) * model.avg_output_std)
+                        f'{running_train_loss/(b*args.batch_size):.4f}'
+                    )
 
         # ======================
         # TRAINING LOSS.
@@ -496,13 +496,15 @@ def train(
         # ======================
         # EPOCH STATISTICS.
         # Show some stats per epoch completed.
-        print(f"[GPU:{global_rank}] | "
-              f"[Epoch: {epoch}] | "
-              f"Train loss: {epoch_train_loss:.4f} | "
-              f"Steps (nb): {len(config['dataloader']['train'])} | "
-              # f"Val loss: {epoch_val_loss:.4f} | "
-              f"Duration: {(time.time()-t0):.2f} s | "
-              f"Collapse (SimSiam): {collapse_level:.4f}/1.0\n")
+        print(
+            f"[GPU:{global_rank}] | "
+            f"[Epoch: {epoch}] | "
+            f"Train loss: {epoch_train_loss:.4f} | "
+            f"Steps (nb): {len(config['dataloader']['train'])} | "
+            # f"Val loss: {epoch_val_loss:.4f} | "
+            f"Duration: {(time.time()-t0):.2f} s | "
+            f"Collapse (SimSiam): {collapse_level:.4f}/{no_collapse:.4f}\n"
+        )
 
         # ======================
         # RAY TUNE REPORTING STAGE.
