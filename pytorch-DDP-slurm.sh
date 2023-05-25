@@ -8,14 +8,35 @@
 #SBATCH --mail-type=ALL                             # Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
 
-
-function show_help {
-    echo "Usage: $0 [OPTION] [MODEL] [BACKBONE]"
-    echo "  -t, --training           Runs normal training."
-    echo "  -r, --resume-training    Resumes the training from a previous saved checkpoint."
-    echo "  -h, --help               Display the help message."
+# Help function
+function display_help {
+  echo "Usage: ./$0 MODEL BACKBONE"
+  echo "Arguments:"
+  echo "  MODEL         Specify the model ('BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', or 'SimSiam')"
+  echo "  BACKBONE      Specify the backbone ('resnet18' or 'resnet50')"
+  echo "  -h, --help    Display this help message"
+  exit 0
 }
 
+# Parse arguments.
+model=$1
+backbone_name=$2
+
+if [[ $1 == "-h" || $1 == "--help" ]]; then
+    display_help
+
+elif [[ -z $model || -z $backbone_name ]]; then
+    echo "Error: Both model and backbone arguments are required."
+    display_help
+
+elif [[ $model != "SimCLR" && $model != "MoCov2" && $model != "SimSiam" ]]; then
+    echo "Error: Invalid model. Supported models are 'BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', and 'SimSiam'."
+    display_help
+
+elif [[ $backbone_name != "resnet18" && $backbone_name != "resnet50" ]]; then
+    echo "Error: Invalid backbone. Supported backbones are 'resnet18' and 'resnet50'."
+    display_help
+fi
 
 # Torchrun configuration for Slurm.
 nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) )
@@ -30,47 +51,17 @@ echo Head node IP: $head_node_ip
 export LOGLEVEL=INFO
 export NCCL_DEBUG=INFO
 
-# Catch the arguments.
-if [[ "$1" == "-t" ]] || [[ "$1" == "--training" ]]; then
-    echo "You chose normal training"
-    exp_options=""
-
-elif [[ "$1" == "-r" ]] || [[ "$1" == "--resume-training" ]]; then
-    echo "You chose resume training"
-    exp_options="--resume_training"
-
-elif [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
-    show_help
-    exit 0
-
-else
-    echo "Invalid option. Use -h or --help to display available options."
-    exit 1
-fi
-
-if [ -z "$2" ] || [ -z "$3" ]; then
-    echo "Second (model) or third (backbone) argument is empty."
-    show_help
-    exit 0
-fi
-
 # Load virtual environment.
 source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 # Define settings for the experiments.
-model=$2
-backbone_name=$3
 input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
-epochs=10
-save_every=1
-if [ "${backbone_name}" == "resnet50" ]; then
-    batch_size=128  #16
-else
-    batch_size=512  #64
-fi
+epochs=500
+save_every=10
+batch_size=128
 num_workers=1
 ini_weights="random"
 
@@ -92,4 +83,3 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --num_workers $num_workers \
 --ini_weights $ini_weights \
 --distributed \
-$exp_options
