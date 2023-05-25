@@ -14,6 +14,7 @@ Date: 2023-04-04
 import torch
 import torch.nn as nn
 from lightly.models.modules.heads import SimSiamPredictionHead, SimSiamProjectionHead
+from lightly.utils.debug import std_of_l2_normalized
 from lightly.loss import NegativeCosineSimilarity
 from .base_model import BaseModel
 
@@ -73,97 +74,72 @@ class SimSiam(BaseModel):
 
         # Loss criterion.
         self.criterion = NegativeCosineSimilarity()
-        
-        # Setup (check collapse).
-        # self.avg_loss = 0.
-        self.avg_output_std = 0.
 
     def forward(
         self,
-        x: torch.Tensor
+        x0: torch.Tensor,
+        x1: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Computes the forward pass.
+        Computes the forward pass and returns loss.
 
         Args:
-            x (torch.Tensor): Batch of input images.
+            x0 (torch.Tensor): Batch of input images.
+            x1 (torch.Tensor): Batch of input images.
 
         Returns:
-            torch.Tensor: Tensor of feature embeddings produced by the projection head network.
+            torch.Tensor: Loss computed after the forward pass in the projection head.
         """
-
-        # Get representations.
-        f = self.backbone(x).flatten(start_dim=1)
-
-        # Get projections.
-        z = self.projection_head(f)
-
-        # Get predictions.
-        p = self.prediction_head(z)
-
-        # Stop gradient.
-        z = z.detach()
-
-        return z, p
-
-    def training_step(
-        self,
-        two_batches: tuple[torch.Tensor, torch.Tensor],
-        **kwargs
-    ) -> float:
-        """
-        Performs a single training step on a batch of transformed images.
-
-        Args:
-            two_batches (tuple): Tuple of two batches of transformed images,
-            where each batch is a tensor of size (batch_size, C, H, W).
-
-        Returns:
-            float: The loss value for the current batch.
-        """
-
-        # Two batches of transformed images.
-        x0, x1 = two_batches
 
         # Output projections of both transformed batches.
-        z0, p0 = self.forward(x0)
-        z1, p1 = self.forward(x1)
+        # Get representations.
+        f0 = self.backbone(x0).flatten(start_dim=1)
+        f1 = self.backbone(x1).flatten(start_dim=1)
+
+        # Get projections.
+        z0 = self.projection_head(f0)
+        z1 = self.projection_head(f1)
+
+        # Get predictions.
+        p0 = self.prediction_head(z0)
+        p1 = self.prediction_head(z1)
+
+        # Stop gradient for projections.
+        z0 = z0.detach()
+        z1 = z1.detach()
 
         # Negative Cosine Similarity.
         loss = .5 * (self.criterion(z0, p1) + self.criterion(z1, p0))
 
-        # For checking collapsing later.
-        self.p0 = p0
+        # Used to check if the representations are collapsing later.
+        # We only take one for simplicity.
+        self.embedding = p0.detach()
 
         return loss
-    
+
     def check_collapse(
         self,
-        loss
-    ) -> None:
+    ) -> float:
         """
         Checks the collapse of the model (non-contrastive SSL).
 
-        Calculates the per-dimension standard deviation of the model's output (prediction head),
-        and uses moving averages to track the loss and standard deviation. This method can be
-        used to detect whether the embeddings produced by the model are collapsing.
+        https://docs.lightly.ai/self-supervised-learning/getting_started/advanced.html
+
+        Representation collapse can happen during unstable training and results in the model's
+        output (prediction head) predicting the same, or very similar, representations for all images.
+        This is of course disastrous for model training as we want to the representations to be
+        as different as possible between images!
+        
+        A value close to 0 indicates that the representations have collapsed. A value close to
+        1/sqrt(dimensions), where dimensions are the number of representation dimensions, indicates
+        that the representations are stable. Below we show model training outputs from a run where
+        the representations collapse and one where they don't collapse.
 
         Args:
-            loss (torch.Tensor): The loss incurred by the model.
-
-        Returns:
             None.
+        
+        Returns:
+            float: the level of collapse.
         """
 
-        # Calculate the per-dimension standard deviation of the outputs.
-        # We can use this later to check whether the embeddings are collapsing.
-        output = self.p0.detach()
-        output = torch.nn.functional.normalize(output, dim=1)
-
-        output_std = torch.std(output, 0)
-        output_std = output_std.mean()
-
-        # Use moving averages to track the loss and standard deviation.
-        w = 0.9
-        # self.avg_loss = w * self.avg_loss + (1 - w) * loss.item()
-        self.avg_output_std = w * self.avg_output_std + (1 - w) * output_std.item()
+        return std_of_l2_normalized(self.embedding)
