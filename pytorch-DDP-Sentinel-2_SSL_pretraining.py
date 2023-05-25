@@ -203,6 +203,7 @@ def load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler,
     warmup_scheduler.load_state_dict(snapshot['WARMUP_SCHEDULER'])
     cosine_scheduler.load_state_dict(snapshot['COSINE_SCHEDULER'])
     print(f"Resuming training from snapshot at Epoch {epoch} <-- {snapshot_path.rsplit('/', 1)[-1]}")
+
     return epoch, model, optimizer, warmup_scheduler, cosine_scheduler
 
 
@@ -271,7 +272,7 @@ def train(
             device=local_rank)
         )
 
-    # Removing head from resnet. Embedding.
+    # Removing head from resnet: Encoder.
     backbone = nn.Sequential(*list(resnet.children())[:-1])
     input_dim = hidden_dim = resnet.fc.in_features
     print(f"{'Model name:'.ljust(18)} {args.model_name}")
@@ -369,6 +370,7 @@ def train(
         config['paths']['snapshots'],
         f'snapshot_{args.model_name}_{args.backbone_name}.pt'
     )
+
     # Load if exists a previous snapshot.
     if os.path.isfile(snapshot_path):
         print("\nLoading snapshot...")
