@@ -5,8 +5,6 @@
 #SBATCH --ntasks=4                                  # Number of tasks.
 #SBATCH --cpus-per-task=1                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --gpus-per-task=1                           # Number of GPUs per task.
-#SBATCH --job-name=ddp_$2_$3                        # Name of the job.
-#SBATCH --output=ddp_$2_$3.out                      # Name of the output file.
 #SBATCH --mail-type=ALL                             # Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
 
