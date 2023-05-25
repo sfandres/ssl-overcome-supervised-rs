@@ -7,7 +7,7 @@ https://github.com/facebookresearch/barlowtwins/blob/8e8d284ca0bc02f88b92328e53f
 
 Author: Andres J. Sanchez-Fernandez
 Email: sfandres@unex.es
-Date: 2023-04-04
+Date: 2023-05-22
 """
 
 

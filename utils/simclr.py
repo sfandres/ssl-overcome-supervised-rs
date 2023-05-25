@@ -8,7 +8,7 @@ https://github.com/lightly-ai/lightly/blob/master/lightly/models/modules/heads.p
 
 Author: Andres J. Sanchez-Fernandez
 Email: sfandres@unex.es
-Date: 2023-05-04
+Date: 2023-05-24
 """
 
 
