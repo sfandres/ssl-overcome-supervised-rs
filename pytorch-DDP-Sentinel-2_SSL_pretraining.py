@@ -473,6 +473,7 @@ def train(
         # Custom functions for saving the checkpoints.
         if local_rank == 0 and epoch % args.save_every == 0:
             os.makedirs(config['paths']['snapshots'], exist_ok=True)
+            print(model.module.backbone[0].weight[0])  # REMOVE LATER.
             save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosine_scheduler)
 
 
