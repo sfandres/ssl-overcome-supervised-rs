@@ -68,7 +68,7 @@ ini_weights="random"
 # Run experiment.
 srun torchrun \
 --nnodes $SLURM_JOB_NUM_NODES \
---nproc_per_node 1 \
+--nproc_per_node $SLURM_GPUS_PER_TASK \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
 --rdzv_endpoint $head_node_ip:29500 \
