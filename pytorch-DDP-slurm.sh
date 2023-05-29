@@ -29,7 +29,7 @@ elif [[ -z $model || -z $backbone_name ]]; then
     echo "Error: Both model and backbone arguments are required."
     display_help
 
-elif [[ $model != "SimCLR" && $model != "MoCov2" && $model != "SimSiam" ]]; then
+elif [[ $model != "BarlowTwins" && $model != "MoCov2" && $model != "SimCLR" && $model != "SimCLRv2" && $model != "SimSiam" ]]; then
     echo "Error: Invalid model. Supported models are 'BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', and 'SimSiam'."
     display_help
 
