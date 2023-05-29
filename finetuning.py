@@ -48,6 +48,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
 AVAIL_SSL_MODELS = ['BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', 'SimSiam']
+MODEL_CHOICES = ['Random', 'Imagenet'] + AVAIL_SSL_MODELS
 SEED = 42
 
 
@@ -66,7 +67,7 @@ def get_args() -> argparse.Namespace:
 
     # General arguments.
     parser.add_argument('model_name', type=str,
-                        choices=AVAIL_SSL_MODELS,
+                        choices=MODEL_CHOICES,
                         help='target SSL model.')
 
     parser.add_argument('task_name', type=str, choices=['multiclass', 'multilabel'],
