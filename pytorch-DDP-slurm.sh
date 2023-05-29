@@ -8,14 +8,14 @@
 #SBATCH --mail-type=ALL                             # Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
 
-# Help function
+# Help function.
 function display_help {
-  echo "Usage: ./$0 MODEL BACKBONE"
-  echo "Arguments:"
-  echo "  MODEL         Specify the model ('BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', or 'SimSiam')"
-  echo "  BACKBONE      Specify the backbone ('resnet18' or 'resnet50')"
-  echo "  -h, --help    Display this help message"
-  exit 0
+    echo "Usage: ./$0 MODEL BACKBONE"
+    echo "Arguments:"
+    echo "  MODEL         Specify the model ('BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', or 'SimSiam')"
+    echo "  BACKBONE      Specify the backbone ('resnet18' or 'resnet50')"
+    echo "  -h, --help    Display this help message"
+    exit 0
 }
 
 # Parse arguments.
