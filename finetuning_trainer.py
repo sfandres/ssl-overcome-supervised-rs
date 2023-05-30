@@ -1,6 +1,85 @@
 import torch
 from torch.utils.data import DataLoader
 import os
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from datetime import datetime
+import time
+
+def accuracy(model, dataloader, task_name, device):
+
+    # Initialize the probabilities, predictions and labels lists.
+    y_prob = []
+    y_pred = []
+    y_true = []
+
+    model.eval()
+    with torch.no_grad():
+        for data in dataloader:
+
+            # Dataset.
+            inputs, labels = data[0].to(device), data[1].to(device)
+
+            # Forward pass.
+            outputs = model(inputs)
+
+            # Get model predictions.
+            if task_name == 'multiclass':
+                # Convert logits to probabilities using a softmax function.
+                probs = torch.softmax(outputs, dim=1)
+                # Take the argmax of the probabilities to obtain the predicted class labels.
+                preds = torch.argmax(probs, dim=1)
+
+            elif task_name == 'multilabel':
+                # Convert logits to probabilities using a sigmoid function.
+                probs = torch.sigmoid(outputs)
+                # Scale predicted abundances to sum to 1 across all the classes for each sample.
+                preds_sum = probs.sum(dim=1, keepdim=True)
+                preds = probs / preds_sum
+
+            # Append true and predicted labels to the lists (option 2).
+            y_prob.append(probs)
+            y_pred.append(preds)
+            y_true.append(labels)
+
+    if task_name == 'multiclass':
+
+        # Concatenate the lists into tensors (option 2).
+        y_prob_cpu = torch.cat(y_prob).to('cpu')
+        y_pred_cpu = torch.cat(y_pred).to('cpu')
+        y_true_cpu = torch.cat(y_true).to('cpu')
+
+        # Compute top1 and top5 accuracy (option 2).
+        top1_accuracy = torch.sum(torch.eq(y_pred_cpu, y_true_cpu)).item() / len(y_true_cpu)
+        top5_accuracy = torch.sum(torch.topk(y_prob_cpu, k=5, dim=1)[1] == y_true_cpu.view(-1, 1)).item() / len(y_true_cpu)
+
+        acc_dict = {
+            'top1': top1_accuracy,
+            'top5': top5_accuracy
+        }
+
+    elif task_name == 'multilabel':
+
+        # Concatenate the lists into tensors.
+        y_prob_cpu = torch.cat(y_prob).to('cpu')
+        y_pred_cpu = torch.cat(y_pred).to('cpu')
+        y_true_cpu = torch.cat(y_true).to('cpu')
+
+        # Compute global RMSE and MAE.
+        rmse = mean_squared_error(y_true_cpu, y_pred_cpu, squared=False)
+        mae = mean_absolute_error(y_true_cpu, y_pred_cpu)
+
+        # Compute RMSE and MAE per class.
+        # rmse_per_class = mean_squared_error(y_true_cpu, y_pred_cpu, multioutput='raw_values', squared=False)
+        # mae_per_class = mean_absolute_error(y_true_cpu, y_pred_cpu, multioutput='raw_values')
+
+        acc_dict = {
+            'rmse': rmse,
+            'mae': mae,
+            # 'rmse_per_class': rmse_per_class,
+            # 'mae_per_class': mae_per_class
+        }
+
+    return acc_dict
 
 
 class Trainer:
@@ -23,7 +102,7 @@ class Trainer:
         self.epochs_run = 0
         self.snapshot_path = snapshot_path
         if os.path.exists(snapshot_path):
-            print("Loading snapshot")
+            print("\nLoading snapshot")
             self._load_snapshot(snapshot_path)
 
         # self.model = DDP(self.model, device_ids=[self.local_rank])
@@ -41,26 +120,38 @@ class Trainer:
         loss = self.loss_fn(output, targets)
         loss.backward()
         self.optimizer.step()
+        return loss.detach()
 
     def _run_epoch(self, epoch: int):
-        batch_size = len(next(iter(self.dataloader))[0])
-        print(f"\n[GPU{self.global_rank}] Epoch {epoch} | Batch size: {batch_size} | Steps: {len(self.dataloader)}")
-        # self.dataloader.sampler.set_epoch(epoch)
-        for source, targets in self.dataloader:
+        batch_size = len(next(iter(self.dataloader['train']))[0])
+        running_loss = 0.
+        t0 = time.time()
+        # self.dataloader['train'].sampler.set_epoch(epoch)
+        for source, targets in self.dataloader['train']:
             source = source.to(self.local_rank)
             targets = targets.to(self.local_rank)
-            self._run_batch(source, targets)
+            loss = self._run_batch(source, targets)
+            running_loss += loss * batch_size
+        epoch_loss = running_loss / len(self.dataloader['train'].sampler)
+        print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Loss: {epoch_loss:.4f} | "
+              f"Batch size: {batch_size} | Steps: {len(self.dataloader['train'])} | "
+              f"Duration: {(time.time()-t0):.2f}s")
 
     def _save_snapshot(self, epoch: int):
         snapshot = {
-            "MODEL_STATE": self.model.state_dict(), # self.model.module.state_dict(),
-            "EPOCHS_RUN": epoch,
+            "MODEL_STATE": self.model.state_dict(),  # self.model.module.state_dict(),
+            "EPOCHS_RUN": epoch + 1,                 # +1 so that the training resumes at the same point.
         }
         torch.save(snapshot, self.snapshot_path)
         print(f"Epoch {epoch} | Training snapshot saved at {self.snapshot_path}")
 
-    def train(self, max_epochs: int):
+    def train(self, max_epochs: int, test_on_validation: bool = False, task_name: str = None):
         for epoch in range(self.epochs_run, max_epochs):
+            print()
             self._run_epoch(epoch)
-            if self.local_rank == 0 and epoch % self.save_every == 0:
+            if self.global_rank == 0 and epoch % self.save_every == 0:
                 self._save_snapshot(epoch)
+            if test_on_validation:
+                acc_results = accuracy(self.model, self.dataloader['validation'], task_name, self.local_rank)
+                for metric in acc_results:
+                    print(f'{f"{metric}:".ljust(5)} {acc_results[metric]:.4f}')

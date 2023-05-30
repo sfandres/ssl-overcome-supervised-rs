@@ -1,15 +1,9 @@
 # Custom modules.
-from utils.other import is_notebook, build_paths
+from utils.other import build_paths
 from utils.reproducibility import set_seed, seed_worker
 from utils.dataset import (
     AndaluciaDataset,
-    get_mean_std_dataloader,
     load_mean_std_values
-)
-from utils.graphs import simple_bar_plot
-from utils.dataset import (
-    inv_norm_tensor,
-    show_one_batch
 )
 
 # Arguments and paths.
@@ -33,13 +27,6 @@ import numpy as np
 # Performance metrics.
 from sklearn.metrics import f1_score
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-
-# Training checks.
-from datetime import datetime
-import time
-
-# For plotting.
-import matplotlib.pyplot as plt
 
 # PyTorch DDP.
 import torch.multiprocessing as mp
@@ -294,7 +281,7 @@ def main(args):
         andalucia_dataset[x],
         batch_size=args.batch_size,
         shuffle=True,
-        num_workers=0,
+        num_workers=args.num_workers,
         drop_last=False,
         worker_init_fn=seed_worker,
         generator=g
@@ -350,7 +337,7 @@ def main(args):
 
         # Get the number of input features to the layer.
         # Adjust the final layer to the current number of classes.
-        print(f'\nOld final fully-connected layer: {model.fc}')
+        print(f'Old final fully-connected layer: {model.fc}')
         num_ftrs = model.fc.in_features
         model.fc = torch.nn.Linear(num_ftrs, len(class_names))
         print(f'New final fully-connected layer: {model.fc}')
@@ -364,7 +351,7 @@ def main(args):
 
         # Get the number of input features to the layer.
         # Adjust the final layer to the current number of classes.
-        print(f'\nOld final fully-connected layer: {model.fc}')
+        print(f'Old final fully-connected layer: {model.fc}')
         num_ftrs = model.fc.in_features
         model.fc = torch.nn.Linear(num_ftrs, len(class_names))
         print(f'New final fully-connected layer: {model.fc}')
@@ -380,7 +367,7 @@ def main(args):
     # Setting the device.
     # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     device = 0
-    print(f"{'Device:'.ljust(20)} {device}")
+    print(f"Device: {device}")
 
     # Show model structure.
     if args.verbose:
@@ -390,25 +377,27 @@ def main(args):
             device=device)
         )
 
-    # Set loss.
+    # Configure the loss.
     if args.task_name == 'multiclass':
         loss_fn = torch.nn.CrossEntropyLoss()
     elif args.task_name == 'multilabel':
         loss_fn = torch.nn.BCEWithLogitsLoss()
-    print(f'\nLoss: {loss_fn}')
+    if args.verbose:
+        print(f'\nLoss: {loss_fn}')
 
-    # Optimizers specified in the torch.optim package
+    # Configure the optimizer.
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    print(f'Optimizer:\n{optimizer}')
+    if args.verbose:
+        print(f'Optimizer:\n{optimizer}')
 
-    trainer = Trainer(model, dataloader['train'], loss_fn, optimizer, save_every=2, snapshot_path="snapshot.pt")
-    trainer.train(5)
-
-
-
-
-
-
+    # Training.
+    trainer = Trainer(
+        model, dataloader, loss_fn,
+        optimizer,
+        save_every=args.save_every,
+        snapshot_path=f'snapshot_{args.task_name}_{args.model_name}.pt'
+    )
+    trainer.train(args.epochs, test_on_validation=True, task_name=args.task_name)
 
 
     return 0
