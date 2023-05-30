@@ -47,6 +47,8 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
+from finetuning_trainer import Trainer
+
 AVAIL_SSL_MODELS = ['BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', 'SimSiam']
 MODEL_CHOICES = ['Random', 'Imagenet'] + AVAIL_SSL_MODELS
 SEED = 42
@@ -336,6 +338,78 @@ def main(args):
     # ======================
     # FINE-TUNING.
     # ======================
+
+    #--------------------------
+    # Models and parameters.
+    #--------------------------
+
+    # Model: resnet with random weights.
+    if args.model_name == 'Random':
+        print('\nModel without pretrained weights')
+        model = torchvision.models.resnet18(weights=None)
+
+        # Get the number of input features to the layer.
+        # Adjust the final layer to the current number of classes.
+        print(f'\nOld final fully-connected layer: {model.fc}')
+        num_ftrs = model.fc.in_features
+        model.fc = torch.nn.Linear(num_ftrs, len(class_names))
+        print(f'New final fully-connected layer: {model.fc}')
+
+    # Model: resnet with pretrained weights (Imagenet-1k).
+    elif args.model_name == 'Imagenet':
+        print('\nModel with pretrained weights on imagenet-1k')
+        model = torchvision.models.resnet18(
+            weights=torchvision.models.ResNet18_Weights.DEFAULT
+        )
+
+        # Get the number of input features to the layer.
+        # Adjust the final layer to the current number of classes.
+        print(f'\nOld final fully-connected layer: {model.fc}')
+        num_ftrs = model.fc.in_features
+        model.fc = torch.nn.Linear(num_ftrs, len(class_names))
+        print(f'New final fully-connected layer: {model.fc}')
+
+    # Parameters of newly constructed modules
+    # have requires_grad=True by default.
+    # Freezing all the network except the final layer.
+    for param in model.parameters():
+        param.requires_grad = False
+    for param in model.fc.parameters():
+        param.requires_grad = True
+
+    # Setting the device.
+    # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = 0
+    print(f"{'Device:'.ljust(20)} {device}")
+
+    # Show model structure.
+    if args.verbose:
+        print(summary(
+            model,
+            input_size=(args.batch_size, 3, input_size, input_size),
+            device=device)
+        )
+
+    # Set loss.
+    if args.task_name == 'multiclass':
+        loss_fn = torch.nn.CrossEntropyLoss()
+    elif args.task_name == 'multilabel':
+        loss_fn = torch.nn.BCEWithLogitsLoss()
+    print(f'\nLoss: {loss_fn}')
+
+    # Optimizers specified in the torch.optim package
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    print(f'Optimizer:\n{optimizer}')
+
+    trainer = Trainer(model, dataloader['train'], loss_fn, optimizer, save_every=2, snapshot_path="snapshot.pt")
+    trainer.train(5)
+
+
+
+
+
+
+
 
     return 0
 
