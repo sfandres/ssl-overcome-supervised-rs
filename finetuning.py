@@ -5,6 +5,11 @@ from utils.dataset import (
     AndaluciaDataset,
     load_mean_std_values
 )
+from utils.simsiam import SimSiam
+from utils.simclr import SimCLR
+from utils.mocov2 import MoCov2
+from utils.barlowtwins import BarlowTwins
+import pandas as pd
 
 # Arguments and paths.
 import os
@@ -303,14 +308,13 @@ def main(args):
     # Check the balance and size of the dataset.
     #--------------------------
     # Check samples per class, total samples and batches of each dataset.
-    if args.verbose:
-        for d in andalucia_dataset:
-            # samples = np.unique(andalucia_dataset[d].targets, return_counts=True)[1]
-            print(f'\n{d}:')
-            # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
-            # print(f'  - #Samples/class (from dataset):\n{samples}')
-            print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
-            print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
+    for d in andalucia_dataset:
+        # samples = np.unique(andalucia_dataset[d].targets, return_counts=True)[1]
+        print(f'\n{d}:')
+        # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
+        # print(f'  - #Samples/class (from dataset):\n{samples}')
+        print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
+        print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
 
     #--------------------------
     # Check the distribution of samples in the dataloader.
@@ -342,6 +346,14 @@ def main(args):
         model.fc = torch.nn.Linear(num_ftrs, len(class_names))
         print(f'New final fully-connected layer: {model.fc}')
 
+        # Parameters of newly constructed modules
+        # have requires_grad=True by default.
+        # Freezing all the network except the final layer.
+        for param in model.parameters():
+            param.requires_grad = False
+        for param in model.fc.parameters():
+            param.requires_grad = True
+
     # Model: resnet with pretrained weights (Imagenet-1k).
     elif args.model_name == 'Imagenet':
         print('\nModel with pretrained weights on imagenet-1k')
@@ -356,13 +368,86 @@ def main(args):
         model.fc = torch.nn.Linear(num_ftrs, len(class_names))
         print(f'New final fully-connected layer: {model.fc}')
 
-    # Parameters of newly constructed modules
-    # have requires_grad=True by default.
-    # Freezing all the network except the final layer.
-    for param in model.parameters():
-        param.requires_grad = False
-    for param in model.fc.parameters():
-        param.requires_grad = True
+        # Parameters of newly constructed modules
+        # have requires_grad=True by default.
+        # Freezing all the network except the final layer.
+        for param in model.parameters():
+            param.requires_grad = False
+        for param in model.fc.parameters():
+            param.requires_grad = True
+
+    # Model: resnet with pretrained weights (SSL).
+    elif args.model_name in AVAIL_SSL_MODELS:
+        print('\nModel with pretrained weights using SSL')
+        resnet = torchvision.models.resnet18(weights=None)
+
+        snapshot = torch.load(os.path.join(paths['input'], 'snapshot_BarlowTwins_resnet18.pt'))
+
+        # Removing head from resnet: Encoder.
+        backbone = torch.nn.Sequential(*list(resnet.children())[:-1])
+        input_dim = resnet.fc.in_features
+
+        paths['ray_tune'] = os.path.join(paths['input'], 'best_configs')
+
+        # Build the filename.
+        filename_lr = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
+
+        # Load the CSV file into a pandas dataframe.
+        df_lr = pd.read_csv(os.path.join(paths['ray_tune'], filename_lr),
+                            usecols=lambda col: col.startswith('loss')
+                            or col.startswith('config/'))
+    
+        hidden_dim = df_lr.loc[0, 'config/hidden_dim']
+        out_dim = df_lr.loc[0, 'config/out_dim']
+
+        print(f"{'Model name:'.ljust(18)} {args.model_name}")
+        print(f"{'Backbone name:'.ljust(18)} {args.backbone_name}")
+        print(f"{'Hidden layer dim.:'.ljust(18)} {hidden_dim}")
+        print(f"{'Output layer dim.:'.ljust(18)} {out_dim}")
+
+        if args.model_name == 'SimSiam':
+            model = SimSiam(backbone=backbone, input_dim=input_dim, proj_hidden_dim=out_dim,
+                            pred_hidden_dim=hidden_dim, output_dim=out_dim)
+        elif args.model_name == 'SimCLR':
+            model = SimCLR(backbone=backbone, input_dim=input_dim,
+                        hidden_dim=hidden_dim, output_dim=out_dim,
+                        num_layers=2, memory_bank_size=0)
+        elif args.model_name == 'SimCLRv2':
+            model = SimCLR(backbone=backbone, input_dim=input_dim,
+                        hidden_dim=hidden_dim, output_dim=out_dim,
+                        num_layers=3, memory_bank_size=65536)
+        elif args.model_name == 'BarlowTwins':
+            model = BarlowTwins(backbone=backbone, input_dim=input_dim,
+                                hidden_dim=hidden_dim, output_dim=out_dim)
+        elif args.model_name == 'MoCov2':
+            model = MoCov2(backbone=backbone, input_dim=input_dim,
+                        hidden_dim=hidden_dim, output_dim=out_dim)
+
+        model.load_state_dict(snapshot["MODEL"])
+
+        # Removing head from resnet: Encoder.
+        model = torch.nn.Sequential(
+            model.backbone,
+            torch.nn.Flatten(),
+            torch.nn.Linear(in_features=input_dim,
+                            out_features=len(class_names),
+                            bias=True),
+        )
+
+        # Get the number of input features to the layer.
+        # Adjust the final layer to the current number of classes.
+        # print(f'\nOld final fully-connected layer: {model[-1]}')
+        # num_ftrs = model[-1].in_features
+        # model[-1] = torch.nn.Linear(num_ftrs, len(class_names))
+        print(f'New final fully-connected layer: {model[-1]}\n')
+
+        # Parameters of newly constructed modules
+        # have requires_grad=True by default.
+        # Freezing all the network except the final layer.
+        for param in model.parameters():
+            param.requires_grad = False
+        for param in model[-1].parameters():
+            param.requires_grad = True
 
     # Setting the device.
     # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -395,9 +480,9 @@ def main(args):
         model, dataloader, loss_fn,
         optimizer,
         save_every=args.save_every,
-        snapshot_path=f'snapshot_{args.task_name}_{args.model_name}.pt'
+        snapshot_path=f'snapshot_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_{args.model_name}.pt'
     )
-    trainer.train(args.epochs, test_on_validation=True, task_name=args.task_name)
+    trainer.train(args.epochs, args, test=True, save_csv=True)
 
 
     return 0

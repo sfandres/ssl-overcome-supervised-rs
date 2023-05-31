@@ -2,8 +2,12 @@ import torch
 from torch.utils.data import DataLoader
 import os
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from datetime import datetime
 import time
+import csv
+import numpy as np
+
+NUM_DECIMALS = 4
+
 
 def accuracy(model, dataloader, task_name, device):
 
@@ -69,14 +73,13 @@ def accuracy(model, dataloader, task_name, device):
         mae = mean_absolute_error(y_true_cpu, y_pred_cpu)
 
         # Compute RMSE and MAE per class.
-        # rmse_per_class = mean_squared_error(y_true_cpu, y_pred_cpu, multioutput='raw_values', squared=False)
-        # mae_per_class = mean_absolute_error(y_true_cpu, y_pred_cpu, multioutput='raw_values')
-
+        rmse_per_class = mean_squared_error(y_true_cpu, y_pred_cpu, multioutput='raw_values', squared=False)
+        mae_per_class = mean_absolute_error(y_true_cpu, y_pred_cpu, multioutput='raw_values')
         acc_dict = {
             'rmse': rmse,
             'mae': mae,
-            # 'rmse_per_class': rmse_per_class,
-            # 'mae_per_class': mae_per_class
+            'rmse_per_class': list(rmse_per_class),
+            'mae_per_class': list(mae_per_class)
         }
 
     return acc_dict
@@ -136,6 +139,7 @@ class Trainer:
         print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Loss: {epoch_loss:.4f} | "
               f"Batch size: {batch_size} | Steps: {len(self.dataloader['train'])} | "
               f"Duration: {(time.time()-t0):.2f}s")
+        return round(float(epoch_loss), NUM_DECIMALS)
 
     def _save_snapshot(self, epoch: int):
         snapshot = {
@@ -145,13 +149,40 @@ class Trainer:
         torch.save(snapshot, self.snapshot_path)
         print(f"Epoch {epoch} | Training snapshot saved at {self.snapshot_path}")
 
-    def train(self, max_epochs: int, test_on_validation: bool = False, task_name: str = None):
+    def _save_to_csv(self, csv_file, data):
+        # Open the file in the append mode.
+        with open(csv_file, 'a', newline='') as file:
+            csv_writer = csv.writer(file)
+            csv_writer.writerow(data)
+
+    def train(self, max_epochs: int, args, test: bool = False, save_csv: bool = True):
+
         for epoch in range(self.epochs_run, max_epochs):
+
             print()
-            self._run_epoch(epoch)
+            epoch_loss = self._run_epoch(epoch)
             if self.global_rank == 0 and epoch % self.save_every == 0:
                 self._save_snapshot(epoch)
-            if test_on_validation:
-                acc_results = accuracy(self.model, self.dataloader['validation'], task_name, self.local_rank)
+
+            if test:
+                acc_results = accuracy(self.model, self.dataloader['test'], args.task_name, self.local_rank)
                 for metric in acc_results:
-                    print(f'{f"{metric}:".ljust(5)} {acc_results[metric]:.4f}')
+                    print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')
+
+            if save_csv:
+
+                csv_file = os.path.join(
+                    os.getcwd(),
+                    f'{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_{args.model_name}.csv'
+                )
+
+                if epoch == 0:
+                    header = ['epoch', 'loss'] + list(acc_results.keys())
+                    with open(csv_file, 'w', newline='') as file:
+                        csv_writer = csv.writer(file)
+                        csv_writer.writerow(header)
+
+                data = [epoch_loss] + list(acc_results.values())
+
+                data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
+                self._save_to_csv(csv_file, [f"{epoch:02d}"]+data_rounded)
