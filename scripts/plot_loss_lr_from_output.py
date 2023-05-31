@@ -36,8 +36,7 @@ def get_args() -> argparse.Namespace:
         description='Script that plots the average losses and learning rates from .out file.'
     )
 
-    # General arguments.
-    parser.add_argument('--input_file', '-i', type=str, required=True,
+    parser.add_argument('--input_file', '-if', type=str, required=True,
                         help='path to input file (.out).')
 
     parser.add_argument('--graph', '-g', type=str, default='matplotlib',
