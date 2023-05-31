@@ -473,7 +473,7 @@ def main(args):
         print(f'\nLoss: {loss_fn}')
 
     # Configure the optimizer.
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
     if args.verbose:
         print(f'Optimizer:\n{optimizer}')
 
