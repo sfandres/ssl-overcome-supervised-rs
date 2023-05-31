@@ -1,24 +1,14 @@
 """Prints the plot of the average losses and learning rates
    obtained during training from an output file (.out).
 
-Usage: losses.py [-h] input_file
-
-Script for plotting the average loss and lr..
-
-positional arguments:
-  input_file  path to input file (.out).
-
-options:
-  -h, --help  show this help message and exit
-
 Author:
-    A.J. Sanchez-Fernandez - 30/05/2023
+    A.J. Sanchez-Fernandez - 31/05/2023
 """
 
 
-import matplotlib.pyplot as plt
 import sys
 import argparse
+import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
