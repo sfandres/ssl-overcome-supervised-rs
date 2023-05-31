@@ -28,8 +28,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--input', '-i', nargs='+', required=True,
                         help='csv file(s) to plot.')
 
-    parser.add_argument('--metric', '-m', type=str, default='acc',
-                        choices=['loss', 'acc'],
+    parser.add_argument('--metric', '-m', type=str, required=True,
+                        choices=['loss', 'top1', 'top5', 'rmse', 'mae'],
                         help='metric in the y-axis.')
 
     return parser.parse_args(sys.argv[1:])
@@ -42,29 +42,31 @@ def main(args):
 
         # Read the CSV file into a pandas DataFrame.
         df = pd.read_csv(filename)
-                
+
         # Extract the header values.
         headers = list(df.columns)
         x_label = headers[0]
-        if args.metric == 'loss':
-            y_label = headers[1]
-        elif args.metric == 'acc':
-            y_label = headers[2]
+        y_label = args.metric
 
         # Extract the first and second columns.
         x = df[x_label]
-        y = df[y_label]
+        try:
+            y = df[y_label]
+        except KeyError:
+            print(f"KeyError: Column '{args.metric}' not found in dataframe. "
+                  f"This may not be the right metric for the task at hand.")
+            return 1
 
         # Plot the data.
         plt.plot(x, y, label=filename)
-    
+
     # Add labels and title to the plot.
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title('CSV Data')
-    
+
     # Display the legend and show the plot.
-    plt.legend()
+    plt.legend(loc='best')
     plt.show()
 
     return 0
