@@ -381,8 +381,9 @@ def main(args):
         print('\nModel with pretrained weights using SSL')
         resnet = torchvision.models.resnet18(weights=None)
 
-        snapshot = torch.load(os.path.join(paths['input'], f'snapshot_{args.model_name}_{args.backbone_name}.pt'))
-        print(f'Model loaded from {snapshot}')
+        snapshot_name = f'snapshot_{args.model_name}_{args.backbone_name}.pt'
+        snapshot = torch.load(os.path.join(paths['input'], snapshot_name))
+        print(f'Model loaded from {snapshot_name}')
 
         # Removing head from resnet: Encoder.
         backbone = torch.nn.Sequential(*list(resnet.children())[:-1])
