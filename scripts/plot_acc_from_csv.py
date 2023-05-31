@@ -28,6 +28,10 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--input', '-i', nargs='+', required=True,
                         help='csv file(s) to plot.')
 
+    parser.add_argument('--metric', '-m', type=str, default='acc',
+                        choices=['loss', 'acc'],
+                        help='metric in the y-axis.')
+
     return parser.parse_args(sys.argv[1:])
 
 
@@ -42,7 +46,10 @@ def main(args):
         # Extract the header values.
         headers = list(df.columns)
         x_label = headers[0]
-        y_label = headers[2]
+        if args.metric == 'loss':
+            y_label = headers[1]
+        elif args.metric == 'acc':
+            y_label = headers[2]
 
         # Extract the first and second columns.
         x = df[x_label]
