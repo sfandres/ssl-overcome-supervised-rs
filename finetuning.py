@@ -89,6 +89,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--epochs', '-e', type=int, default=25,
                         help='number of epochs for training (default: 25).')
 
+    parser.add_argument('--learning_rate', '-lr', type=float, default=0.01,
+                        help='learning rate for fine-tuning (default: 0.01).')
+
     parser.add_argument('--save_every', '-se', type=int, default=5,
                         help='save model checkpoint every n epochs (default: 5).')
 
@@ -473,7 +476,7 @@ def main(args):
         print(f'\nLoss: {loss_fn}')
 
     # Configure the optimizer.
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     if args.verbose:
         print(f'Optimizer:\n{optimizer}')
 
@@ -482,7 +485,7 @@ def main(args):
         model, dataloader, loss_fn,
         optimizer,
         save_every=args.save_every,
-        snapshot_path=f'snapshot_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_{args.model_name}.pt'
+        snapshot_path=f'snapshot_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.model_name}.pt'
     )
     trainer.train(args.epochs, args, test=True, save_csv=True)
 
