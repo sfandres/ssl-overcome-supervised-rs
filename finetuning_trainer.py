@@ -1,12 +1,16 @@
 import torch
 from torch.utils.data import DataLoader
 import os
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import (
+    mean_squared_error,
+    mean_absolute_error,
+    f1_score
+)
 import time
 import csv
 import numpy as np
 
-NUM_DECIMALS = 4
+NUM_DECIMALS = 3
 
 
 def accuracy(model, dataloader, task_name, device):
@@ -56,9 +60,19 @@ def accuracy(model, dataloader, task_name, device):
         top1_accuracy = torch.sum(torch.eq(y_pred_cpu, y_true_cpu)).item() / len(y_true_cpu)
         top5_accuracy = torch.sum(torch.topk(y_prob_cpu, k=5, dim=1)[1] == y_true_cpu.view(-1, 1)).item() / len(y_true_cpu)
 
+        # F1 metrics.
+        f1_micro = f1_score(y_true_cpu, y_pred_cpu, average='micro')
+        f1_macro = f1_score(y_true_cpu, y_pred_cpu, average='macro')
+        f1_weighted = f1_score(y_true_cpu, y_pred_cpu, average='weighted')
+        f1_per_class = f1_score(y_true_cpu, y_pred_cpu, average=None)
+
         acc_dict = {
             'top1': top1_accuracy,
-            'top5': top5_accuracy
+            'top5': top5_accuracy,
+            'f1_micro': f1_micro,
+            'f1_macro': f1_macro,
+            'f1_weighted': f1_weighted,
+            'f1_per_class': list(np.round(f1_per_class, NUM_DECIMALS))
         }
 
     elif task_name == 'multilabel':
@@ -75,11 +89,12 @@ def accuracy(model, dataloader, task_name, device):
         # Compute RMSE and MAE per class.
         rmse_per_class = mean_squared_error(y_true_cpu, y_pred_cpu, multioutput='raw_values', squared=False)
         mae_per_class = mean_absolute_error(y_true_cpu, y_pred_cpu, multioutput='raw_values')
+
         acc_dict = {
             'rmse': rmse,
             'mae': mae,
-            'rmse_per_class': list(rmse_per_class),
-            'mae_per_class': list(mae_per_class)
+            'rmse_per_class': list(np.round(rmse_per_class, NUM_DECIMALS)),
+            'mae_per_class': list(np.round(mae_per_class, NUM_DECIMALS))
         }
 
     return acc_dict
