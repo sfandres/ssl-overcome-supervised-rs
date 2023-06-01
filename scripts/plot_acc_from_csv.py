@@ -10,6 +10,7 @@ import sys
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
+import math
 
 
 def get_args() -> argparse.Namespace:
@@ -28,45 +29,83 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--input', '-i', nargs='+', required=True,
                         help='csv file(s) to plot.')
 
-    parser.add_argument('--metric', '-m', type=str, required=True,
-                        choices=['loss', 'top1', 'top5', 'f1_micro', 'f1_macro', 'f1_weighted', 'rmse', 'mae'],
-                        help='metric in the y-axis.')
+    parser.add_argument('--downstream_task', '-dt', type=str, required=True,
+                        choices=['multiclass', 'multilabel'],
+                        help='type of downstream task (metrics in the y-axis).')
 
     return parser.parse_args(sys.argv[1:])
 
 
 def main(args):
 
-    # Iterate over each CSV file.
-    for filename in args.input:
+    # Target metrics.
+    if args.downstream_task == "multiclass":
+        metrics = ['loss', 'top1', 'top5', 'f1_micro', 'f1_macro', 'f1_weighted']
+        bbox_to_anchor = (-0.08, -0.4)
+    else:
+        metrics = ['loss', 'rmse', 'mae']
+        bbox_to_anchor = (-0.08, -0.25)
 
-        # Read the CSV file into a pandas DataFrame.
-        df = pd.read_csv(filename)
+    # Calculate the number of rows and columns for subplots.
+    num_metrics = len(metrics)
+    num_columns = 2
+    num_rows = math.ceil(num_metrics / num_columns)
 
-        # Extract the header values.
-        headers = list(df.columns)
-        x_label = headers[0]
-        y_label = args.metric
+    # Create a subplot for each metric.
+    fig, axs = plt.subplots(num_rows, num_columns, sharex=True, figsize=(16, 8*num_rows))
 
-        # Extract the first and second columns.
-        x = df[x_label]
-        try:
-            y = df[y_label]
-        except KeyError:
-            print(f"KeyError: Column '{args.metric}' not found in dataframe. "
-                  f"This may not be the right metric for the task at hand.")
-            return 1
+    # Iterate over the metrics.
+    for i, metric in enumerate(metrics):
 
-        # Plot the data.
-        plt.plot(x, y, label=filename)
+        # Calculate the subplot indices.
+        row_index = i // num_columns
+        col_index = i % num_columns
 
-    # Add labels and title to the plot.
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.title('CSV Data')
+        # Iterate over each CSV file.
+        for filename in args.input:
 
-    # Display the legend and show the plot.
-    plt.legend(loc='best')
+            # Read the CSV file into a pandas DataFrame.
+            df = pd.read_csv(filename)
+
+            # Extract the header values.
+            headers = list(df.columns)
+            x_label = headers[0]
+
+            # Extract the first and second columns.
+            x = df[x_label]
+            try:
+                y = df[metric]
+            except KeyError:
+                print(f"KeyError: Column '{metric}' not found in dataframe. "
+                    f"This may not be the right metric for the task at hand.")
+                return 1
+
+            # Plot the metric data.
+            axs[row_index, col_index].plot(x, y, label=filename)
+            axs[row_index, col_index].set_ylabel(metric.capitalize())
+
+    # Set x-label for the bottom-most subplot
+    axs[-1, 0].set_xlabel(x_label)
+    axs[-1, 1].set_xlabel(x_label)
+
+    # Create a legend below the last row of subplots
+    handles, labels = axs[-1, 0].get_legend_handles_labels()
+    plt.legend(handles=handles,
+               labels=labels,
+               loc='lower center',
+               ncol=3,
+               labelspacing=0.,
+               bbox_to_anchor=bbox_to_anchor,
+               fancybox=True,
+               shadow=True)
+
+    # Adjust spacing between subplots
+    plt.subplots_adjust(wspace=0.2, hspace=0.1)
+
+    # Adjust subplot spacing.
+    # plt.tight_layout(rect=[0, 0, 0.5, 1.0])
+
+    # Show the plot
     plt.show()
 
     return 0
