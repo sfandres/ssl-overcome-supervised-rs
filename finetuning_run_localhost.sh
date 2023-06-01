@@ -2,8 +2,8 @@
 
 # Define the variables.
 downstream=("multiclass" "multilabel")
-train_rates=("1." ".25" ".1" ".05")
-learning_rates=("0.1" "0.01" "0.01")
+train_rates=(".05" ".1" ".25" "1.")
+learning_rates=("0.001" "0.01" "0.1")
 models=("Random" "Imagenet" "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam")
 backbones=("resnet18")  # "resnet50")
 
