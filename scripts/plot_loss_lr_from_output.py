@@ -26,7 +26,7 @@ def get_args() -> argparse.Namespace:
         description='Script that plots the average losses and learning rates from .out file.'
     )
 
-    parser.add_argument('--input_file', '-if', type=str, required=True,
+    parser.add_argument('--input', '-i', type=str, required=True,
                         help='path to input file (.out).')
 
     parser.add_argument('--graph', '-g', type=str, default='matplotlib',
@@ -40,12 +40,12 @@ def main(args):
 
     # Initialization.
     train_losses = {}      # Dictionary to store train losses per epoch.
-    learning_rates = []    # List to store learning rates.
+    learning_rates = {}    # Dictionary to store learning rates.
     first_epoch = 0        # Initialize the first epoch.
     last_epoch = 0         # Initialize the last epoch.
 
     # Read the output file.
-    with open(args.input_file, 'r') as file:
+    with open(args.input, 'r') as file:
         for line in file:
             if 'Train loss:' in line:
                 # Split the line using the '|' delimiter.
@@ -69,18 +69,24 @@ def main(args):
 
                 # Check if the learning rate value has already been saved.
                 lr = float(parts[1].strip())
-                if lr not in learning_rates:
-                    learning_rates.append(lr)
+                if lr not in learning_rates.values():
+                    learning_rates[last_epoch] = lr
 
     # Create a range of epochs.
-    epochs = range(first_epoch, last_epoch + 1)
+    # epochs = range(first_epoch, last_epoch + 1)
 
     # Calculate average loss per epoch.
-    average_losses = [sum(train_losses.get(epoch, [])) / 4 for epoch in epochs]
+    # average_losses = [sum(train_losses.get(epoch, [])) / 4 for epoch in epochs]
+
+    average_losses = {}
+
+    for key, values in train_losses.items():
+        average = sum(values) / len(values)
+        average_losses[key] = average
 
     # The last lr value has appeared and should not be counted.
-    if len(learning_rates) - len(epochs) == 1:
-        learning_rates = learning_rates[:-1]
+    # if len(learning_rates) - len(epochs) == 1:
+    #     learning_rates = learning_rates[:-1]
 
     # Graph.
     if args.graph == 'matplotlib':
@@ -89,13 +95,13 @@ def main(args):
         fig, axs = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
 
         # Plot average losses over epochs.
-        axs[0].plot(epochs, average_losses, marker='o')
+        axs[0].plot(average_losses.keys(), average_losses.values(), marker='o')
         axs[0].set_ylabel('Average train loss')
-        axs[0].set_title(args.input_file)
+        axs[0].set_title(args.input)
         axs[0].grid(True)
 
         # Plot learning rates over epochs.
-        axs[1].plot(epochs, learning_rates, marker='o', color='orange')
+        axs[1].plot(learning_rates.keys(), learning_rates.values(), marker='o', color='orange')
         axs[1].set_xlabel('Epoch')
         axs[1].set_ylabel('Learning rate')
         axs[1].grid(True)
@@ -108,15 +114,15 @@ def main(args):
 
         # Create subplots with 2 rows and 1 column.
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
-                            vertical_spacing=0.02, subplot_titles=(args.input_file, ))
+                            vertical_spacing=0.02, subplot_titles=(args.input, ))
 
         # Add trace for average losses.
-        fig.add_trace(go.Scatter(x=list(epochs), y=average_losses,
+        fig.add_trace(go.Scatter(x=list(average_losses.keys()), y=list(average_losses.values()),
                                  mode='lines+markers', name='Average train loss'),
                                  row=1, col=1)
 
         # Add trace for learning rates.
-        fig.add_trace(go.Scatter(x=list(epochs), y=learning_rates,
+        fig.add_trace(go.Scatter(x=list(learning_rates.keys()), y=list(learning_rates.values()),
                                  mode='lines+markers', name='Learning rate',
                                  line=dict(color='orange')), row=2, col=1)
 
