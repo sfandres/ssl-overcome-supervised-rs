@@ -29,7 +29,7 @@ def get_args() -> argparse.Namespace:
                         help='csv file(s) to plot.')
 
     parser.add_argument('--metric', '-m', type=str, required=True,
-                        choices=['loss', 'top1', 'top5', 'rmse', 'mae'],
+                        choices=['loss', 'top1', 'top5', 'f1_micro', 'f1_macro', 'f1_weighted', 'rmse', 'mae'],
                         help='metric in the y-axis.')
 
     return parser.parse_args(sys.argv[1:])
