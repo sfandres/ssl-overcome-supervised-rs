@@ -118,7 +118,7 @@ def main(args):
 
         # Add trace for average losses.
         fig.add_trace(go.Scatter(x=list(average_losses.keys()), y=list(average_losses.values()),
-                                 mode='lines+markers', name='Average train loss'),
+                                 mode='lines+markers', name='Train loss'),
                                  row=1, col=1)
 
         # Add trace for learning rates.
@@ -130,7 +130,9 @@ def main(args):
         fig.update_xaxes(title_text='Epoch', row=2, col=1)
         fig.update_yaxes(title_text='Average train loss', row=1, col=1)
         fig.update_yaxes(title_text='Learning rate', row=2, col=1)
-        # fig.update_yaxes(tickformat="none")
+
+        # Update hovermode and hovertemplate to display y-values from both subplots
+        fig.update_layout(hovermode='x unified')
 
         # Show the figure.
         fig.show()
