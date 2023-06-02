@@ -113,11 +113,9 @@ def main(args):
     if args.save_fig:
         fig.savefig(f'fig_{args.downstream_task}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}',
                     bbox_inches='tight')
-
-    # Show the plot
-    plt.show()
-
-
+    else:
+        # Show the plot
+        plt.show()
 
     return 0
 

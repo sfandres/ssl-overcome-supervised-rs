@@ -114,10 +114,10 @@ def main(args):
         if args.save_fig:
             fig.savefig(f'fig_{args.input.split("/")[-1]}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}',
                         bbox_inches='tight')
-
-        # Show the figure.
-        plt.tight_layout()
-        plt.show()
+        else:
+            # Show the figure.
+            plt.tight_layout()
+            plt.show()
 
     elif args.graph == 'plotly':
 
