@@ -11,6 +11,7 @@ import argparse
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from datetime import datetime
 
 
 def get_args() -> argparse.Namespace:
@@ -32,6 +33,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--graph', '-g', type=str, default='matplotlib',
                         choices=['matplotlib', 'plotly'],
                         help='graphing library to use for plotting (default: matplotlib).')
+
+    parser.add_argument('--save_fig', '-sf', type=str, choices=['png', 'pdf'],
+                        help='format of the output image (default: png).')
 
     return parser.parse_args(sys.argv[1:])
 
@@ -106,6 +110,11 @@ def main(args):
         axs[1].set_ylabel('Learning rate')
         axs[1].grid(True)
 
+        # Save figure.
+        if args.save_fig:
+            fig.savefig(f'fig_{args.input.split("/")[-1]}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}',
+                        bbox_inches='tight')
+
         # Show the figure.
         plt.tight_layout()
         plt.show()
@@ -133,6 +142,10 @@ def main(args):
 
         # Update hovermode and hovertemplate to display y-values from both subplots
         fig.update_layout(hovermode='x unified')
+
+        # Save figure.
+        if args.save_fig:
+            print("Error: '--save_fig' does not work with Plotly, please use '-g matplotlib' instead.")
 
         # Show the figure.
         fig.show()

@@ -11,6 +11,7 @@ import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+from datetime import datetime
 
 
 def get_args() -> argparse.Namespace:
@@ -33,6 +34,9 @@ def get_args() -> argparse.Namespace:
                         choices=['multiclass', 'multilabel'],
                         help='type of downstream task (metrics in the y-axis).')
 
+    parser.add_argument('--save_fig', '-sf', type=str, choices=['png', 'pdf'],
+                        help='format of the output image (default: png).')
+
     return parser.parse_args(sys.argv[1:])
 
 
@@ -41,7 +45,7 @@ def main(args):
     # Target metrics.
     if args.downstream_task == "multiclass":
         metrics = ['loss', 'top1', 'top5', 'f1_micro', 'f1_macro', 'f1_weighted']
-        bbox_to_anchor = (-0.08, -0.4)
+        bbox_to_anchor = (-0.08, -0.35)
     else:
         metrics = ['loss', 'rmse', 'mae']
         bbox_to_anchor = (-0.08, -0.25)
@@ -52,7 +56,7 @@ def main(args):
     num_rows = math.ceil(num_metrics / num_columns)
 
     # Create a subplot for each metric.
-    fig, axs = plt.subplots(num_rows, num_columns, sharex=True, figsize=(16, 8*num_rows))
+    fig, axs = plt.subplots(num_rows, num_columns, sharex=True, figsize=(40, 8*num_rows))
 
     # Iterate over the metrics.
     for i, metric in enumerate(metrics):
@@ -105,8 +109,15 @@ def main(args):
     # Adjust subplot spacing.
     # plt.tight_layout(rect=[0, 0, 0.5, 1.0])
 
+    # Save figure.
+    if args.save_fig:
+        fig.savefig(f'fig_{args.downstream_task}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}',
+                    bbox_inches='tight')
+
     # Show the plot
     plt.show()
+
+
 
     return 0
 
