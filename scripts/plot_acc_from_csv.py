@@ -42,6 +42,11 @@ def get_args() -> argparse.Namespace:
 
 def main(args):
 
+    # Show filenames.
+    print('Files used for the plot:')
+    for i, filename in enumerate(args.input):
+        print(f'  {i:02d} --> {filename}')
+
     # Target metrics.
     if args.downstream_task == "multiclass":
         metrics = ['loss', 'top1', 'top5', 'f1_micro', 'f1_macro', 'f1_weighted']
