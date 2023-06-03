@@ -89,7 +89,7 @@ def get_args() -> argparse.Namespace:
                         choices=['Level_N1', 'Level_N2'],
                         help="dataset level (default=Level_N2).")
 
-    parser.add_argument('--dataset_train_pc', '-dtp', type=float, default=1.,
+    parser.add_argument('--train_rate', '-tr', type=float, default=1.,
                         help='dataset ratio for train subset (default=1.).')
 
     parser.add_argument('--epochs', '-e', type=int, default=25,
@@ -270,7 +270,7 @@ def main(args):
         root_dir=os.path.join(paths['datasets'], args.dataset_name),
         level='Level_N2',
         split=x,
-        train_ratio=args.dataset_train_pc,
+        train_ratio=args.train_rate,
         transform=transform[x],
         target_transform=transform_abundances if args.task_name == 'multiclass' else None,
         verbose=args.verbose
@@ -486,7 +486,7 @@ def main(args):
 
 
     # Training.
-    general_name = f'ft_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}'
+    general_name = f'ft_{args.task_name}_pctrain_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
