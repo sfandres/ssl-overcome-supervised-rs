@@ -8,11 +8,11 @@ models=("Random" "Imagenet" "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam"
 backbones=("resnet50" "resnet18")
 
 # Loop over the sbatch commands.
-for d in "${downstream[@]}"; do
+for b in "${backbones[@]}"; do
     for tr in "${train_rates[@]}"; do
-        for lr in "${learning_rates[@]}"; do
-            for m in "${models[@]}"; do
-                for b in "${backbones[@]}"; do
+        for d in "${downstream[@]}"; do
+            for lr in "${learning_rates[@]}"; do
+                for m in "${models[@]}"; do
                     echo torchrun finetuning.py $m $d -bn $b -tr $tr -e 50 -lr $lr -bs 64 -nw 4
                     torchrun finetuning.py $m $d -bn $b -tr $tr -e 50 -lr $lr -bs 64 -nw 4
                 done
