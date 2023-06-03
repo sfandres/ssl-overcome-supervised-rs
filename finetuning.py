@@ -486,13 +486,13 @@ def main(args):
 
 
     # Training.
-    general_name = f'ft_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}.pt'
+    general_name = f'ft_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
         save_every=args.save_every,
-        snapshot_path=os.path.join(paths['snapshots'], f'snapshot_{general_name}'),
-        csv_path=os.path.join(paths['csv_results'], f'csv_{general_name}'),
+        snapshot_path=os.path.join(paths['snapshots'], f'snapshot_{general_name}.pt'),
+        csv_path=os.path.join(paths['csv_results'], f'csv_{general_name}.csv'),
     )
     trainer.train(args.epochs, args, test=True, save_csv=True)
 
