@@ -21,6 +21,12 @@ import torch
 import torchvision
 from torchvision import transforms
 from torchinfo import summary
+from torchvision.models import (
+    resnet18,
+    ResNet18_Weights,
+    resnet50,
+    ResNet50_Weights
+)
 
 # PyTorch TensorBoard support
 from torch.utils.tensorboard import SummaryWriter
@@ -336,33 +342,34 @@ def main(args):
     #--------------------------
     # Models and parameters.
     #--------------------------
+    # Setting the model and initial weights.
+    if args.backbone_name == 'resnet18':
+        if args.model_name == 'Imagenet':
+            resnet = resnet18(
+                weights=ResNet18_Weights.DEFAULT,
+                # zero_init_residual=True
+            )
+        else:
+            resnet = resnet18(
+                weights=None,
+                # zero_init_residual=True
+            )
+    elif args.backbone_name == 'resnet50':
+        if args.model_name == 'Imagenet':
+            resnet = resnet50(
+                weights=ResNet50_Weights.DEFAULT,
+                # zero_init_residual=True
+            )
+        else:
+            resnet = resnet50(
+                weights=None,
+                # zero_init_residual=True
+            )
 
     # Model: resnet with random weights.
-    if args.model_name == 'Random':
-        print('\nModel without pretrained weights')
-        model = torchvision.models.resnet18(weights=None)
-
-        # Get the number of input features to the layer.
-        # Adjust the final layer to the current number of classes.
-        print(f'Old final fully-connected layer: {model.fc}')
-        num_ftrs = model.fc.in_features
-        model.fc = torch.nn.Linear(num_ftrs, len(class_names))
-        print(f'New final fully-connected layer: {model.fc}')
-
-        # Parameters of newly constructed modules
-        # have requires_grad=True by default.
-        # Freezing all the network except the final layer.
-        for param in model.parameters():
-            param.requires_grad = False
-        for param in model.fc.parameters():
-            param.requires_grad = True
-
-    # Model: resnet with pretrained weights (Imagenet-1k).
-    elif args.model_name == 'Imagenet':
-        print('\nModel with pretrained weights on imagenet-1k')
-        model = torchvision.models.resnet18(
-            weights=torchvision.models.ResNet18_Weights.DEFAULT
-        )
+    if args.model_name == 'Random' or args.model_name == 'Imagenet':
+        print(f'\nModel {args.backbone_name} with {args.model_name} weights')
+        model = resnet
 
         # Get the number of input features to the layer.
         # Adjust the final layer to the current number of classes.
@@ -381,8 +388,7 @@ def main(args):
 
     # Model: resnet with pretrained weights (SSL).
     elif args.model_name in AVAIL_SSL_MODELS:
-        print('\nModel with pretrained weights using SSL')
-        resnet = torchvision.models.resnet18(weights=None)
+        print(f'\nModel {args.backbone_name} with pretrained weights using {args.model_name} SSL')
 
         snapshot_name = f'snapshot_{args.model_name}_{args.backbone_name}.pt'
         snapshot = torch.load(os.path.join(paths['input'], snapshot_name))
@@ -485,7 +491,7 @@ def main(args):
         model, dataloader, loss_fn,
         optimizer,
         save_every=args.save_every,
-        snapshot_path=f'snapshot_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.model_name}.pt'
+        snapshot_path=f'snapshot_ft_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}.pt'
     )
     trainer.train(args.epochs, args, test=True, save_csv=True)
 

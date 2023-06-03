@@ -188,7 +188,7 @@ class Trainer:
 
                 csv_file = os.path.join(
                     os.getcwd(),
-                    f'{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.model_name}.csv'
+                    f'csv_ft_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}.csv'
                 )
 
                 if epoch == 0:
