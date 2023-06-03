@@ -109,6 +109,7 @@ class Trainer:
         optimizer: torch.optim.Optimizer,
         save_every: int,
         snapshot_path: str,
+        csv_path: str
     ) -> None:
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.global_rank = int(os.environ["RANK"])
@@ -119,6 +120,7 @@ class Trainer:
         self.save_every = save_every
         self.epochs_run = 0
         self.snapshot_path = snapshot_path
+        self.csv_path = csv_path
         if os.path.exists(snapshot_path):
             print("\nLoading snapshot")
             self._load_snapshot(snapshot_path)
@@ -186,18 +188,13 @@ class Trainer:
 
             if save_csv:
 
-                csv_file = os.path.join(
-                    os.getcwd(),
-                    f'csv_ft_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}.csv'
-                )
-
                 if epoch == 0:
                     header = ['epoch', 'loss'] + list(acc_results.keys())
-                    with open(csv_file, 'w', newline='') as file:
+                    with open(self.csv_path, 'w', newline='') as file:
                         csv_writer = csv.writer(file)
                         csv_writer.writerow(header)
 
                 data = [epoch_loss] + list(acc_results.values())
 
                 data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
-                self._save_to_csv(csv_file, [f"{epoch:02d}"]+data_rounded)
+                self._save_to_csv(self.csv_path, [f"{epoch:02d}"]+data_rounded)
