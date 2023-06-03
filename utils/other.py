@@ -45,13 +45,13 @@ def is_notebook() -> bool:
         return False
 
 
-def build_paths(cwd: str, model_name: str) -> dict:
+def build_paths(cwd: str, script_name: str) -> dict:
     """
     Buils all the necessary paths into a dictionary.
 
     Args:
         cwd (str): path to the current working directory.
-        model_name (str): name of the target SSL model.
+        script_name (str): name of the running script.
 
     Returns:
         paths (dict): all the generated paths in a dictionary.
@@ -62,12 +62,16 @@ def build_paths(cwd: str, model_name: str) -> dict:
     try:
         # Create main paths.
         input_path = os.path.join(cwd, 'input')
-        output_path = os.path.join(cwd, 'output')
+        output_path = os.path.join(
+            cwd,
+            os.path.join('output', script_name)
+        )
 
         # Create directories if they don't exist.
         os.makedirs(input_path, exist_ok=True)
         os.makedirs(output_path, exist_ok=True)
 
+        # INPUT.
         # Second level paths within input.
         datasets_path = os.path.join(input_path, 'datasets')
         best_configs_path = os.path.join(input_path, 'best_configs')
@@ -76,39 +80,35 @@ def build_paths(cwd: str, model_name: str) -> dict:
         os.makedirs(datasets_path, exist_ok=True)
         os.makedirs(best_configs_path, exist_ok=True)
 
+        # OUTPUT.
         # Second level paths within output.
-        checkpoints_path = os.path.join(output_path, 'model_checkpoints')
+        csv_results_path = os.path.join(output_path, 'csv_results')
         images_path = os.path.join(output_path, 'images')
+        checkpoints_path = os.path.join(output_path, 'ckpts')
         runs_path = os.path.join(output_path, 'runs')
+        snapshots_path = os.path.join(output_path, 'snapshots')
 
         # Create directories if they don't exist.
-        os.makedirs(checkpoints_path, exist_ok=True)
+        os.makedirs(csv_results_path, exist_ok=True)
         os.makedirs(images_path, exist_ok=True)
+        os.makedirs(checkpoints_path, exist_ok=True)
         os.makedirs(runs_path, exist_ok=True)
+        os.makedirs(snapshots_path, exist_ok=True)
 
+        # CHECKPOINTS.
         # Third level paths within checkpoints.
-        checkpoints_logs_path = os.path.join(checkpoints_path, '0_history_logs')
-        os.makedirs(checkpoints_logs_path, exist_ok=True)
-
-        checkpoints_model_path = os.path.join(checkpoints_path, model_name)
-        os.makedirs(checkpoints_model_path, exist_ok=True)
-
-        # Third level paths within images.
-        images_logs_path = os.path.join(images_path, '0_history_logs')
-        os.makedirs(images_logs_path, exist_ok=True)
-
-        images_model_path = os.path.join(images_path, model_name)
-        os.makedirs(images_model_path, exist_ok=True)
 
         # Create dictionary.
         paths = {
             'input': input_path,
+            'best_configs': best_configs_path,
             'datasets': datasets_path,
             'output': output_path,
+            'csv_results': csv_results_path,
+            'images': images_path,
+            'checkpoints': checkpoints_path,
             'runs': runs_path,
-            'log_checkpoints': checkpoints_logs_path,
-            'checkpoints': checkpoints_model_path,
-            'images': images_model_path        
+            'snapshots': snapshots_path
         }
 
     except OSError as e:
