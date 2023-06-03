@@ -486,7 +486,7 @@ def main(args):
 
 
     # Training.
-    general_name = f'ft_{args.task_name}_pctrain_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}'
+    general_name = f'ft_{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
