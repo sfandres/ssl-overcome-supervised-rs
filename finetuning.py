@@ -188,7 +188,7 @@ def main(args):
     # Build paths.
     print()
     cwd = os.getcwd()
-    paths = build_paths(cwd, os.path.join('finetuning', args.model_name))
+    paths = build_paths(cwd, 'finetuning')
     if args.input_data:
         paths['datasets'] = args.input_data
 
@@ -398,13 +398,11 @@ def main(args):
         backbone = torch.nn.Sequential(*list(resnet.children())[:-1])
         input_dim = resnet.fc.in_features
 
-        paths['ray_tune'] = os.path.join(paths['input'], 'best_configs')
-
         # Build the filename.
         filename_lr = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
 
         # Load the CSV file into a pandas dataframe.
-        df_lr = pd.read_csv(os.path.join(paths['ray_tune'], filename_lr),
+        df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr),
                             usecols=lambda col: col.startswith('loss')
                             or col.startswith('config/'))
     
@@ -486,15 +484,17 @@ def main(args):
     if args.verbose:
         print(f'Optimizer:\n{optimizer}')
 
+
     # Training.
+    general_name = f'ft_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}.pt'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
         save_every=args.save_every,
-        snapshot_path=f'snapshot_ft_{args.task_name}_pctrain_{args.dataset_train_pc:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}.pt'
+        snapshot_path=os.path.join(paths['snapshots'], f'snapshot_{general_name}'),
+        csv_path=os.path.join(paths['csv_results'], f'csv_{general_name}'),
     )
     trainer.train(args.epochs, args, test=True, save_csv=True)
-
 
     return 0
 
