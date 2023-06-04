@@ -50,8 +50,8 @@ def main(args):
     # Target metrics.
     if args.downstream_task == "multiclass":
         metrics = ['loss', 'top1', 'top5', 'f1_micro', 'f1_macro', 'f1_weighted']
-        bbox_to_anchor = (-0.08, -0.35)
-    else:
+        bbox_to_anchor = (-0.08, -0.45)
+    else:   
         metrics = ['loss', 'rmse', 'mae']
         bbox_to_anchor = (-0.08, -0.25)
 
@@ -102,7 +102,7 @@ def main(args):
     plt.legend(handles=handles,
                labels=labels,
                loc='lower center',
-               ncol=3,
+               ncol=2,
                labelspacing=0.,
                bbox_to_anchor=bbox_to_anchor,
                fancybox=True,
