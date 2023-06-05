@@ -256,4 +256,3 @@ dependencies:
       - tqdm==4.65.0
       - virtualenv==20.21.0
       - yarl==1.8.2
-prefix: /home/sfandres/Documents/Git/lulc/lulc2-conda
