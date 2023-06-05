@@ -63,8 +63,8 @@ export LOGLEVEL=INFO
 export NCCL_DEBUG=INFO
 
 # Load virtual environment.
-# source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
-source ~/anaconda3/etc/profile.d/conda.sh
+source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
+# source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 # Define settings for the experiments.
