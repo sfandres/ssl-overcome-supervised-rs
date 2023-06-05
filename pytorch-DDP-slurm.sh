@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Resource request.
-#SBATCH --nodes=4                                   # Number of nodes.
-#SBATCH --ntasks=4                                  # Number of tasks.
-#SBATCH --cpus-per-task=1                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
+#SBATCH --nodes=1                                   # Number of nodes.
+#SBATCH --ntasks=1                                  # Number of tasks.
+#SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --gpus-per-task=1                           # Number of GPUs per task.
 #SBATCH --mail-type=ALL                             # Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
@@ -52,17 +52,18 @@ export LOGLEVEL=INFO
 export NCCL_DEBUG=INFO
 
 # Load virtual environment.
-source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
+# source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
+source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 # Define settings for the experiments.
-input_data="/p/project/prcoe12"
+# input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
-epochs=500
+epochs=250
 save_every=10
 batch_size=128
-num_workers=1
+num_workers=4
 ini_weights="random"
 
 # Run experiment.
@@ -82,4 +83,5 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --batch_size $batch_size \
 --num_workers $num_workers \
 --ini_weights $ini_weights \
---distributed \
+--balanced_dataset
+#--distributed \
