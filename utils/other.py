@@ -85,6 +85,7 @@ def build_paths(cwd: str, script_name: str) -> dict:
         csv_results_path = os.path.join(output_path, 'csv_results')
         images_path = os.path.join(output_path, 'images')
         checkpoints_path = os.path.join(output_path, 'ckpts')
+        ray_tune_path = os.path.join(output_path, 'ray_tune')
         runs_path = os.path.join(output_path, 'runs')
         snapshots_path = os.path.join(output_path, 'snapshots')
 
@@ -92,6 +93,7 @@ def build_paths(cwd: str, script_name: str) -> dict:
         os.makedirs(csv_results_path, exist_ok=True)
         os.makedirs(images_path, exist_ok=True)
         os.makedirs(checkpoints_path, exist_ok=True)
+        os.makedirs(ray_tune_path, exist_ok=True)
         os.makedirs(runs_path, exist_ok=True)
         os.makedirs(snapshots_path, exist_ok=True)
 
@@ -107,6 +109,7 @@ def build_paths(cwd: str, script_name: str) -> dict:
             'csv_results': csv_results_path,
             'images': images_path,
             'checkpoints': checkpoints_path,
+            'ray_tune': ray_tune_path,
             'runs': runs_path,
             'snapshots': snapshots_path
         }

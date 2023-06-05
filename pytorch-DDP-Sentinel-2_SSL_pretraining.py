@@ -552,7 +552,7 @@ def main(args):
     # Build paths.
     print()
     cwd = os.getcwd()
-    paths = build_paths(cwd, args.model_name)
+    paths = build_paths(cwd, 'pretraining')
     if args.input_data:
         paths['datasets'] = args.input_data
 
@@ -805,7 +805,6 @@ def main(args):
 
         max_num_epochs = args.epochs
         gpus_per_trial = 1
-        paths['ray_tune'] = os.path.join(paths['output'], 'ray_results')
         print(f'\nMax. number of epochs: {max_num_epochs}')
         print(f'Number of samples:     {args.num_samples_trials}')
 
@@ -889,13 +888,11 @@ def main(args):
 
     else:
 
-        paths['ray_tune'] = os.path.join(paths['input'], 'best_configs')
-
         # Build the filename.
         filename_lr = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
 
         # Load the CSV file into a pandas dataframe.
-        df_lr = pd.read_csv(os.path.join(paths['ray_tune'], filename_lr),
+        df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr),
                             usecols=lambda col: col.startswith('loss')
                             or col.startswith('config/'))
 
