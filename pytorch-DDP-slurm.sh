@@ -1,15 +1,22 @@
 #!/bin/bash
 
 # Resource request.
-#SBATCH --nodes=1                                   # Number of nodes.
-#SBATCH --partition=volta                           # Request specific partition.
-#SBATCH --ntasks=4                                  # Number of tasks.
-#SBATCH --time=72:00:00                             # Job duration.
-#SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
-#SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
-##SBATCH --gpus-per-task=1                           # Number of GPUs per task.
+
+# Juelich.
+#SBATCH --cpus-per-task=1                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
+#SBATCH --gpus-per-task=1                           # Number of GPUs per task.
 #SBATCH --mail-type=ALL                             # Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
+
+# Turgalium.
+##SBATCH --nodes=1                                   # Number of nodes.
+##SBATCH --ntasks=4                                  # Number of tasks.
+##SBATCH --partition=volta                           # Request specific partition.
+##SBATCH --time=72:00:00                             # Job duration.
+##SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
+##SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
+##SBATCH --mail-type=ALL                             # Type of notification via email.
+##SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
 
 
 # Help function.
@@ -61,20 +68,20 @@ source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 # Define settings for the experiments.
-# input_data="/p/project/prcoe12"
+input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=250
 save_every=10
 batch_size=128
-num_workers=4
+num_workers=1
 ini_weights="imagenet"
 
 # Run experiment (--standalone).
-# $SLURM_GPUS_PER_TASK
-srun torchrun --standalone \
+# $SLURM_GPUS_PER_TASK $SLURM_NTASKS
+srun torchrun \
 --nnodes $SLURM_JOB_NUM_NODES \
---nproc_per_node $SLURM_NTASKS \
+--nproc_per_node $SLURM_GPUS_PER_TASK \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
 --rdzv_endpoint $head_node_ip:29500 \
@@ -82,6 +89,7 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --backbone_name $backbone_name \
 --dataset_name $dataset_name \
 --dataset_ratio $dataset_ratio \
+--input_data $input_data \
 --epochs $epochs \
 --save_every $save_every \
 --batch_size $batch_size \
