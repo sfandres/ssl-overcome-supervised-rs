@@ -813,7 +813,7 @@ def main(args):
     if args.balanced_dataset and not args.distributed:
 
         # List to save the labels.
-        print('Plotting the balanced dataset...')
+        print('\nCreating the plot for the balanced dataset...')
         labels_list = []
 
         # Accessing Data and Targets in a PyTorch DataLoader.
