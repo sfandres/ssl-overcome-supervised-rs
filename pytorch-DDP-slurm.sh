@@ -70,10 +70,10 @@ batch_size=128
 num_workers=4
 ini_weights="random"
 
-# Run experiment.
+# Run experiment (--standalone).
 srun torchrun --standalone \
 --nnodes $SLURM_JOB_NUM_NODES \
---nproc_per_node 1 \
+--nproc_per_node $SLURM_NTASKS \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
 --rdzv_endpoint $head_node_ip:29500 \
