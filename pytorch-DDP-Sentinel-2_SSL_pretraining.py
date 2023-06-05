@@ -372,7 +372,6 @@ def train(
     # ======================
     # LOADING SNAPSHOT (IF EXISTS).
     # Path to folder and file.
-    config['paths']['snapshots'] = os.path.join(config['paths']['output'], 'snapshots')
     snapshot_path = os.path.join(
         config['paths']['snapshots'],
         f'snapshot_{args.model_name}_{args.backbone_name}.pt'
@@ -481,9 +480,18 @@ def train(
         # SAVING CHECKPOINT.
         # Custom functions for saving the checkpoints.
         if global_rank == 0 and epoch % args.save_every == 0:
-            os.makedirs(config['paths']['snapshots'], exist_ok=True)
+
+            # Single snapshot (overwritten) in case of failure.
             save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosine_scheduler)
 
+            # Checkpoint every few epochs.
+            save_snapshot(
+                os.path.join(
+                    config['paths']['checkpoints'],
+                    f'ckpt_{args.model_name}_{args.backbone_name}_epoch_{epoch}.zip'
+                ),
+                epoch, model, optimizer, warmup_scheduler, cosine_scheduler
+            )
 
         #     model.module.save(                   # THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
         #         args.backbone_name,
