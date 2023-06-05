@@ -7,10 +7,10 @@
 #SBATCH --time=72:00:00                             # Job duration.
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
-##SBATCH --gpus=1                                    # Number of GPUs required for the job.
 ##SBATCH --gpus-per-task=1                           # Number of GPUs per task.
 #SBATCH --mail-type=ALL                             # Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
+
 
 # Help function.
 function display_help {
@@ -71,6 +71,7 @@ num_workers=4
 ini_weights="imagenet"
 
 # Run experiment (--standalone).
+# $SLURM_GPUS_PER_TASK
 srun torchrun --standalone \
 --nnodes $SLURM_JOB_NUM_NODES \
 --nproc_per_node $SLURM_NTASKS \
