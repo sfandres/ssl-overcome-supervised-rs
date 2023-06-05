@@ -3,7 +3,7 @@
 # Resource request.
 #SBATCH --nodes=1                                   # Number of nodes.
 #SBATCH --partition=volta                           # Request specific partition.
-#SBATCH --ntasks=1                                  # Number of tasks.
+#SBATCH --ntasks=4                                  # Number of tasks.
 #SBATCH --time=72:00:00                             # Job duration.
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
@@ -68,7 +68,7 @@ epochs=250
 save_every=10
 batch_size=128
 num_workers=4
-ini_weights="random"
+ini_weights="imagenet"
 
 # Run experiment (--standalone).
 srun torchrun --standalone \
@@ -86,6 +86,7 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --batch_size $batch_size \
 --num_workers $num_workers \
 --ini_weights $ini_weights \
---balanced_dataset
+--distributed
+# --balanced_dataset \
 # --input_data $input_data \
 # --distributed \
