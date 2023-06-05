@@ -6,6 +6,7 @@ from utils.simsiam import SimSiam
 from utils.simclr import SimCLR
 from utils.mocov2 import MoCov2
 from utils.barlowtwins import BarlowTwins
+from utils.graphs import simple_bar_plot
 
 # Arguments and paths.
 import os
@@ -184,10 +185,10 @@ def show_batch(
     plt.show()
 
 
-def save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosine_scheduler):
+def save_snapshot(snapshot_path, epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler):
     snapshot = {
         "EPOCH": epoch + 1,  # +1 so that the training resumes at the same point.
-        "MODEL": model.module.state_dict(),
+        "MODEL": model_state_dict,
         "OPTIMIZER": optimizer.state_dict(),
         "WARMUP_SCHEDULER": warmup_scheduler.state_dict(),
         "COSINE_SCHEDULER": cosine_scheduler.state_dict()
@@ -369,12 +370,15 @@ def train(
 
     epoch = 0
 
+    # General name for csv files and snapshots.
+    general_name = f'pt_{args.model_name}_{args.backbone_name}_balanced={args.balanced_dataset}_weights={args.ini_weights}'
+
     # ======================
     # LOADING SNAPSHOT (IF EXISTS).
     # Path to folder and file.
     snapshot_path = os.path.join(
         config['paths']['snapshots'],
-        f'snapshot_{args.model_name}_{args.backbone_name}.pt'
+        f'snapshot_{general_name}.pt'
     )
 
     # Load if exists a previous snapshot.
@@ -404,7 +408,6 @@ def train(
         print(f'Cosine scheduler: {cosine_scheduler}')
         print(f'Batches in (train, val) datasets: '
               f'({total_train_batches}, {total_val_batches})')
-    general_name = f'pt_{args.model_name}_{args.backbone_name}'
     csv_path=os.path.join(config['paths']['csv_results'], f'csv_{general_name}.csv')
 
     # ======================
@@ -422,7 +425,8 @@ def train(
         collapse_level = 0.
         running_train_loss = 0.
         model.train()
-        config['dataloader']['train'].sampler.set_epoch(epoch)  # Important.
+        if args.distributed:
+            config['dataloader']['train'].sampler.set_epoch(epoch)  # Important.
         for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
 
             # Move images to the GPU (same batch with two transformations).
@@ -481,16 +485,21 @@ def train(
         # Custom functions for saving the checkpoints.
         if global_rank == 0 and epoch % args.save_every == 0:
 
+            if args.distributed:
+                model_state_dict = model.module.state_dict()
+            else:
+                model_state_dict = model.state_dict()
+
             # Single snapshot (overwritten) in case of failure.
-            save_snapshot(snapshot_path, epoch, model, optimizer, warmup_scheduler, cosine_scheduler)
+            save_snapshot(snapshot_path, epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler)
 
             # Checkpoint every few epochs.
             save_snapshot(
                 os.path.join(
                     config['paths']['checkpoints'],
-                    f'ckpt_{args.model_name}_{args.backbone_name}_epoch_{epoch}.zip'
+                    f'ckpt_{general_name}_epoch={epoch:03d}.zip'
                 ),
-                epoch, model, optimizer, warmup_scheduler, cosine_scheduler
+                epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler
             )
 
         #     model.module.save(                   # THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
@@ -671,7 +680,7 @@ def main(args):
         # Calculating the number of samples per label/class.
         class_sample_count = np.unique(train_sample_labels,
                                     return_counts=True)[1]
-        print(class_sample_count)
+        print(f'Initial imbalanced dataset (samples/class):\n{class_sample_count}')
 
         # Weight per sample not per class.
         weight = 1. / class_sample_count
@@ -800,7 +809,46 @@ def main(args):
     #--------------------------
     # Check the distribution of samples in the dataloader (lightly dataset).
     #--------------------------
-    # Not copied yet.
+
+    if args.balanced_dataset and not args.distributed:
+
+        # List to save the labels.
+        print('Plotting the balanced dataset...')
+        labels_list = []
+
+        # Accessing Data and Targets in a PyTorch DataLoader.
+        t0 = time.time()
+        for i, (images, labels, names) in enumerate(dataloader['train']):
+            labels_list.append(labels)
+
+        # Concatenate list of lists (batches).
+        labels_list = torch.cat(labels_list, dim=0).numpy()
+        print(f'\nSample distribution computation in train dataset (s): '
+            f'{(time.time()-t0):.2f}')
+
+        # Count number of unique values.
+        data_x, data_y = np.unique(labels_list, return_counts=True)
+
+        # New function to plot (suitable for execution in shell).
+        fig, ax = plt.subplots(1, 1, figsize=(20, 5))
+        simple_bar_plot(ax,
+                        data_x,
+                        'Class',
+                        data_y,
+                        'N samples (dataloader)')
+
+        plt.gcf().subplots_adjust(bottom=0.15)
+        plt.gcf().subplots_adjust(left=0.15)
+        fig_name_save = (f'sample_distribution'
+                        f'-ratio={args.dataset_ratio}'
+                        f'-balanced_dataset={args.balanced_dataset}'
+                        f'-reduced_dataset={args.reduced_dataset}')
+        fig_format = '.png'
+        fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
+                    bbox_inches='tight')
+
+        plt.show() if args.show else plt.close()
+        print('Done!')
 
     #--------------------------
     # Look at some training samples (lightly dataset).
@@ -928,7 +976,7 @@ def main(args):
                             or col.startswith('config/'))
 
         # Configuration.
-        print(f'Setting the best configuration for the model from file: {filename_lr}')
+        print(f'\nSetting the best configuration for the model from file: {filename_lr}')
         config = {
             'args': args,
             'input_size': input_size,
