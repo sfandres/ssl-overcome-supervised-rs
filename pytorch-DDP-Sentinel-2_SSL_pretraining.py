@@ -11,6 +11,7 @@ from utils.barlowtwins import BarlowTwins
 import os
 import sys
 import argparse
+import csv
 
 # PyTorch.
 import torch
@@ -53,6 +54,7 @@ import matplotlib.pyplot as plt
 
 AVAIL_SSL_MODELS = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins', 'MoCov2']
 SEED = 42
+NUM_DECIMALS = 3
 
 
 def get_args() -> argparse.Namespace:
@@ -206,6 +208,11 @@ def load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler,
 
     return epoch, model, optimizer, warmup_scheduler, cosine_scheduler
 
+def save_to_csv(csv_file, data):
+    # Open the file in the append mode.
+    with open(csv_file, 'a', newline='') as file:
+        csv_writer = csv.writer(file)
+        csv_writer.writerow(data)
 
 def train(
     config: dict = None
@@ -398,6 +405,8 @@ def train(
         print(f'Cosine scheduler: {cosine_scheduler}')
         print(f'Batches in (train, val) datasets: '
               f'({total_train_batches}, {total_val_batches})')
+    general_name = f'pt_{args.model_name}_{args.backbone_name}'
+    csv_path=os.path.join(config['paths']['csv_results'], f'csv_{general_name}.csv')
 
     # ======================
     # TRAINING LOOP.
@@ -494,6 +503,20 @@ def train(
         #         'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
         #         'loss': epoch_train_loss
         #     }, os.path.join(config['paths']['checkpoints'], 'ckpt_' + str(model.module)))
+
+        # ======================
+        # SAVING CSV FILE.
+        if global_rank == 0:
+            if epoch == 0:
+                header = ['epoch', 'loss']
+                with open(csv_path, 'w', newline='') as file:
+                    csv_writer = csv.writer(file)
+                    csv_writer.writerow(header)
+
+            data = [epoch_train_loss]
+
+            data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
+            save_to_csv(csv_path, [f"{epoch:02d}"]+data_rounded)
 
         # ======================
         # EPOCH STATISTICS.
