@@ -2,7 +2,9 @@
 
 # Resource request.
 #SBATCH --nodes=1                                   # Number of nodes.
+#SBATCH --partition=volta                           # Request specific partition.
 #SBATCH --ntasks=1                                  # Number of tasks.
+#SBATCH --time=72:00:00                             # Job duration.
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --gpus-per-task=1                           # Number of GPUs per task.
 #SBATCH --mail-type=ALL                             # Type of notification via email.
