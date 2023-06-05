@@ -61,7 +61,7 @@ source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 # Define settings for the experiments.
-input_data=""  # input_data="/p/project/prcoe12"
+# input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=250
@@ -79,7 +79,6 @@ srun torchrun --standalone \
 --rdzv_endpoint $head_node_ip:29500 \
 pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --backbone_name $backbone_name \
---input_data $input_data \
 --dataset_name $dataset_name \
 --dataset_ratio $dataset_ratio \
 --epochs $epochs \
@@ -88,4 +87,5 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --num_workers $num_workers \
 --ini_weights $ini_weights \
 --balanced_dataset
-#--distributed \
+# --input_data $input_data \
+# --distributed \
