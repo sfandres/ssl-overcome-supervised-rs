@@ -61,7 +61,7 @@ source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
 
 # Define settings for the experiments.
-# input_data="/p/project/prcoe12"
+input_data=""  # input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=250
