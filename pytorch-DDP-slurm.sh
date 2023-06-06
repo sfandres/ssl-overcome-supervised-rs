@@ -3,10 +3,10 @@
 # Resource request.
 
 # Juelich.
-##SBATCH --cpus-per-task=1                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
-##SBATCH --gpus-per-task=1                           # Number of GPUs per task.
-##SBATCH --mail-type=ALL                             # Type of notification via email.
-##SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
+#SBATCH --cpus-per-task=1                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
+#SBATCH --gpus-per-task=1                           # Number of GPUs per task.
+#SBATCH --mail-type=ALL                             # Type of notification via email.
+#SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
 
 # Turgalium.
 ##SBATCH --nodes=1                                   # Number of nodes.
