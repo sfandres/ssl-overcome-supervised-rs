@@ -7,6 +7,12 @@ from utils.simclr import SimCLR
 from utils.mocov2 import MoCov2
 from utils.barlowtwins import BarlowTwins
 from utils.graphs import simple_bar_plot
+from utils.check_embeddings import (
+    create_list_embeddings,
+    pca_computation,
+    tsne_computation
+)
+import seaborn as sns
 
 # Arguments and paths.
 import os
@@ -56,6 +62,7 @@ import matplotlib.pyplot as plt
 AVAIL_SSL_MODELS = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins', 'MoCov2']
 SEED = 42
 NUM_DECIMALS = 3
+FIG_FORMAT='.png'
 
 
 def get_args() -> argparse.Namespace:
@@ -553,6 +560,27 @@ def train(
         if args.ray_tune:
             tune.report(loss=epoch_train_loss)
 
+    print('Calculating embeddings...')
+    embeddings, labels = create_list_embeddings(model, config['dataloader'], local_rank)
+
+    # t-SNE computation for 2-D.
+    df = tsne_computation(embeddings, labels, SEED, n_components=2)
+
+    # 2-D plot.
+    fig = plt.figure(figsize=(10, 10))
+    sns.scatterplot(
+        x='tsne_x',
+        y='tsne_y',
+        hue='labels',
+        palette=sns.color_palette('hls', 29),
+        data=df,
+        legend='full',
+        alpha=0.9
+    )
+    fig_name_save = (f'tsne_2d-{general_name}')
+    fig.savefig(os.path.join(config['paths']['images'], fig_name_save+FIG_FORMAT),
+                bbox_inches='tight')
+
 
 def main(args):
 
@@ -843,8 +871,7 @@ def main(args):
                         f'-ratio={args.dataset_ratio}'
                         f'-balanced_dataset={args.balanced_dataset}'
                         f'-reduced_dataset={args.reduced_dataset}')
-        fig_format = '.png'
-        fig.savefig(os.path.join(paths['images'], fig_name_save+fig_format),
+        fig.savefig(os.path.join(paths['images'], fig_name_save+FIG_FORMAT),
                     bbox_inches='tight')
 
         plt.show() if args.show else plt.close()
