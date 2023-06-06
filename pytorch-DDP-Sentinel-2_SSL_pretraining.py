@@ -770,7 +770,7 @@ def main(args):
         num_workers=args.num_workers,
         collate_fn=collate_fn[x],
         pin_memory=True,
-        drop_last=False,
+        drop_last=True,
         worker_init_fn=seed_worker if not args.ray_tune else None,
         generator=g if not args.ray_tune else None
     ) for x in splits[1:]}
@@ -784,7 +784,7 @@ def main(args):
         num_workers=args.num_workers,
         collate_fn=collate_fn['train'],
         pin_memory=True,
-        drop_last=False,
+        drop_last=True,
         worker_init_fn=seed_worker if not args.ray_tune else None,
         generator=g if not args.ray_tune else None
     )
