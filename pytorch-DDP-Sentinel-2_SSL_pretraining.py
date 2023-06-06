@@ -759,7 +759,7 @@ def main(args):
     #--------------------------
     if args.distributed:
         sampler=DistributedSampler(dataset['train'])
-        shuffle=False
+        shuffle=True
 
     #--------------------------
     # Cast to Lightly dataset.
