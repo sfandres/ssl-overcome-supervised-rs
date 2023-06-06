@@ -281,7 +281,7 @@ def train(
     if args.show:
         print(summary(
             resnet,
-            input_size=(args.batch_size, 3,
+            input_size=(config['bsz'], 3,
                         config['input_size'],
                         config['input_size']),
             device=local_rank)
@@ -458,7 +458,7 @@ def train(
 
             # Print statistics.
             # Averaged loss across all training examples * batch_size.
-            running_train_loss += loss.detach() * args.batch_size
+            running_train_loss += loss.detach() * config['bsz']
 
             # Show partial stats (only four times per epoch).
             if args.verbose:
@@ -467,7 +467,7 @@ def train(
                         f'[GPU:{global_rank}] | '
                         f'T[{epoch},{b+1:5d}] | '
                         f'Averaged loss: '
-                        f'{running_train_loss/(b*args.batch_size):.4f}'
+                        f"{running_train_loss/(b*config['bsz']):.4f}"
                     )
 
         # ======================
@@ -765,6 +765,9 @@ def main(args):
             drop_last=True
         )
         shuffle=False
+        world_size = int(os.environ['WORLD_SIZE'])
+        bsz = int(args.batch_size / world_size)
+        print(f'\nNew batch size considering a word size of {world_size} GPUs: {bsz}')
 
     #--------------------------
     # Cast to Lightly dataset.
@@ -795,7 +798,7 @@ def main(args):
     # Dataloader for validating and testing.
     dataloader = {x: torch.utils.data.DataLoader(
         lightly_dataset[x],
-        batch_size=args.batch_size,
+        batch_size=bsz,
         shuffle=False,
         num_workers=args.num_workers,
         collate_fn=collate_fn[x],
@@ -808,7 +811,7 @@ def main(args):
     # Dataloader for training.
     dataloader['train'] = torch.utils.data.DataLoader(
         lightly_dataset['train'],
-        batch_size=args.batch_size,
+        batch_size=bsz,
         shuffle=shuffle,
         sampler=sampler,
         num_workers=args.num_workers,
@@ -819,7 +822,7 @@ def main(args):
         generator=g if not args.ray_tune else None
     )
 
-    print(f'\nSampler: {sampler}')
+    print(f'Sampler: {sampler}')
     if args.verbose:
         for d in dataloader:
             print(f'\n{d}: {vars(dataloader[d])}')
@@ -835,7 +838,7 @@ def main(args):
             # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
             print(f'  - #Samples/class (from dataset):\n{samples}')
             print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
-            print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
+            print(f'  - #Samples (from dataloader): {len(dataloader[d])*bsz}')
 
     #--------------------------
     # Check the distribution of samples in the dataloader (lightly dataset).
@@ -934,6 +937,7 @@ def main(args):
                 'args': args,
                 'input_size': input_size,
                 'dataloader': dataloader,
+                'bsz': bsz,
                 'paths': paths,
                 'hidden_dim': df.loc[0, 'config/hidden_dim'],
                 'out_dim': df.loc[0, 'config/out_dim'],
@@ -948,6 +952,7 @@ def main(args):
                 'args': args,
                 'input_size': input_size,
                 'dataloader': dataloader,
+                'bsz': bsz,
                 'paths': paths,
                 'hidden_dim': tune.grid_search([128, 256, 512]),
                 'out_dim': tune.grid_search([128, 256, 512]),
@@ -1011,6 +1016,7 @@ def main(args):
             'args': args,
             'input_size': input_size,
             'dataloader': dataloader,
+            'bsz': bsz,
             'paths': paths,
             'hidden_dim': df_lr.loc[0, 'config/hidden_dim'],
             'out_dim': df_lr.loc[0, 'config/out_dim'],
