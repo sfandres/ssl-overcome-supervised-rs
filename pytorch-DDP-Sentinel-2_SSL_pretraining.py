@@ -838,10 +838,10 @@ def main(args):
     # Check the distribution of samples in the dataloader (lightly dataset).
     #--------------------------
 
-    if args.balanced_dataset and not args.distributed:
+    if not args.distributed:
 
         # List to save the labels.
-        print('\nCreating the plot for the balanced dataset...')
+        print('\nCreating the sample distribution plot...')
         labels_list = []
 
         # Accessing Data and Targets in a PyTorch DataLoader.
