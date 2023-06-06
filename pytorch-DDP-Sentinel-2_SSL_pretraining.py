@@ -792,9 +792,6 @@ def main(args):
     #--------------------------
     # PyTorch dataloaders.
     #--------------------------
-    print(f'\nSampler: {sampler}')
-    print(f'Shuffle: {shuffle}')
-
     # Dataloader for validating and testing.
     dataloader = {x: torch.utils.data.DataLoader(
         lightly_dataset[x],
@@ -822,6 +819,7 @@ def main(args):
         generator=g if not args.ray_tune else None
     )
 
+    print(f'\nSampler: {sampler}')
     if args.verbose:
         for d in dataloader:
             print(f'\n{d}: {vars(dataloader[d])}')
