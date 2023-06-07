@@ -164,7 +164,12 @@ def ddp_setup():
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
 
 
-def show_two_batch(batch1: torch.Tensor = None, batch2: torch.Tensor = None, batch_id: int = None, **kwargs) -> None:
+def show_two_batches(
+        batch1: torch.Tensor = None,
+        batch2: torch.Tensor = None,
+        batch_id: int = None,
+        **kwargs
+) -> None:
     """
     Shows the images in two batches, one above the other, in the same figure.
 
@@ -211,42 +216,6 @@ def show_two_batch(batch1: torch.Tensor = None, batch2: torch.Tensor = None, bat
         axes[row, col].axis('off')
 
     plt.tight_layout()
-    plt.show()
-
-
-def show_batch(
-    batch: torch.Tensor = None,
-    batch_id: int = None,
-    **kwargs
-) -> None:
-    """
-    Shows the images in a batch.
-
-    Args:
-        batch (torch.Tensor): batch of images.
-        batch_id (int): batch identification number.
-    """
-
-    # Figure settings
-    columns = 8
-    rows = 2
-    width = 30
-    height = 5
-
-    # Figure creation and show.
-    fig = plt.figure(figsize=(width, height))
-    fig.suptitle(f'Batch {batch_id}')
-    for i in range(1, columns * rows + 1):
-        if i < batch.shape[0]:  # = batch_size
-            img = batch[i]
-            if 'mean' and 'std' in kwargs:  # Revert normalization.
-                img = inv_norm_tensor(
-                    img,
-                    mean=kwargs['mean']['train'],
-                    std=kwargs['std']['train']
-                )
-            fig.add_subplot(rows, columns, i)
-            plt.imshow(torch.permute(img, (1, 2, 0)))
     plt.show()
 
 
@@ -979,14 +948,15 @@ def main(args):
             img = images[0][0]
             label = labels[0]
             name = names[0]
-            print(name)
             img = inv_norm_tensor(  # Revert normalization.
                 img,
                 mean=mean['train'],
                 std=std['train']
             )
-            print(images[0].shape)
-            print(labels.shape)
+            if args.verbose:
+                print(images[0].shape)
+                print(labels.shape)
+                print(name)
             plt.title("Label: " + str(int(label)))
             plt.imshow(torch.permute(img, (1, 2, 0)))
             plt.show()
@@ -996,9 +966,7 @@ def main(args):
     # Show the images within the first batch.
     if args.show:
         for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
-            # show_batch(x0, 0, mean=mean, std=std)
-            # show_batch(x1, 1, mean=mean, std=std)
-            show_two_batch(x0, x1, 1, mean=mean, std=std)
+            show_two_batches(x0, x1, 1, mean=mean, std=std)
             if b == 1:  # Only a few batches.
                 break
 
