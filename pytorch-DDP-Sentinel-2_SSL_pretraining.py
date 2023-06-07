@@ -567,7 +567,9 @@ def train(
     df = tsne_computation(embeddings, labels, SEED, n_components=2)
 
     # 2-D plot.
+    fig_name_save = (f'tsne_2d-{general_name}')
     fig = plt.figure(figsize=(10, 10))
+    sns.set(font_scale=1.6)
     sns.scatterplot(
         x='tsne_x',
         y='tsne_y',
@@ -576,10 +578,32 @@ def train(
         data=df,
         legend='full',
         alpha=0.9
-    )
-    fig_name_save = (f'tsne_2d-{general_name}')
+    ).set_title(fig_name_save)
+    plt.legend(loc='right', fontsize='12', title_fontsize='12')
     fig.savefig(os.path.join(config['paths']['images'], fig_name_save+FIG_FORMAT),
                 bbox_inches='tight')
+    plt.show() if args.show else plt.close()
+
+    # PCA computation for 2-D.
+    df = pca_computation(embeddings, labels, SEED)
+
+    # 2-D plot.
+    fig_name_save = (f'pca_2d-{general_name}')
+    fig = plt.figure(figsize=(10, 10))
+    sns.set(font_scale=1.6)
+    sns.scatterplot(
+        x='pca_x',
+        y='pca_y',
+        hue='labels',
+        palette=sns.color_palette('hls', 29),
+        data=df,
+        legend='full',
+        alpha=0.9
+    ).set_title(fig_name_save)
+    plt.legend(loc='right', fontsize='12', title_fontsize='12')
+    fig.savefig(os.path.join(config['paths']['images'], fig_name_save+FIG_FORMAT),
+                bbox_inches='tight')
+    plt.show() if args.show else plt.close()
 
 
 def main(args):
@@ -765,9 +789,11 @@ def main(args):
             drop_last=True
         )
         shuffle=False
-        world_size = int(os.environ['WORLD_SIZE'])
-        bsz = int(args.batch_size / world_size)
-        print(f'\nNew batch size considering a word size of {world_size} GPUs: {bsz}')
+
+    # Configure correct batch size.
+    world_size = int(os.environ['WORLD_SIZE'])
+    bsz = int(args.batch_size / world_size)
+    print(f'\nNew batch size considering a word size of {world_size} GPUs: {bsz}')
 
     #--------------------------
     # Cast to Lightly dataset.
@@ -844,44 +870,44 @@ def main(args):
     # Check the distribution of samples in the dataloader (lightly dataset).
     #--------------------------
 
-    if not args.distributed:
+    # if not args.distributed:
 
-        # List to save the labels.
-        print('\nCreating the sample distribution plot...')
-        labels_list = []
+    #     # List to save the labels.
+    #     print('\nCreating the sample distribution plot...')
+    #     labels_list = []
 
-        # Accessing Data and Targets in a PyTorch DataLoader.
-        t0 = time.time()
-        for i, (images, labels, names) in enumerate(dataloader['train']):
-            labels_list.append(labels)
+    #     # Accessing Data and Targets in a PyTorch DataLoader.
+    #     t0 = time.time()
+    #     for i, (images, labels, names) in enumerate(dataloader['train']):
+    #         labels_list.append(labels)
 
-        # Concatenate list of lists (batches).
-        labels_list = torch.cat(labels_list, dim=0).numpy()
-        print(f'\nSample distribution computation in train dataset (s): '
-            f'{(time.time()-t0):.2f}')
+    #     # Concatenate list of lists (batches).
+    #     labels_list = torch.cat(labels_list, dim=0).numpy()
+    #     print(f'\nSample distribution computation in train dataset (s): '
+    #         f'{(time.time()-t0):.2f}')
 
-        # Count number of unique values.
-        data_x, data_y = np.unique(labels_list, return_counts=True)
+    #     # Count number of unique values.
+    #     data_x, data_y = np.unique(labels_list, return_counts=True)
 
-        # New function to plot (suitable for execution in shell).
-        fig, ax = plt.subplots(1, 1, figsize=(20, 5))
-        simple_bar_plot(ax,
-                        data_x,
-                        'Class',
-                        data_y,
-                        'N samples (dataloader)')
+    #     # New function to plot (suitable for execution in shell).
+    #     fig, ax = plt.subplots(1, 1, figsize=(20, 5))
+    #     simple_bar_plot(ax,
+    #                     data_x,
+    #                     'Class',
+    #                     data_y,
+    #                     'N samples (dataloader)')
 
-        plt.gcf().subplots_adjust(bottom=0.15)
-        plt.gcf().subplots_adjust(left=0.15)
-        fig_name_save = (f'sample_distribution'
-                        f'-ratio={args.dataset_ratio}'
-                        f'-balanced_dataset={args.balanced_dataset}'
-                        f'-reduced_dataset={args.reduced_dataset}')
-        fig.savefig(os.path.join(paths['images'], fig_name_save+FIG_FORMAT),
-                    bbox_inches='tight')
+    #     plt.gcf().subplots_adjust(bottom=0.15)
+    #     plt.gcf().subplots_adjust(left=0.15)
+    #     fig_name_save = (f'sample_distribution'
+    #                     f'-ratio={args.dataset_ratio}'
+    #                     f'-balanced_dataset={args.balanced_dataset}'
+    #                     f'-reduced_dataset={args.reduced_dataset}')
+    #     fig.savefig(os.path.join(paths['images'], fig_name_save+FIG_FORMAT),
+    #                 bbox_inches='tight')
 
-        plt.show() if args.show else plt.close()
-        print('Done!')
+    #     plt.show() if args.show else plt.close()
+    #     print('Done!')
 
     #--------------------------
     # Look at some training samples (lightly dataset).
