@@ -13,6 +13,7 @@ from utils.check_embeddings import (
     tsne_computation
 )
 import seaborn as sns
+from utils.dataset import inv_norm_tensor
 
 # Arguments and paths.
 import os
@@ -163,9 +164,60 @@ def ddp_setup():
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
 
 
+def show_two_batch(batch1: torch.Tensor = None, batch2: torch.Tensor = None, batch_id: int = None, **kwargs) -> None:
+    """
+    Shows the images in two batches, one above the other, in the same figure.
+
+    Args:
+        batch1 (torch.Tensor): first batch of images.
+        batch2 (torch.Tensor): second batch of images.
+        batch_id (int): batch identification number.
+    """
+
+    # Figure settings
+    batch_size = batch1.shape[0]
+    total_images = batch_size * 2
+    columns = 8
+    rows = math.ceil(total_images / columns)
+
+    # Calculate width and height based on the number of columns and rows
+    width = columns * 5
+    height = rows * 5
+
+    # Figure creation and show
+    fig, axes = plt.subplots(nrows=rows, ncols=columns, figsize=(width, height))
+    fig.suptitle(f'Batch {batch_id}')
+
+    # Iterate over two times the batch size.
+    for i in range(total_images):
+        row = i // columns
+        col = i % columns
+        if i < batch_size:
+            img = batch1[i]
+            pbatch = 1
+            pimage = i
+        else:
+            img = batch2[i % batch_size]
+            pbatch = 2
+            pimage = i % batch_size
+        if 'mean' in kwargs and 'std' in kwargs:  # Revert normalization
+            img = inv_norm_tensor(
+                img,
+                mean=kwargs['mean']['train'],
+                std=kwargs['std']['train']
+            )
+        axes[row, col].imshow(torch.permute(img, (1, 2, 0)))
+        axes[row, col].set_title(f'Batch {pbatch} - Image {pimage}')
+        axes[row, col].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+
 def show_batch(
     batch: torch.Tensor = None,
-    batch_id: int = None
+    batch_id: int = None,
+    **kwargs
 ) -> None:
     """
     Shows the images in a batch.
@@ -185,8 +237,14 @@ def show_batch(
     fig = plt.figure(figsize=(width, height))
     fig.suptitle(f'Batch {batch_id}')
     for i in range(1, columns * rows + 1):
-        if i < batch.shape[0]:  # batch_size
+        if i < batch.shape[0]:  # = batch_size
             img = batch[i]
+            if 'mean' and 'std' in kwargs:  # Revert normalization.
+                img = inv_norm_tensor(
+                    img,
+                    mean=kwargs['mean']['train'],
+                    std=kwargs['std']['train']
+                )
             fig.add_subplot(rows, columns, i)
             plt.imshow(torch.permute(img, (1, 2, 0)))
     plt.show()
@@ -216,11 +274,13 @@ def load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler,
 
     return epoch, model, optimizer, warmup_scheduler, cosine_scheduler
 
+
 def save_to_csv(csv_file, data):
     # Open the file in the append mode.
     with open(csv_file, 'a', newline='') as file:
         csv_writer = csv.writer(file)
         csv_writer.writerow(data)
+
 
 def train(
     config: dict = None
@@ -720,6 +780,7 @@ def main(args):
     if args.verbose:
         for d in dataset:
             print(f'\n{d}: {dataset[d]}')
+            print(f'\n{d}: {dataset[d].class_to_idx}')
 
     #--------------------------
     # Dealing with imbalanced data (option).
@@ -917,20 +978,29 @@ def main(args):
         for i, (images, labels, names) in enumerate(dataloader['train']):
             img = images[0][0]
             label = labels[0]
+            name = names[0]
+            print(name)
+            img = inv_norm_tensor(  # Revert normalization.
+                img,
+                mean=mean['train'],
+                std=std['train']
+            )
             print(images[0].shape)
             print(labels.shape)
             plt.title("Label: " + str(int(label)))
             plt.imshow(torch.permute(img, (1, 2, 0)))
             plt.show()
-            if i == 0:
-                break  # Only a few batches.
+            if i == 0:  # Only a few batches.
+                break
 
-    # Show batches.
+    # Show the images within the first batch.
     if args.show:
         for b, ((x0, x1), _, _) in enumerate(dataloader['train']):
-            show_batch(x0, 0)  # Show the images within the first batch.
-            show_batch(x1, 1)
-            break
+            # show_batch(x0, 0, mean=mean, std=std)
+            # show_batch(x1, 1, mean=mean, std=std)
+            show_two_batch(x0, x1, 1, mean=mean, std=std)
+            if b == 1:  # Only a few batches.
+                break
 
     # ======================
     # SELF-SUPERVISED MODELS.
