@@ -110,11 +110,18 @@ def get_args() -> argparse.Namespace:
                              '0 means that the data will be loaded in the '
                              'main process (default: 1).')
 
+    parser.add_argument('--ini_weights', '-iw', type=str, default='random',
+                        choices=['random', 'imagenet'],
+                        help='initial weights (default: random).')
+
     parser.add_argument('--show', '-s', action='store_true',
                         help='the images pops up.')
 
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='provides additional details for debugging purposes.')
+
+    parser.add_argument('--balanced_dataset', '-bd', action='store_true',
+                        help='whether the dataset should be balanced.')
 
     parser.add_argument('--torch_compile', '-tc', action='store_true',
                         help='PyTorch 2.0 compile enabled.')
@@ -390,7 +397,8 @@ def main(args):
     elif args.model_name in AVAIL_SSL_MODELS:
         print(f'\nModel {args.backbone_name} with pretrained weights using {args.model_name} SSL')
 
-        snapshot_name = f'snapshot_{args.model_name}_{args.backbone_name}.pt'
+        # Load snapshot from pretraining.
+        snapshot_name = f'snapshot_pt_{args.model_name}_{args.backbone_name}_balanced={args.balanced_dataset}_weights={args.ini_weights}.pt'
         snapshot = torch.load(os.path.join(paths['input'], snapshot_name))
         print(f'Model loaded from {snapshot_name}')
 
@@ -486,7 +494,7 @@ def main(args):
 
 
     # Training.
-    general_name = f'ft_{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}'
+    general_name = f'ft_{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_balanced={args.balanced_dataset}_weights={args.ini_weights}'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
