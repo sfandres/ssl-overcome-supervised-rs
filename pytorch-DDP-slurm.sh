@@ -74,7 +74,7 @@ dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=1000
 save_every=25
-batch_size=256
+batch_size=128
 num_workers=4
 ini_weights="random"
 
