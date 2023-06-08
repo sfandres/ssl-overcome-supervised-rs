@@ -71,11 +71,11 @@ conda activate lulc2-conda
 input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
-epochs=250
-save_every=10
-batch_size=128
+epochs=1000
+save_every=25
+batch_size=256
 num_workers=1
-ini_weights="random"
+ini_weights="imagenet"
 
 # Run experiment (--standalone).
 # $SLURM_GPUS_PER_TASK $SLURM_NTASKS
