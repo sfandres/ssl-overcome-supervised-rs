@@ -974,6 +974,11 @@ def main(args):
     # SELF-SUPERVISED MODELS.
     # ======================
 
+    if args.epochs < 100:
+        warmup_epochs = max(1, int(0.1 * args.epochs))
+    else:
+        warmup_epochs = 10
+
     #--------------------------
     # Training (also with hyperparameter tuning using Ray Tune)
     #--------------------------
@@ -1006,7 +1011,7 @@ def main(args):
                 'hidden_dim': df.loc[0, 'config/hidden_dim'],
                 'out_dim': df.loc[0, 'config/out_dim'],
                 'lr': tune.loguniform(1e-4, 1e-1),
-                'warmup_epochs': max(1, int(0.1 * max_num_epochs)),
+                'warmup_epochs': warmup_epochs,
             }
 
         elif args.ray_tune == 'gridsearch':
@@ -1021,7 +1026,7 @@ def main(args):
                 'hidden_dim': tune.grid_search([128, 256, 512]),
                 'out_dim': tune.grid_search([128, 256, 512]),
                 'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-                'warmup_epochs': max(1, int(0.1 * max_num_epochs)),
+                'warmup_epochs': warmup_epochs,
             }
 
         scheduler = ASHAScheduler(
@@ -1085,7 +1090,7 @@ def main(args):
             'hidden_dim': df_lr.loc[0, 'config/hidden_dim'],
             'out_dim': df_lr.loc[0, 'config/out_dim'],
             'lr': df_lr.loc[0, 'config/lr'],
-            'warmup_epochs': max(1, int(0.1 * args.epochs)),
+            'warmup_epochs': warmup_epochs,
         }
 
         train(config)
