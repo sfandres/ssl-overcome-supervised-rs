@@ -10,6 +10,9 @@ from utils.simclr import SimCLR
 from utils.mocov2 import MoCov2
 from utils.barlowtwins import BarlowTwins
 import pandas as pd
+from utils.graphs import simple_bar_plot
+import time
+import matplotlib.pyplot as plt
 
 # Arguments and paths.
 import os
@@ -50,6 +53,7 @@ from finetuning_trainer import Trainer
 AVAIL_SSL_MODELS = ['BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', 'SimSiam']
 MODEL_CHOICES = ['Random', 'Imagenet'] + AVAIL_SSL_MODELS
 SEED = 42
+FIG_FORMAT='.png'
 
 
 def get_args() -> argparse.Namespace:
@@ -285,6 +289,39 @@ def main(args):
 
 
     #--------------------------
+    # Dealing with imbalanced data (option).
+    #--------------------------
+
+    # Creating a list of labels of samples.
+    train_sample_labels = andalucia_dataset['train'].targets
+
+    # Calculating the number of samples per label/class.
+    class_and_sample_counts = np.unique(train_sample_labels,
+                                   return_counts=True)
+    class_count = class_and_sample_counts[0]
+    sample_count_per_class = class_and_sample_counts[1]
+    print('Initial imbalanced dataset (classes and samples/class):')
+    print(f'Diff. classes --> {class_count}')
+    print(f'Samples/class --> {sample_count_per_class}')
+
+    # Weight per sample not per class.
+    weight = 1. / sample_count_per_class
+    index_map = {value: index for index, value in enumerate(class_count)}  # Map, e.g., 0--> 0, 21 --> 1, etc.
+    samples_weight = np.array([weight[index_map[t]] for t in train_sample_labels])
+
+    # Casting.
+    samples_weight = torch.from_numpy(samples_weight)
+    samples_weight = samples_weight.double()
+
+    # Sampler, imbalanced data.
+    sampler = torch.utils.data.WeightedRandomSampler(
+        samples_weight,
+        len(samples_weight)
+    )
+    shuffle = False
+    print('Using balanced dataloader as default option!')
+
+    #--------------------------
     # If distributed (option).
     #--------------------------
     if args.distributed:
@@ -294,19 +331,30 @@ def main(args):
     #--------------------------
     # PyTorch dataloaders.
     #--------------------------
-    print(f'Sampler: {sampler}')
-    print(f'Shuffle: {shuffle}')
-
-    # Define dataloaders.
+    # Dataloader for validating and testing.
     dataloader = {x: torch.utils.data.DataLoader(
         andalucia_dataset[x],
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=args.num_workers,
-        drop_last=False,
+        pin_memory=True,
+        drop_last=True,
         worker_init_fn=seed_worker,
         generator=g
-    ) for x in splits}
+    ) for x in splits[1:]}
+
+    # Dataloader for training.
+    dataloader['train'] = torch.utils.data.DataLoader(
+        andalucia_dataset['train'],
+        batch_size=args.batch_size,
+        shuffle=shuffle,                      # Careful.
+        sampler=sampler,
+        num_workers=args.num_workers,
+        pin_memory=True,
+        drop_last=True,
+        worker_init_fn=seed_worker,
+        generator=g
+    )
 
     if args.verbose:
         for d in dataloader:
@@ -333,9 +381,43 @@ def main(args):
         print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
 
     #--------------------------
-    # Check the distribution of samples in the dataloader.
+    # Check the distribution of samples in the dataloader (lightly dataset).
     #--------------------------
-    # Not copied yet.
+
+    # List to save the labels.
+    print('\nCreating the sample distribution plot...')
+    labels_list = []
+
+    # Accessing Data and Targets in a PyTorch DataLoader.
+    t0 = time.time()
+    for i, (images, labels) in enumerate(dataloader['train']):
+        labels_list.append(labels)
+
+    # Concatenate list of lists (batches).
+    labels_list = torch.cat(labels_list, dim=0).numpy()
+    print(f'\nSample distribution computation in train dataset (s): '
+        f'{(time.time()-t0):.2f}')
+
+    # Count number of unique values.
+    data_x, data_y = np.unique(labels_list, return_counts=True)
+
+    # New function to plot (suitable for execution in shell).
+    fig, ax = plt.subplots(1, 1, figsize=(20, 5))
+    simple_bar_plot(ax,
+                    data_x,
+                    'Class',
+                    data_y,
+                    'N samples (dataloader)')
+
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.15)
+    fig_name_save = (f'sample_distribution'
+                     f'-train_ratio={args.train_rate}')
+    fig.savefig(os.path.join(paths['images'], fig_name_save+FIG_FORMAT),
+                bbox_inches='tight')
+
+    plt.show() if args.show else plt.close()
+    print('Done!')
 
     #--------------------------
     # Look at some training samples.
