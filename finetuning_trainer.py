@@ -142,6 +142,20 @@ class Trainer:
         self.optimizer.step()
         return loss.detach()
 
+    def _run_evaluation(self):
+        batch_size = len(next(iter(self.dataloader['validation']))[0])
+        running_loss = 0.
+        self.model.eval()
+        with torch.no_grad():
+            for source, targets in self.dataloader['validation']:
+                source = source.to(self.local_rank)
+                targets = targets.to(self.local_rank)
+                output = self.model(source)
+                loss = self.loss_fn(output, targets)
+                running_loss += loss * batch_size
+        epoch_val_loss = running_loss / len(self.dataloader['validation'].sampler)
+        return epoch_val_loss
+
     def _run_epoch(self, epoch: int):
         batch_size = len(next(iter(self.dataloader['train']))[0])
         running_loss = 0.
@@ -153,11 +167,12 @@ class Trainer:
             targets = targets.to(self.local_rank)
             loss = self._run_batch(source, targets)
             running_loss += loss * batch_size
-        epoch_loss = running_loss / len(self.dataloader['train'].sampler)
-        print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Loss: {epoch_loss:.4f} | "
-              f"Batch size: {batch_size} | Steps: {len(self.dataloader['train'])} | "
-              f"Duration: {(time.time()-t0):.2f}s")
-        return round(float(epoch_loss), NUM_DECIMALS)
+        epoch_train_loss = running_loss / len(self.dataloader['train'].sampler)
+        epoch_val_loss = self._run_evaluation()
+        print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Train loss: {epoch_train_loss:.4f} | "
+              f"Steps: {len(self.dataloader['train'])} | Val loss: {epoch_val_loss:.4f} | "
+              f"Batch size: {batch_size} | Duration: {(time.time()-t0):.2f}s")
+        return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
     def _save_snapshot(self, epoch: int):
         snapshot = {
@@ -178,7 +193,7 @@ class Trainer:
         for epoch in range(self.epochs_run, max_epochs):
 
             print()
-            epoch_loss = self._run_epoch(epoch)
+            epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)
             if self.global_rank == 0 and epoch % self.save_every == 0:
                 self._save_snapshot(epoch)
 
@@ -190,12 +205,12 @@ class Trainer:
             if save_csv:
 
                 if epoch == 0:
-                    header = ['epoch', 'loss'] + list(acc_results.keys())
+                    header = ['epoch', 'train_loss', 'val_loss'] + list(acc_results.keys())
                     with open(self.csv_path, 'w', newline='') as file:
                         csv_writer = csv.writer(file)
                         csv_writer.writerow(header)
 
-                data = [epoch_loss] + list(acc_results.values())
+                data = [epoch_train_loss, epoch_val_loss] + list(acc_results.values())
 
                 data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
                 self._save_to_csv(self.csv_path, [f"{epoch:02d}"]+data_rounded)
