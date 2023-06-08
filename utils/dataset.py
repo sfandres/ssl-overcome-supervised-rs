@@ -73,6 +73,9 @@ class AndaluciaDataset(Dataset):
         classes = self._find_classes(level)
         self.classes, self.class_to_idx, self.idx_to_class = classes
 
+        # Get targets.
+        self.targets = self.csv_dataset_info['Class_max'].values.tolist()
+
         # Print info.
         if verbose:
             self._show_info()
