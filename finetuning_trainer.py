@@ -147,6 +147,7 @@ class Trainer:
         running_loss = 0.
         t0 = time.time()
         # self.dataloader['train'].sampler.set_epoch(epoch)             # CAREFUL
+        self.model.train()
         for source, targets in self.dataloader['train']:
             source = source.to(self.local_rank)
             targets = targets.to(self.local_rank)
