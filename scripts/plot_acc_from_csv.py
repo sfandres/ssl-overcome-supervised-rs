@@ -49,10 +49,10 @@ def main(args):
 
     # Target metrics.
     if args.downstream_task == "multiclass":
-        metrics = ['loss', 'top1', 'top5', 'f1_micro', 'f1_macro', 'f1_weighted']
+        metrics = ['train_loss', 'val_loss', 'top1', 'top5', 'f1_macro', 'f1_weighted']  # 'f1_micro'
         bbox_to_anchor = (-0.08, -0.45)
     else:   
-        metrics = ['loss', 'rmse', 'mae']
+        metrics = ['train_loss', 'val_loss', 'rmse', 'mae']
         bbox_to_anchor = (-0.08, -0.25)
 
     # Calculate the number of rows and columns for subplots.
