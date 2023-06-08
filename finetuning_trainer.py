@@ -132,7 +132,7 @@ class Trainer:
         snapshot = torch.load(snapshot_path, map_location=loc)
         self.model.load_state_dict(snapshot["MODEL_STATE"])
         self.epochs_run = snapshot["EPOCHS_RUN"]
-        print(f"Resuming training from snapshot at Epoch {self.epochs_run}")
+        print(f"Resuming training from snapshot at Epoch {self.epochs_run} <-- {snapshot_path.rsplit('/', 1)[-1]}")
 
     def _run_batch(self, source, targets):
         self.optimizer.zero_grad()
