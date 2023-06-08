@@ -146,7 +146,7 @@ class Trainer:
         batch_size = len(next(iter(self.dataloader['train']))[0])
         running_loss = 0.
         t0 = time.time()
-        # self.dataloader['train'].sampler.set_epoch(epoch)
+        # self.dataloader['train'].sampler.set_epoch(epoch)             # CAREFUL
         for source, targets in self.dataloader['train']:
             source = source.to(self.local_rank)
             targets = targets.to(self.local_rank)
