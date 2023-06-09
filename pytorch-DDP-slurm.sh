@@ -10,14 +10,14 @@
 
 # Turgalium.
 #SBATCH --nodes=1                                   # Number of nodes.
-#SBATCH --ntasks=1                                  # Number of tasks.
+#SBATCH --ntasks=4                                  # Number of tasks.
 #SBATCH --partition=volta                           # Request specific partition.
-#SBATCH --time=48:00:00                             # Job duration (72h is the limit).
-#SBATCH --cpus-per-task=2                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
-#SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
+#SBATCH --time=24:00:00                             # Job duration (72h is the limit).
+#SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
+#SBATCH --gpus-per-node=4                           # Min. number of GPUs on each node.
 #SBATCH --mail-type=ALL                             # Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
-##SBATCH --exclusive
+#SBATCH --exclusive
 
 
 # Help function.
@@ -75,8 +75,8 @@ dataset_ratio="(0.900,0.0250,0.0750)"
 epochs=1000
 save_every=25
 batch_size=128
-num_workers=2
-ini_weights="random"
+num_workers=4
+ini_weights="imagenet"
 
 # Run experiment (--standalone).
 # $SLURM_GPUS_PER_TASK $SLURM_NTASKS
@@ -95,7 +95,7 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --batch_size $batch_size \
 --num_workers $num_workers \
 --ini_weights $ini_weights \
---balanced_dataset
+--distributed
 
 # --balanced_dataset \
 # --input_data $input_data \
