@@ -561,7 +561,7 @@ def train(
         # SAVING CSV FILE.
         if global_rank == 0:
             if epoch == 0:
-                header = ['epoch', 'loss']
+                header = ['epoch', 'train_loss']
                 with open(csv_path, 'w', newline='') as file:
                     csv_writer = csv.writer(file)
                     csv_writer.writerow(header)
