@@ -90,7 +90,7 @@ def main(args):
                 return 1
 
             # Plot the metric data.
-            axs[row_index, col_index].plot(x, y, label=filename)
+            axs[row_index, col_index].plot(x, y, label=filename.rsplit('/', 1)[-1][:-4])
             axs[row_index, col_index].set_ylabel(metric.capitalize())
 
     # Set x-label for the bottom-most subplot
