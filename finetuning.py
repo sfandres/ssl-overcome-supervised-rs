@@ -117,6 +117,10 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                         choices=['random', 'imagenet'],
                         help='initial weights (default: random).')
+    
+    parser.add_argument('--dropout', '-do', type=float,
+                        help='adds a dropout layer before the linear classifier '
+                             'with the given probability.')
 
     parser.add_argument('--show', '-s', action='store_true',
                         help='the images pops up.')
@@ -461,19 +465,32 @@ def main(args):
         model = resnet
 
         # Get the number of input features to the layer.
-        # Adjust the final layer to the current number of classes.
         print(f'Old final fully-connected layer: {model.fc}')
         num_ftrs = model.fc.in_features
-        model.fc = torch.nn.Linear(num_ftrs, len(class_names))
+
+        # Create the new final fully-connected layer.
+        final_fc = torch.nn.Linear(num_ftrs, len(class_names))
+
+        # Check if the dropout argument is passed and create the modified model accordingly
+        if args.dropout:
+            model.fc = torch.nn.Sequential(
+                torch.nn.Dropout(p=args.dropout, inplace=True),
+                final_fc
+            )
+            print(f'Dropout layer added: {model.fc}')
+        else:
+            model.fc = final_fc
+            print('No dropout layer')
+
         print(f'New final fully-connected layer: {model.fc}')
 
         # Parameters of newly constructed modules
         # have requires_grad=True by default.
         # Freezing all the network except the final layer.
-        for param in model.parameters():
-            param.requires_grad = False
-        for param in model.fc.parameters():
-            param.requires_grad = True
+        # for param in model.parameters():
+        #     param.requires_grad = False
+        # for param in model.fc.parameters():
+        #     param.requires_grad = True
 
     # Model: resnet with pretrained weights (SSL).
     elif args.model_name in AVAIL_SSL_MODELS:
@@ -524,14 +541,24 @@ def main(args):
 
         model.load_state_dict(snapshot["MODEL"])
 
-        # Removing head from resnet: Encoder.
+        # Define your model.
         model = torch.nn.Sequential(
             model.backbone,
             torch.nn.Flatten(),
-            torch.nn.Linear(in_features=input_dim,
-                            out_features=len(class_names),
-                            bias=True),
         )
+
+        # Add dropout layer if the dropout argument is passed.
+        if args.dropout:
+            model.add_module('dropout', torch.nn.Dropout(p=args.dropout, inplace=True))
+            print(f'Dropout layer added: {model.dropout}')
+        else:
+            print('No dropout layer')
+
+        # Add the final linear layer
+        model.add_module('linear',
+                         torch.nn.Linear(in_features=input_dim,
+                                         out_features=len(class_names),
+                                         bias=True))
 
         # Get the number of input features to the layer.
         # Adjust the final layer to the current number of classes.
@@ -543,10 +570,10 @@ def main(args):
         # Parameters of newly constructed modules
         # have requires_grad=True by default.
         # Freezing all the network except the final layer.
-        for param in model.parameters():
-            param.requires_grad = False
-        for param in model[-1].parameters():
-            param.requires_grad = True
+        # for param in model.parameters():
+        #     param.requires_grad = False
+        # for param in model[-1].parameters():
+        #     param.requires_grad = True
 
     # Setting the device.
     # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -576,7 +603,7 @@ def main(args):
 
 
     # Training.
-    general_name = f'ft_{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_balanced={args.balanced_dataset}_weights={args.ini_weights}'
+    general_name = f'ft_{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_balanced={args.balanced_dataset}_weights={args.ini_weights}_dropout={args.dropout}'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
