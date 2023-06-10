@@ -76,7 +76,7 @@ epochs=1000
 save_every=25
 batch_size=128
 num_workers=4
-ini_weights="imagenet"
+ini_weights="random"
 
 # Run experiment (--standalone).
 # $SLURM_GPUS_PER_TASK $SLURM_NTASKS
