@@ -60,6 +60,8 @@ def main(args):
     num_metrics = len(metrics)
     num_columns = 2
     num_rows = math.ceil(num_metrics / num_columns)
+    bar_width = 0.2
+    bar_space = 0.3
 
     # Create a subplot for each metric.
     fig = plt.figure(figsize=(40, 8*num_rows))
@@ -94,14 +96,16 @@ def main(args):
 
             # Extract the metrics and plot them.
             try:
+
+                # Special case with metrics per class.
                 if metric == 'f1_per_class' or metric == 'rmse_per_class':
                     column_values_str = df[metric].iloc[-1]
                     y = [float(x) for x in column_values_str.strip('[]').split(',')]
                     x = np.array(range(len(y)))
-                    axes[i].bar(x + nf * 0.3, y, width=0.2, label=filename.rsplit('/', 1)[-1][:-4])
-                    axes[i].set_xticks(x)
+                    axes[i].bar(x + nf * bar_space, y, width=bar_width, label=filename.rsplit('/', 1)[-1][:-4])
                     for j, k in zip(x, y):
-                        axes[i].text(j + nf * 0.3, k, str(round(k, 2)), ha='center', va='bottom')
+                        axes[i].text(j + nf * bar_space, k, str(round(k, 2)), ha='center', va='bottom')
+                        axes[i].set_xticks([j + (nf * bar_space)/2 for j in x], x)
                     if args.downstream_task == 'multiclass':
                         axes[i].set_ylim(0, 1)
                     else:
