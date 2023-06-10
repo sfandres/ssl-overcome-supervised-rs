@@ -49,11 +49,11 @@ def main(args):
 
     # Target metrics.
     if args.downstream_task == "multiclass":
-        metrics = ['train_loss', 'val_loss', 'top1', 'top5', 'f1_macro', 'f1_weighted']  # 'f1_micro'
-        bbox_to_anchor = (-0.08, -0.45)
+        metrics = ['train_loss', 'val_loss', 'top1', 'top5', 'f1_macro', 'f1_weighted', 'f1_per_class']  # 'f1_micro'
+        bbox_to_anchor = (0.5, -0.7)
     else:   
-        metrics = ['train_loss', 'val_loss', 'rmse', 'mae']
-        bbox_to_anchor = (-0.08, -0.25)
+        metrics = ['train_loss', 'val_loss', 'rmse', 'mae', 'rmse_per_class']
+        bbox_to_anchor = (0.5, -0.45)
 
     # Calculate the number of rows and columns for subplots.
     num_metrics = len(metrics)
@@ -61,14 +61,25 @@ def main(args):
     num_rows = math.ceil(num_metrics / num_columns)
 
     # Create a subplot for each metric.
-    fig, axs = plt.subplots(num_rows, num_columns, sharex=True, figsize=(40, 8*num_rows))
+    fig = plt.figure(figsize=(40, 8*num_rows))
+    grid = plt.GridSpec(num_rows, num_columns, hspace=0.6, wspace=0.3)
 
-    # Iterate over the metrics.
-    for i, metric in enumerate(metrics):
+    # Create axes.
+    axes = []
+    for i in range(len(metrics)):
 
         # Calculate the subplot indices.
         row_index = i // num_columns
         col_index = i % num_columns
+
+        # If not the latest row.
+        if i < len(metrics) - 1:
+            axes.append(fig.add_subplot(grid[row_index, col_index]))
+        else:
+            axes.append(fig.add_subplot(grid[-1, :]))
+
+    # Iterate over the metrics.
+    for i, metric in enumerate(metrics):
 
         # Iterate over each CSV file.
         for filename in args.input:
@@ -76,29 +87,40 @@ def main(args):
             # Read the CSV file into a pandas DataFrame.
             df = pd.read_csv(filename)
 
-            # Extract the header values.
-            headers = list(df.columns)
-            x_label = headers[0]
-
-            # Extract the first and second columns.
+            # Extract the 'epoch' name.
+            x_label = list(df.columns)[0]
             x = df[x_label]
+
+            # Extract the metrics and plot them.
             try:
-                y = df[metric]
+                if metric == 'f1_per_class' or metric == 'rmse_per_class':
+                    column_values_str = df[metric].iloc[-1]
+                    y = [float(x) for x in column_values_str.strip('[]').split(',')]
+                    x = range(len(y))
+                    axes[i].bar(x, y, label=filename.rsplit('/', 1)[-1][:-4])
+                    axes[i].set_xticks(x)
+                    if args.downstream_task == 'multiclass':
+                        axes[i].set_ylim(0, 1)
+                    else:
+                        axes[i].set_ylim(0, max(y)+0.1)
+                    for j, k in zip(x, y):
+                        axes[i].text(j, k, str(round(k, 3)), ha='center', va='bottom')
+                    axes[i].set_xlabel('Classes')
+                else:
+                    y = df[metric]
+                    axes[i].plot(x, y, label=filename.rsplit('/', 1)[-1][:-4])
             except KeyError:
                 print(f"KeyError: Column '{metric}' not found in dataframe. "
-                    f"This may not be the right metric for the task at hand.")
+                      f"This may not be the right metric for the task at hand.")
                 return 1
+            axes[i].set_ylabel(metric.capitalize())
 
-            # Plot the metric data.
-            axs[row_index, col_index].plot(x, y, label=filename.rsplit('/', 1)[-1][:-4])
-            axs[row_index, col_index].set_ylabel(metric.capitalize())
+    # Set x-label for the bottom-most subplot.
+    axes[-2].set_xlabel(x_label)
+    axes[-3].set_xlabel(x_label)
 
-    # Set x-label for the bottom-most subplot
-    axs[-1, 0].set_xlabel(x_label)
-    axs[-1, 1].set_xlabel(x_label)
-
-    # Create a legend below the last row of subplots
-    handles, labels = axs[-1, 0].get_legend_handles_labels()
+    # Create a legend below the last row of subplots.
+    handles, labels = axes[0].get_legend_handles_labels()
     plt.legend(handles=handles,
                labels=labels,
                loc='lower center',
@@ -108,18 +130,17 @@ def main(args):
                fancybox=True,
                shadow=True)
 
-    # Adjust spacing between subplots
+    # Adjust spacing between subplots.
     plt.subplots_adjust(wspace=0.2, hspace=0.1)
 
-    # Adjust subplot spacing.
+    # # Adjust subplot spacing.
     # plt.tight_layout(rect=[0, 0, 0.5, 1.0])
 
-    # Save figure.
+    # Save figure or show.
     if args.save_fig:
         fig.savefig(f'fig_{args.downstream_task}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}',
                     bbox_inches='tight')
     else:
-        # Show the plot
         plt.show()
 
     return 0
