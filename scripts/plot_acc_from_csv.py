@@ -12,6 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import math
 from datetime import datetime
+import numpy as np
 
 
 def get_args() -> argparse.Namespace:
@@ -50,10 +51,10 @@ def main(args):
     # Target metrics.
     if args.downstream_task == "multiclass":
         metrics = ['train_loss', 'val_loss', 'top1', 'top5', 'f1_macro', 'f1_weighted', 'f1_per_class']  # 'f1_micro'
-        bbox_to_anchor = (0.5, -0.7)
+        bbox_to_anchor = (0.45, -0.7)
     else:   
         metrics = ['train_loss', 'val_loss', 'rmse', 'mae', 'rmse_per_class']
-        bbox_to_anchor = (0.5, -0.45)
+        bbox_to_anchor = (0.45, -0.45)
 
     # Calculate the number of rows and columns for subplots.
     num_metrics = len(metrics)
@@ -82,7 +83,7 @@ def main(args):
     for i, metric in enumerate(metrics):
 
         # Iterate over each CSV file.
-        for filename in args.input:
+        for nf, filename in enumerate(args.input):
 
             # Read the CSV file into a pandas DataFrame.
             df = pd.read_csv(filename)
@@ -96,15 +97,15 @@ def main(args):
                 if metric == 'f1_per_class' or metric == 'rmse_per_class':
                     column_values_str = df[metric].iloc[-1]
                     y = [float(x) for x in column_values_str.strip('[]').split(',')]
-                    x = range(len(y))
-                    axes[i].bar(x, y, label=filename.rsplit('/', 1)[-1][:-4])
+                    x = np.array(range(len(y)))
+                    axes[i].bar(x + nf * 0.3, y, width=0.2, label=filename.rsplit('/', 1)[-1][:-4])
                     axes[i].set_xticks(x)
+                    for j, k in zip(x, y):
+                        axes[i].text(j + nf * 0.3, k, str(round(k, 2)), ha='center', va='bottom')
                     if args.downstream_task == 'multiclass':
                         axes[i].set_ylim(0, 1)
                     else:
                         axes[i].set_ylim(0, max(y)+0.1)
-                    for j, k in zip(x, y):
-                        axes[i].text(j, k, str(round(k, 3)), ha='center', va='bottom')
                     axes[i].set_xlabel('Classes')
                 else:
                     y = df[metric]
