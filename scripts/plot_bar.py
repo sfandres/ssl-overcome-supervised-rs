@@ -18,21 +18,26 @@ column_values_str = data[y_label].iloc[-1]
 y = [float(x) for x in column_values_str.strip('[]').split(',')]
 x = range(len(y))
 
-# Create a subplot with 1 row and 1 column
-fig, ax = plt.subplots(1, 1)
+# Set up the axes with gridspec
+fig = plt.figure(figsize=(12, 6))
+grid = plt.GridSpec(2, 2, hspace=0.4, wspace=0.4)
+main_ax = fig.add_subplot(grid[0, 0])
+y_hist = fig.add_subplot(grid[0, 1])
+x_hist = fig.add_subplot(grid[-1, :])
 
 # Plot the column as a column graph
-ax.bar(x, y)
+main_ax.bar(x, y)
+y_hist.bar(x, y)
 
 # Display the corresponding value of each bar just above it
 for i, j in zip(x, y):
-    ax.text(i, j, str(j), ha='center', va='bottom')
+    main_ax.text(i, j, str(round(j, 2)), ha='center', va='bottom')
 
 # Customize the subplot if needed (e.g., axis labels, title, etc.)
-ax.set_xticks(x)
-ax.set_.ylim(0, 1)
-ax.set_xlabel('Classes', labelpad=10)
-ax.set_ylabel(y_label, labelpad=10)
+main_ax.set_xticks(x)
+main_ax.set_ylim(0, 1)
+main_ax.set_xlabel('Classes')  #, labelpad=10)
+main_ax.set_ylabel(y_label)  #, labelpad=10)
 
 # Display the graph
 plt.show()
