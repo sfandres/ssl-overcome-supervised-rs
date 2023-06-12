@@ -491,20 +491,21 @@ def main(args):
 
         print(f'New final fully-connected layer: {model.fc}')
 
-        # Freezing all the network for random baseline.
-        # if args.model_name == 'Random':
-        #     for param in model.parameters():
-        #         param.requires_grad = False
-        #     for param in model.fc.parameters():
-        #         param.requires_grad = False
-
         # Parameters of newly constructed modules
         # have requires_grad=True by default.
-        # Freezing all the network except the final layer.
-        # for param in model.parameters():
-        #     param.requires_grad = False
-        # for param in model.fc.parameters():
-        #     param.requires_grad = True
+        # Freezing all the network if chosen.
+        if args.transfer_learning == 'FT':          # Fine-tuning (FT).
+            for param in model.parameters():
+                param.requires_grad = True
+            for param in model.fc.parameters():
+                param.requires_grad = True
+            print('Fine-tuning adjusted')
+        else:                                       # Linear probing (LP) / LP+FT.
+            for param in model.parameters():
+                param.requires_grad = False
+            for param in model.fc.parameters():
+                param.requires_grad = True
+            print('Linear probing adjusted')
 
     # Model: resnet with pretrained weights (SSL).
     elif args.model_name in AVAIL_SSL_MODELS:
@@ -583,11 +584,19 @@ def main(args):
 
         # Parameters of newly constructed modules
         # have requires_grad=True by default.
-        # Freezing all the network except the final layer.
-        # for param in model.parameters():
-        #     param.requires_grad = False
-        # for param in model[-1].parameters():
-        #     param.requires_grad = True
+        # Freezing all the network if chosen.
+        if args.transfer_learning == 'FT':          # Fine-tuning (FT).
+            for param in model.parameters():
+                param.requires_grad = True
+            for param in model[-1].parameters():
+                param.requires_grad = True
+            print('Fine-tuning adjusted')
+        else:                                       # Linear probing (LP) / LP+FT.
+            for param in model.parameters():
+                param.requires_grad = False
+            for param in model[-1].parameters():
+                param.requires_grad = True
+            print('Linear probing adjusted')
 
     # Setting the device.
     # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
