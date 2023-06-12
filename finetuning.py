@@ -123,7 +123,7 @@ def get_args() -> argparse.Namespace:
                              'with the given probability.')
 
     parser.add_argument('--transfer_learning', '-tl', type=str, required=True,
-                        choices=['LP', 'FT', 'LP-FT'],
+                        choices=['LP', 'FT', 'LP+FT'],
                         help='sets the main transfer learning algorithm to use.')
 
     parser.add_argument('--show', '-s', action='store_true',
