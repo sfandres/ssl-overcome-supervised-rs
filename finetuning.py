@@ -51,7 +51,7 @@ from torch.distributed import init_process_group, destroy_process_group
 from finetuning_trainer import Trainer
 
 AVAIL_SSL_MODELS = ['BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', 'SimSiam']
-MODEL_CHOICES = ['Random', 'Imagenet'] + AVAIL_SSL_MODELS
+MODEL_CHOICES = ['Random', 'Supervised'] + AVAIL_SSL_MODELS
 SEED = 42
 FIG_FORMAT='.png'
 
@@ -441,31 +441,34 @@ def main(args):
     #--------------------------
     # Setting the model and initial weights.
     if args.backbone_name == 'resnet18':
-        if args.model_name == 'Imagenet':
+        if args.ini_weights == 'imagenet':
             resnet = resnet18(
                 weights=ResNet18_Weights.DEFAULT,
                 # zero_init_residual=True
             )
+            print('Using ImageNet weights')
         else:
             resnet = resnet18(
                 weights=None,
                 # zero_init_residual=True
             )
     elif args.backbone_name == 'resnet50':
-        if args.model_name == 'Imagenet':
+        if args.ini_weights == 'imagenet':
             resnet = resnet50(
                 weights=ResNet50_Weights.DEFAULT,
                 # zero_init_residual=True
             )
+            print('Using ImageNet weights')
         else:
             resnet = resnet50(
                 weights=None,
                 # zero_init_residual=True
             )
 
-    # Model: resnet with random weights.
-    if args.model_name == 'Random' or args.model_name == 'Imagenet':
-        print(f'\nModel {args.backbone_name} with {args.model_name} weights')
+    # Model: random and supervised resnet.
+    # if args.model_name == 'Random' or 
+    if args.model_name == 'Supervised':
+        print(f'\n{args.model_name} model {args.backbone_name} with {args.ini_weights} weights')
         model = resnet
 
         # Get the number of input features to the layer.
@@ -487,6 +490,13 @@ def main(args):
             print('No dropout layer')
 
         print(f'New final fully-connected layer: {model.fc}')
+
+        # Freezing all the network for random baseline.
+        # if args.model_name == 'Random':
+        #     for param in model.parameters():
+        #         param.requires_grad = False
+        #     for param in model.fc.parameters():
+        #         param.requires_grad = False
 
         # Parameters of newly constructed modules
         # have requires_grad=True by default.
