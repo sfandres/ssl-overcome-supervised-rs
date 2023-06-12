@@ -171,7 +171,8 @@ class Trainer:
         epoch_val_loss = self._run_evaluation()
         print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Train loss: {epoch_train_loss:.4f} | "
               f"Steps: {len(self.dataloader['train'])} | Val loss: {epoch_val_loss:.4f} | "
-              f"Batch size: {batch_size} | Duration: {(time.time()-t0):.2f}s")
+              f"Batch size: {batch_size} | lr: {self.optimizer.param_groups[0]['lr']} | "
+              f"Duration: {(time.time()-t0):.2f}s")
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
     def _save_snapshot(self, epoch: int):
@@ -188,9 +189,18 @@ class Trainer:
             csv_writer = csv.writer(file)
             csv_writer.writerow(data)
 
+    def _change_from_lp_to_ft(self, lr):
+        for param in self.model.parameters():
+            param.requires_grad = True
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=lr/2, momentum=0.9)   # HALF LR
+        print('Changed from LP to FT')
+
     def train(self, max_epochs: int, args, test: bool = False, save_csv: bool = True):
 
         for epoch in range(self.epochs_run, max_epochs):
+
+            if epoch == max_epochs // 2 and args.transfer_learning == 'LP+FT':
+                self._change_from_lp_to_ft(args.learning_rate)
 
             print()
             epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)
