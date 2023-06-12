@@ -135,8 +135,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--torch_compile', '-tc', action='store_true',
                         help='PyTorch 2.0 compile enabled.')
 
-    parser.add_argument('--resume_training', '-r', action='store_true',
-                        help='training is resumed from the latest checkpoint.')
+    parser.add_argument('--partially_frozen', '-pf', action='store_true',
+                        help='freezes the weights of the first layers.')
 
     parser.add_argument('--distributed', '-d', action='store_true',
                         help='enables distributed training.')
@@ -422,6 +422,17 @@ def train(
         print("\nLoading snapshot...")
         epoch, model, optimizer, warmup_scheduler, cosine_scheduler = load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler, cosine_scheduler)
 
+    # Parameters of newly constructed modules
+    # have requires_grad=True by default.
+    # Freezing all the network except the first
+    # part of the backbone to preserve imagenet weights.
+    for param in model.backbone.parameters():
+        param.requires_grad = True
+    if args.partially_frozen and args.ini_weights == 'imagenet':
+        print('\nThe first layers of the backbone are frozen!')
+        for param in model.backbone[:5].parameters():
+            param.requires_grad = False
+
     # ======================
     # COMPILING (IF ENABLED) AND GPU SUPPORT.
     # Compile model (only for PT2.0).
@@ -589,7 +600,7 @@ def train(
         if args.ray_tune:
             tune.report(loss=epoch_train_loss)
 
-    print('Calculating embeddings...')
+    print('\nGenerating the embeddings...')
     embeddings, labels = create_list_embeddings(model, config['dataloader'], local_rank)
 
     # t-SNE computation for 2-D.
