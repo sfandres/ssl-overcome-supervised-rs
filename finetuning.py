@@ -580,7 +580,7 @@ def main(args):
         # print(f'\nOld final fully-connected layer: {model[-1]}')
         # num_ftrs = model[-1].in_features
         # model[-1] = torch.nn.Linear(num_ftrs, len(class_names))
-        print(f'New final fully-connected layer: {model[-1]}\n')
+        print(f'New final fully-connected layer: {model[-1]}')
 
         # Parameters of newly constructed modules
         # have requires_grad=True by default.
