@@ -122,6 +122,10 @@ def get_args() -> argparse.Namespace:
                         help='adds a dropout layer before the linear classifier '
                              'with the given probability.')
 
+    parser.add_argument('--transfer_learning', '-tl', type=str, required=True,
+                        choices=['LP', 'FT', 'LP-FT'],
+                        help='sets the main transfer learning algorithm to use.')
+
     parser.add_argument('--show', '-s', action='store_true',
                         help='the images pops up.')
 
@@ -600,7 +604,6 @@ def main(args):
     optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
     if args.verbose:
         print(f'Optimizer:\n{optimizer}')
-
 
     # Training.
     general_name = f'ft_{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_balanced={args.balanced_dataset}_weights={args.ini_weights}_dropout={args.dropout}'
