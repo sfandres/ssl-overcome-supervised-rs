@@ -60,8 +60,8 @@ def main(args):
     num_metrics = len(metrics)
     num_columns = 2
     num_rows = math.ceil(num_metrics / num_columns)
-    bar_width = 0.2
-    bar_space = 0.3
+    bar_width = 0.10
+    bar_space = 0.15
 
     # Create a subplot for each metric.
     fig = plt.figure(figsize=(40, 8*num_rows))
