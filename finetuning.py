@@ -52,7 +52,6 @@ from finetuning_trainer import Trainer
 
 AVAIL_SSL_MODELS = ['BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', 'SimSiam']
 MODEL_CHOICES = ['Random', 'Supervised'] + AVAIL_SSL_MODELS
-SEED = 42
 FIG_FORMAT='.png'
 
 
@@ -117,7 +116,10 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                         choices=['random', 'imagenet'],
                         help='initial weights (default: random).')
-    
+
+    parser.add_argument('--seed', '-s', type=int, default=42,
+                        help='seed for the experiments (default: 42).')
+
     parser.add_argument('--dropout', '-do', type=float,
                         help='adds a dropout layer before the linear classifier '
                              'with the given probability.')
@@ -126,7 +128,7 @@ def get_args() -> argparse.Namespace:
                         choices=['LP', 'FT', 'LP+FT'],
                         help='sets the main transfer learning algorithm to use.')
 
-    parser.add_argument('--show', '-s', action='store_true',
+    parser.add_argument('--show', '-sw', action='store_true',
                         help='the images pops up.')
 
     parser.add_argument('--verbose', '-v', action='store_true',
@@ -175,7 +177,7 @@ def main(args):
 
     # Enable reproducibility.
     print(f"\n{'torch initial seed:'.ljust(33)}{torch.initial_seed()}")
-    g = set_seed(SEED)
+    g = set_seed(args.seed)
     print(f"{'torch current seed:'.ljust(33)}{torch.initial_seed()}")
 
     # Check torch CUDA and CPUs available (for num_workers).
@@ -629,7 +631,7 @@ def main(args):
         print(f'Optimizer:\n{optimizer}')
 
     # Training.
-    general_name = f'{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_{args.transfer_learning}_bd={args.balanced_dataset}_wi={args.ini_weights}_do={args.dropout}'
+    general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_lr={args.learning_rate}_bd={args.balanced_dataset}_wi={args.ini_weights}_do={args.dropout}'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
