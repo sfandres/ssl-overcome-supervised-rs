@@ -625,7 +625,7 @@ def main(args):
         print(f'Optimizer:\n{optimizer}')
 
     # Training.
-    general_name = f'{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_{args.transfer_learning}_bd={args.balanced_dataset}_wi={args.ini_weights}_dropout={args.dropout}'
+    general_name = f'{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_{args.transfer_learning}_bd={args.balanced_dataset}_wi={args.ini_weights}_do={args.dropout}'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
