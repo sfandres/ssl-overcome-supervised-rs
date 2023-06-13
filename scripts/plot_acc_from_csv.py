@@ -51,10 +51,10 @@ def main(args):
     # Target metrics.
     if args.downstream_task == "multiclass":
         metrics = ['train_loss', 'val_loss', 'top1', 'top5', 'f1_macro', 'f1_weighted', 'f1_per_class']  # 'f1_micro'
-        bbox_to_anchor = (0.45, -0.7)
+        bbox_to_anchor = (0.45, -0.9)
     else:   
         metrics = ['train_loss', 'val_loss', 'rmse', 'mae', 'rmse_per_class']
-        bbox_to_anchor = (0.45, -0.45)
+        bbox_to_anchor = (0.45, -0.7)
 
     # Calculate the number of rows and columns for subplots.
     num_metrics = len(metrics)
@@ -136,7 +136,7 @@ def main(args):
                shadow=True)
 
     # Adjust spacing between subplots.
-    plt.subplots_adjust(wspace=0.2, hspace=0.1)
+    plt.subplots_adjust(wspace=0.2, hspace=0.1, bottom=0.15)
 
     # # Adjust subplot spacing.
     # plt.tight_layout(rect=[0, 0, 0.5, 1.0])
