@@ -625,13 +625,13 @@ def main(args):
         print(f'Optimizer:\n{optimizer}')
 
     # Training.
-    general_name = f'ft_{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_{args.transfer_learning}_balanced={args.balanced_dataset}_weights={args.ini_weights}_dropout={args.dropout}'
+    general_name = f'{args.task_name}_tr_{args.train_rate:.3f}_lr_{args.learning_rate}_{args.backbone_name}_{args.model_name}_{args.transfer_learning}_bd={args.balanced_dataset}_wi={args.ini_weights}_dropout={args.dropout}'
     trainer = Trainer(
         model, dataloader, loss_fn,
         optimizer,
         save_every=args.save_every,
         snapshot_path=os.path.join(paths['snapshots'], f'snapshot_{general_name}.pt'),
-        csv_path=os.path.join(paths['csv_results'], f'csv_{general_name}.csv'),
+        csv_path=os.path.join(paths['csv_results'], f'{general_name}.csv'),
     )
     trainer.train(args.epochs, args, test=True, save_csv=True)
 
