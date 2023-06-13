@@ -61,11 +61,11 @@ def main(args):
     num_columns = 2
     num_rows = math.ceil(num_metrics / num_columns)
     bar_width = 0.10
-    bar_space = 0.15
+    bar_space = 0.18
 
     # Create a subplot for each metric.
-    fig = plt.figure(figsize=(40, 8*num_rows))
-    grid = plt.GridSpec(num_rows, num_columns, hspace=0.6, wspace=0.3)
+    fig = plt.figure(figsize=(40, 10*num_rows))
+    grid = plt.GridSpec(num_rows, num_columns, hspace=0.5, wspace=0.3)
 
     # Create axes.
     axes = []
@@ -104,7 +104,7 @@ def main(args):
                     x = np.array(range(len(y)))
                     axes[i].bar(x + nf * bar_space, y, width=bar_width, label=filename.rsplit('/', 1)[-1][:-4])
                     for j, k in zip(x, y):
-                        axes[i].text(j + nf * bar_space, k, str(round(k, 2)), ha='center', va='bottom')
+                        axes[i].text(j + nf * bar_space, k, str(round(k, 2)).lstrip('0'), ha='center', va='bottom')
                         axes[i].set_xticks([j + (nf * bar_space)/2 for j in x], x)
                     if args.downstream_task == 'multiclass':
                         axes[i].set_ylim(0, 1)
@@ -136,7 +136,7 @@ def main(args):
                shadow=True)
 
     # Adjust spacing between subplots.
-    plt.subplots_adjust(wspace=0.2, hspace=0.1, bottom=0.15)
+    plt.subplots_adjust(bottom=0.15)
 
     # # Adjust subplot spacing.
     # plt.tight_layout(rect=[0, 0, 0.5, 1.0])
