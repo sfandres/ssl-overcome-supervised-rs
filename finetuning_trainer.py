@@ -132,6 +132,7 @@ class Trainer:
         snapshot = torch.load(snapshot_path, map_location=loc)
         self.model.load_state_dict(snapshot["MODEL_STATE"])
         self.epochs_run = snapshot["EPOCHS_RUN"]
+        self.optimizer.load_state_dict(snapshot['OPTIMIZER'])
         print(f"Resuming training from snapshot at Epoch {self.epochs_run} <-- {snapshot_path.rsplit('/', 1)[-1]}")
 
     def _run_batch(self, source, targets):
@@ -179,6 +180,7 @@ class Trainer:
         snapshot = {
             "MODEL_STATE": self.model.state_dict(),  # self.model.module.state_dict(),
             "EPOCHS_RUN": epoch + 1,                 # +1 so that the training resumes at the same point.
+            "OPTIMIZER": self.optimizer.state_dict()
         }
         torch.save(snapshot, self.snapshot_path)
         print(f"Epoch {epoch} | Training snapshot saved at {self.snapshot_path}")
@@ -192,8 +194,8 @@ class Trainer:
     def _change_from_lp_to_ft(self, lr):
         for param in self.model.parameters():
             param.requires_grad = True
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=lr/2, momentum=0.9)   # HALF LR
-        print('Changed from LP to FT')
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=lr/10, momentum=0.9)   # TEN TIMES SMALLER
+        print('Changed from LP to FT w/ lr 10 times smaller')
 
     def train(self, max_epochs: int, args, test: bool = False, save_csv: bool = True):
 
