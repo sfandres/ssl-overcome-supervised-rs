@@ -206,7 +206,7 @@ class Trainer:
 
             print()
             epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)
-            if self.global_rank == 0 and epoch % self.save_every == 0:
+            if self.global_rank == 0 and epoch % self.save_every == 0 or epoch == max_epochs - 1:
                 self._save_snapshot(epoch)
 
             if test:
