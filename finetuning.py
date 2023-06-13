@@ -220,12 +220,6 @@ def main(args):
     # Size of the images.
     input_size = 224
 
-    # Format of the saved images.
-    fig_format = '.png'
-
-    # Number of digits to the right of the decimal
-    decimal_places = 2
-
     # ======================
     # DATASET.
     # ======================
@@ -300,34 +294,36 @@ def main(args):
     # Dealing with imbalanced data (option).
     #--------------------------
 
-    # Creating a list of labels of samples.
-    train_sample_labels = andalucia_dataset['train'].targets
+    if args.task_name == 'multiclass':
 
-    # Calculating the number of samples per label/class.
-    class_and_sample_counts = np.unique(train_sample_labels,
-                                   return_counts=True)
-    class_count = class_and_sample_counts[0]
-    sample_count_per_class = class_and_sample_counts[1]
-    print('Initial imbalanced dataset (classes and samples/class):')
-    print(f'Diff. classes --> {class_count}')
-    print(f'Samples/class --> {sample_count_per_class}')
+        # Creating a list of labels of samples.
+        train_sample_labels = andalucia_dataset['train'].targets
 
-    # Weight per sample not per class.
-    weight = 1. / sample_count_per_class
-    index_map = {value: index for index, value in enumerate(class_count)}  # Map, e.g., 0--> 0, 21 --> 1, etc.
-    samples_weight = np.array([weight[index_map[t]] for t in train_sample_labels])
+        # Calculating the number of samples per label/class.
+        class_and_sample_counts = np.unique(train_sample_labels,
+                                            return_counts=True)
+        class_count = class_and_sample_counts[0]
+        sample_count_per_class = class_and_sample_counts[1]
+        print('Initial imbalanced dataset:')
+        print(f'Diff. classes --> {class_count}')
+        print(f'Samples/class --> {sample_count_per_class}')
 
-    # Casting.
-    samples_weight = torch.from_numpy(samples_weight)
-    samples_weight = samples_weight.double()
+        # Weight per sample not per class.
+        weight = 1. / sample_count_per_class
+        index_map = {value: index for index, value in enumerate(class_count)}  # Map, e.g., 0--> 0, 21 --> 1, etc.
+        samples_weight = np.array([weight[index_map[t]] for t in train_sample_labels])
 
-    # Sampler, imbalanced data.
-    sampler = torch.utils.data.WeightedRandomSampler(
-        samples_weight,
-        len(samples_weight)
-    )
-    shuffle = False
-    print('Using balanced dataloader as default option!')
+        # Casting.
+        samples_weight = torch.from_numpy(samples_weight)
+        samples_weight = samples_weight.double()
+
+        # Sampler, imbalanced data.
+        sampler = torch.utils.data.WeightedRandomSampler(
+            samples_weight,
+            len(samples_weight)
+        )
+        shuffle = False
+        print('Using balanced dataloader as default option!')
 
     #--------------------------
     # If distributed (option).
@@ -381,10 +377,10 @@ def main(args):
     #--------------------------
     # Check samples per class, total samples and batches of each dataset.
     for d in andalucia_dataset:
-        # samples = np.unique(andalucia_dataset[d].targets, return_counts=True)[1]
+        samples = np.unique(andalucia_dataset[d].targets, return_counts=True)[1]
         print(f'\n{d}:')
-        # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
-        # print(f'  - #Samples/class (from dataset):\n{samples}')
+        print(f'  - #Samples (from dataset):  {len(andalucia_dataset[d].targets)}')
+        print(f'  - #Samples/class (from dataset):\n{samples}')
         print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
         print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
 
@@ -392,40 +388,48 @@ def main(args):
     # Check the distribution of samples in the dataloader (lightly dataset).
     #--------------------------
 
-    # List to save the labels.
-    print('\nCreating the sample distribution plot...')
-    labels_list = []
+    if args.task_name == 'multiclass':
 
-    # Accessing Data and Targets in a PyTorch DataLoader.
-    t0 = time.time()
-    for i, (images, labels) in enumerate(dataloader['train']):
-        labels_list.append(labels)
+        # List to save the labels.
+        print('\nCreating the sample distribution plot...')
+        labels_list = []
 
-    # Concatenate list of lists (batches).
-    labels_list = torch.cat(labels_list, dim=0).numpy()
-    print(f'\nSample distribution computation in train dataset (s): '
-        f'{(time.time()-t0):.2f}')
+        # Accessing Data and Targets in a PyTorch DataLoader.
+        t0 = time.time()
+        for _, labels in dataloader['train']:
+            labels_list.append(labels)
 
-    # Count number of unique values.
-    data_x, data_y = np.unique(labels_list, return_counts=True)
+        # Concatenate list of lists (batches).
+        labels_list = torch.cat(labels_list, dim=0).numpy()
+        print(f'Sample distribution computation in train dataset (s): '
+              f'{(time.time()-t0):.2f}')
 
-    # New function to plot (suitable for execution in shell).
-    fig, ax = plt.subplots(1, 1, figsize=(20, 5))
-    simple_bar_plot(ax,
-                    data_x,
-                    'Class',
-                    data_y,
-                    'N samples (dataloader)')
+        # Calculating the number of samples per label/class.
+        class_and_sample_counts = np.unique(labels_list,
+                                            return_counts=True)
+        class_count = class_and_sample_counts[0]
+        sample_count_per_class = class_and_sample_counts[1]
+        print('Resulting balanced dataloader:')
+        print(f'Diff. classes     --> {class_count}')
+        print(f'New samples/class --> {sample_count_per_class}')
 
-    plt.gcf().subplots_adjust(bottom=0.15)
-    plt.gcf().subplots_adjust(left=0.15)
-    fig_name_save = (f'sample_distribution'
-                     f'-train_ratio={args.train_rate}')
-    fig.savefig(os.path.join(paths['images'], fig_name_save+FIG_FORMAT),
-                bbox_inches='tight')
+        # New function to plot (suitable for execution in shell).
+        fig, ax = plt.subplots(1, 1, figsize=(20, 5))
+        simple_bar_plot(ax,
+                        class_count,
+                        'Class',
+                        sample_count_per_class,
+                        'N samples (dataloader)')
 
-    plt.show() if args.show else plt.close()
-    print('Done!')
+        plt.gcf().subplots_adjust(bottom=0.15)
+        plt.gcf().subplots_adjust(left=0.15)
+        fig_name_save = (f'sample_distribution'
+                        f'-train_ratio={args.train_rate}')
+        fig.savefig(os.path.join(paths['images'], fig_name_save+FIG_FORMAT),
+                    bbox_inches='tight')
+
+        plt.show() if args.show else plt.close()
+        print('Done!')
 
     #--------------------------
     # Look at some training samples.
