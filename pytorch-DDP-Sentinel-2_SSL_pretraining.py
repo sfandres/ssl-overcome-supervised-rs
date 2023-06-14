@@ -357,8 +357,8 @@ def train(
     optimizer = torch.optim.SGD(
         model.parameters(),
         lr=lr_init,
-        momentum=0.9,
-        weight_decay=5e-4
+        momentum=config["momentum"],            # 0.9
+        weight_decay=config["weight_decay"]     # 5e-4
     )
 
     # Define the warmup duration.
@@ -1017,6 +1017,8 @@ def main(args):
                 'hidden_dim': df.loc[0, 'config/hidden_dim'],
                 'out_dim': df.loc[0, 'config/out_dim'],
                 'lr': tune.loguniform(1e-4, 1e-1),
+                'momentum': df.loc[0, 'config/momentum'],
+                'weight_decay': df.loc[0, 'config/weight_decay'],
                 'warmup_epochs': 1,
             }
 
@@ -1032,6 +1034,8 @@ def main(args):
                 'hidden_dim': tune.grid_search([128, 256, 512]),
                 'out_dim': tune.grid_search([128, 256, 512]),
                 'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
+                'momentum': tune.grid_search([0.99, 0.9]),          # 0.97, 0.95
+                'weight_decay': tune.grid_search([0, 1e-4, 1e-5]),  # 1e-3
                 'warmup_epochs': 1,
             }
 
@@ -1106,6 +1110,8 @@ def main(args):
             'hidden_dim': df_lr.loc[0, 'config/hidden_dim'],
             'out_dim': df_lr.loc[0, 'config/out_dim'],
             'lr': df_lr.loc[0, 'config/lr'],
+            'momentum': 0.9,                            # CHANGE THIS TO BE LOADED.
+            'weight_decay': 0,                          # CHANGE THIS TO BE LOADED.
             'warmup_epochs': warmup_epochs,
         }
 
