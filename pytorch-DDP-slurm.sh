@@ -72,11 +72,14 @@ conda activate lulc2-conda
 # input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.900,0.0250,0.0750)"
-epochs=150
-save_every=25
+epochs=15
+save_every=5
 batch_size=128
 num_workers=4
-ini_weights="imagenet"
+ini_weights="random"
+
+# Env variables.
+export RAY_PICKLE_VERBOSE_DEBUG=1
 
 # Run experiment (--standalone).
 # $SLURM_GPUS_PER_TASK $SLURM_NTASKS
@@ -95,8 +98,10 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --batch_size $batch_size \
 --num_workers $num_workers \
 --ini_weights $ini_weights \
---balanced_dataset \
---partially_frozen
+--ray_tune=gridsearch \
+--grace_period=1 \
+--num_samples_trials=1 \
+--gpus_per_trial=1
 
 # --balanced_dataset \
 # --input_data $input_data \
