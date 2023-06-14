@@ -62,6 +62,7 @@ echo Head node IP: $head_node_ip
 # Troubleshooting.
 export LOGLEVEL=INFO
 export NCCL_DEBUG=INFO
+export RAY_PICKLE_VERBOSE_DEBUG=1
 
 # Load virtual environment.
 # source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
@@ -77,9 +78,6 @@ save_every=5
 batch_size=128
 num_workers=4
 ini_weights="random"
-
-# Env variables.
-export RAY_PICKLE_VERBOSE_DEBUG=1
 
 # Run experiment (--standalone).
 # $SLURM_GPUS_PER_TASK $SLURM_NTASKS
