@@ -146,11 +146,14 @@ def get_args() -> argparse.Namespace:
                         choices=['gridsearch', 'loguniform'],
                         help='enables Ray Tune (tunes everything or only lr).')
 
-    parser.add_argument('--grace_period', '-gp', type=int,
+    parser.add_argument('--grace_period', '-rtgp', type=int,
                         help='only stop trials at least this old in time.')
 
-    parser.add_argument('--num_samples_trials', '-nst', type=int,
+    parser.add_argument('--num_samples_trials', '-rtnst', type=int,
                         help='number of samples to tune the hyperparameters.')
+
+    parser.add_argument('--gpus_per_trial', '-rtgpt', type=int,
+                        help='number of gpus to be used per trial.')
 
     return parser.parse_args(sys.argv[1:])
 
@@ -986,10 +989,11 @@ def main(args):
     #--------------------------
     if args.ray_tune:
 
-        max_num_epochs = args.epochs
-        gpus_per_trial = 1
-        print(f'\nMax. number of epochs: {max_num_epochs}')
-        print(f'Number of samples:     {args.num_samples_trials}')
+        cpus_per_trial = args.num_workers
+        print(f'\nMax. number of epochs:    {args.epochs}')
+        print(f'Number of samples:        {args.num_samples_trials}')
+        print(f'Number of CPUs per trial: {cpus_per_trial}')
+        print(f'Number of GPUS per trial: {args.gpus_per_trial}')
 
         # Configuration.
         if args.ray_tune == 'loguniform':
@@ -1035,7 +1039,7 @@ def main(args):
         scheduler = ASHAScheduler(
             metric='loss',
             mode='min',
-            max_t=max_num_epochs,
+            max_t=args.epochs,  # max_num_epochs
             grace_period=args.grace_period
         )
 
@@ -1047,7 +1051,7 @@ def main(args):
 
         result = tune.run(
             partial(train),
-            resources_per_trial={'cpu': 12, 'gpu': gpus_per_trial},
+            resources_per_trial={'cpu': cpus_per_trial, 'gpu': args.gpus_per_trial},
             name=args.model_name,
             config=config,
             num_samples=args.num_samples_trials,
