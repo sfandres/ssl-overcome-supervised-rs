@@ -526,7 +526,7 @@ def train(
         # ======================
         # SAVING CHECKPOINT.
         # Custom functions for saving the checkpoints.
-        if global_rank == 0 and not args.ray_tune and epoch % args.save_every == 0 or epoch == args.epochs - 1:
+        if (global_rank == 0 and not args.ray_tune) and (epoch % args.save_every == 0 or epoch == args.epochs - 1):
 
             if args.distributed:
                 model_state_dict = model.module.state_dict()
@@ -535,7 +535,7 @@ def train(
 
             # Single snapshot (overwritten) in case of failure.
             save_snapshot(snapshot_path, epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler)
-            
+
             # Checkpoint every few epochs.
             save_snapshot(
                 os.path.join(
@@ -981,11 +981,6 @@ def main(args):
     # SELF-SUPERVISED MODELS.
     # ======================
 
-    if args.epochs < 100:
-        warmup_epochs = max(1, int(0.1 * args.epochs))
-    else:
-        warmup_epochs = 10
-
     #--------------------------
     # Training (also with hyperparameter tuning using Ray Tune)
     #--------------------------
@@ -1000,12 +995,12 @@ def main(args):
         if args.ray_tune == 'loguniform':
 
             # Build the filename.
-            filename = f'ray_tune_results_{args.backbone_name}_{args.model_name}.csv'
+            filename = f'ray_tune_{args.backbone_name}_{args.model_name}.csv'
 
             # Load the CSV file into a pandas dataframe.
             df = pd.read_csv(os.path.join(paths['ray_tune'], filename),
-                            usecols=lambda col: col.startswith('loss')
-                            or col.startswith('config/'))
+                             usecols=lambda col: col.startswith('loss')
+                             or col.startswith('config/'))
 
             # Configuration.
             print(f'Setting the configuration from {filename} and tuning the lr')
@@ -1018,7 +1013,7 @@ def main(args):
                 'hidden_dim': df.loc[0, 'config/hidden_dim'],
                 'out_dim': df.loc[0, 'config/out_dim'],
                 'lr': tune.loguniform(1e-4, 1e-1),
-                'warmup_epochs': warmup_epochs,
+                'warmup_epochs': 1,
             }
 
         elif args.ray_tune == 'gridsearch':
@@ -1033,19 +1028,22 @@ def main(args):
                 'hidden_dim': tune.grid_search([128, 256, 512]),
                 'out_dim': tune.grid_search([128, 256, 512]),
                 'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-                'warmup_epochs': warmup_epochs,
+                'warmup_epochs': 1,
             }
 
+        # Ray tune configuration.
         scheduler = ASHAScheduler(
             metric='loss',
             mode='min',
             max_t=max_num_epochs,
-            grace_period=args.grace_period)
+            grace_period=args.grace_period
+        )
 
         reporter = CLIReporter(
             # ``parameter_columns=["l1", "l2", "lr", "batch_size"]``,
             # metric_columns=["loss", "accuracy", "training_iteration"])
-            metric_columns=['loss', 'training_iteration'])
+            metric_columns=['loss', 'training_iteration']
+        )
 
         result = tune.run(
             partial(train),
@@ -1056,7 +1054,8 @@ def main(args):
             local_dir=paths['ray_tune'],
             scheduler=scheduler,
             verbose=1,
-            progress_reporter=reporter)
+            progress_reporter=reporter
+        )
 
         # Sorted dataframe for the last reported results of all of the trials.
         df = result.results_df
@@ -1064,9 +1063,9 @@ def main(args):
 
         # Create the name of the file.
         if args.ray_tune == 'loguniform':
-            filename = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
+            filename = f'ray_tune_lr_{args.backbone_name}_{args.model_name}.csv'
         elif args.ray_tune == 'gridsearch':
-            filename = f'ray_tune_results_{args.backbone_name}_{args.model_name}.csv'
+            filename = f'ray_tune_{args.backbone_name}_{args.model_name}.csv'
 
         # Write the results to a CSV file.
         df.to_csv(os.path.join(paths['ray_tune'], filename))
@@ -1078,8 +1077,14 @@ def main(args):
 
     else:
 
+        # Set warm-up epochs.
+        if args.epochs < 100:
+            warmup_epochs = max(1, int(0.1 * args.epochs))
+        else:
+            warmup_epochs = 10
+
         # Build the filename.
-        filename_lr = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
+        filename_lr = f'ray_tune_lr_{args.backbone_name}_{args.model_name}.csv'
 
         # Load the CSV file into a pandas dataframe.
         df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr),
@@ -1100,6 +1105,7 @@ def main(args):
             'warmup_epochs': warmup_epochs,
         }
 
+        # Launch training.
         train(config)
 
     destroy_process_group()
