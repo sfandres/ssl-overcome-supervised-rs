@@ -407,7 +407,7 @@ def train(
     epoch = 0
 
     # General name for csv files and snapshots.
-    general_name = f'pt_{args.model_name}_{args.backbone_name}_balanced={args.balanced_dataset}_weights={args.ini_weights}'
+    general_name = f'{args.model_name}_{args.backbone_name}_bd={args.balanced_dataset}_iw={args.ini_weights}'
 
     # ======================
     # LOADING SNAPSHOT (IF EXISTS).
@@ -418,7 +418,7 @@ def train(
     )
 
     # Load if exists a previous snapshot.
-    if os.path.isfile(snapshot_path):
+    if not args.ray_tune and os.path.isfile(snapshot_path):
         print("\nLoading snapshot...")
         epoch, model, optimizer, warmup_scheduler, cosine_scheduler = load_snapshot(snapshot_path, local_rank, model, optimizer, warmup_scheduler, cosine_scheduler)
 
@@ -517,10 +517,6 @@ def train(
                             / len(config['dataloader']['train'].sampler))
 
         # ======================
-        # EVALUATION COMPUTATION.
-        # It was not right (needs implementation).
-
-        # ======================
         # UPDATE LEARNING RATE SCHEDULER.
         if (epoch < warmup_epochs):
             warmup_scheduler.step()
@@ -530,7 +526,7 @@ def train(
         # ======================
         # SAVING CHECKPOINT.
         # Custom functions for saving the checkpoints.
-        if global_rank == 0 and epoch % args.save_every == 0:
+        if global_rank == 0 and not args.ray_tune and epoch % args.save_every == 0 or epoch == args.epochs - 1:
 
             if args.distributed:
                 model_state_dict = model.module.state_dict()
@@ -539,7 +535,7 @@ def train(
 
             # Single snapshot (overwritten) in case of failure.
             save_snapshot(snapshot_path, epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler)
-
+            
             # Checkpoint every few epochs.
             save_snapshot(
                 os.path.join(
@@ -598,7 +594,7 @@ def train(
         # ======================
         # RAY TUNE REPORTING STAGE.
         if args.ray_tune:
-            tune.report(loss=epoch_train_loss)
+            tune.report(loss=epoch_train_loss.cpu())
 
     print('\nGenerating the embeddings...')
     embeddings, labels = create_list_embeddings(model, config['dataloader'], local_rank)
