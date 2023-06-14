@@ -548,28 +548,9 @@ def train(
                 epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler
             )
 
-        #     model.module.save(                   # THIS WORKS BUT CAREFUL WITH BACKBONE/MODEL SAVE ISSUE. 
-        #         args.backbone_name,
-        #         epoch,
-        #         epoch_train_loss,
-        #         args.dataset_ratio,
-        #         args.balanced_dataset,
-        #         config['paths']['checkpoints'],
-        #         collapse_level=collapse_level if args.model_name == 'SimSiam' else 0.
-        #     )
-
-        #     torch.save({
-        #         'epoch': epoch,
-        #         'model_state_dict': model.module.backbone.state_dict(),  # .MODULE. ADDED
-        #         'optimizer_state_dict': optimizer.state_dict(),
-        #         'warmup_scheduler_state_dict': warmup_scheduler.state_dict(),
-        #         'cosine_scheduler_state_dict': cosine_scheduler.state_dict(),
-        #         'loss': epoch_train_loss
-        #     }, os.path.join(config['paths']['checkpoints'], 'ckpt_' + str(model.module)))
-
         # ======================
         # SAVING CSV FILE.
-        if global_rank == 0:
+        if global_rank == 0 and not args.ray_tune:
             if epoch == 0:
                 header = ['epoch', 'train_loss']
                 with open(csv_path, 'w', newline='') as file:
