@@ -36,7 +36,7 @@ for m in "${models[@]}"; do
     for b in "${backbones[@]}"; do
 
         # Run.
-        command="sbatch -J ${m}_${b} -o out_${m}_${b}.out pytorch-DDP-slurm.sh ${m} ${b} ${experiment}"
+        command="sbatch -J ${m}_${b}_${experiment} -o out_${m}_${b}_${experiment}.out pytorch-DDP-slurm.sh ${m} ${b} ${experiment}"
         echo ${command}
         ${command}
 
