@@ -1,16 +1,38 @@
 #!/bin/bash
 
 # General resource requests.
-# ----> Juelich.
+
+#--------------------------------------------
+# JUELICH (no longer used).
+#--------------------------------------------
 # #SBATCH --cpus-per-task=1                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 # #SBATCH --gpus-per-task=1                           # Number of GPUs per task.
 # #SBATCH --mail-type=ALL                             # Type of notification via email.
 # #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
-# ----> Turgalium.
+#--------------------------------------------
+
+#--------------------------------------------
+# TURGALIUM.
+#--------------------------------------------
+# Common options.
 #SBATCH --partition=volta                           # Request specific partition.
 #SBATCH --time=48:00:00                             # Job duration (72h is the limit).
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --nodes=1                                   # Number of nodes.
+
+# Specific options.
+#SBATCH --ntasks=1                                  # Number of tasks.
+#SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
+#SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
+#--------------------------------------------
+
+#--------------------------------------------
+# INFO: Specific configurations for the experiments (copy and paste above).
+#--------------------------------------------
+# * RayTune:  --ntasks=1, --gpus-per-node=2, --exclusive
+# * DDP:      --ntasks=4, --gpus-per-node=4, --exclusive
+# * Balanced: --ntasks=1, --gpus-per-node=2
+#--------------------------------------------
 
 
 # Help function.
@@ -65,9 +87,6 @@ fi
 
 # Configure the target experiment.
 if [[ $experiment == "RayTune" ]]; then
-    #SBATCH --ntasks=1                                  # Number of tasks.
-    #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
-    #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
     dataset_ratio="(0.400,0.1500,0.4500)"
     epochs=15
     more_options="--ray_tune=gridsearch --grace_period=5 --num_samples_trials=1 --gpus_per_trial=1"
@@ -75,24 +94,17 @@ if [[ $experiment == "RayTune" ]]; then
     echo "RayTune experiment has been successfully set up!"
 
 elif [[ $experiment == "DDP" ]]; then
-    #SBATCH --ntasks=4                                  # Number of tasks.
-    #SBATCH --gpus-per-node=4                           # Min. number of GPUs on each node.
-    #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
     dataset_ratio="(0.900,0.0250,0.0750)"
     epochs=1000
     more_options="--distributed"
     echo "DDP experiment has been successfully set up!"
 
 elif [[ $experiment == "Balanced" ]]; then
-    #SBATCH --ntasks=1                                  # Number of tasks.
-    #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
     dataset_ratio="(0.900,0.0250,0.0750)"
     epochs=1000
     more_options="--balanced_dataset"
     echo "Balanced experiment has been successfully set up!"
 fi
-
-#SBATCH --ntasks=4
 
 # Troubleshooting.
 export LOGLEVEL=INFO
@@ -138,7 +150,6 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --ini_weights=$ini_weights \
 ${more_options}
 "
-
 # --input_data $input_data \
 # --partially_frozen \
 
@@ -147,4 +158,5 @@ echo "---------------------"
 echo "Command executed: >> srun $command"
 echo "---------------------"
 
+# Run.
 srun $command
