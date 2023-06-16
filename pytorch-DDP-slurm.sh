@@ -63,7 +63,7 @@ else
 fi
 
 # Configure the target experiment.
-if [[ $experiment != "RayTune" ]]; then
+if [[ $experiment == "RayTune" ]]; then
     #SBATCH --nodes=1                                   # Number of nodes.
     #SBATCH --ntasks=1                                  # Number of tasks.
     #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
@@ -74,7 +74,7 @@ if [[ $experiment != "RayTune" ]]; then
     export RAY_PICKLE_VERBOSE_DEBUG=1
     echo "RayTune experiment has been successfully set up!"
 
-elif [[ $experiment != "DDP" ]]; then
+elif [[ $experiment == "DDP" ]]; then
     #SBATCH --nodes=1                                   # Number of nodes.
     #SBATCH --ntasks=4                                  # Number of tasks.
     #SBATCH --gpus-per-node=4                           # Min. number of GPUs on each node.
@@ -84,7 +84,7 @@ elif [[ $experiment != "DDP" ]]; then
     more_options="--distributed"
     echo "DDP experiment has been successfully set up!"
 
-elif [[ $experiment != "Balanced" ]]; then
+elif [[ $experiment == "Balanced" ]]; then
     #SBATCH --nodes=1                                   # Number of nodes.
     #SBATCH --ntasks=1                                  # Number of tasks.
     #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
