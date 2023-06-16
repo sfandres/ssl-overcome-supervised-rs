@@ -22,15 +22,15 @@
 
 # Specific options.
 #SBATCH --ntasks=1                                  # Number of tasks.
-#SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
+#SBATCH --gpus-per-node=4                           # Min. number of GPUs on each node.
 #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 #--------------------------------------------
 
 #--------------------------------------------
 # INFO: Specific configurations for the experiments (copy and paste above).
 #--------------------------------------------
-# * RayTune:  --ntasks=1, --gpus-per-node=2, --exclusive
-# * DDP:      --ntasks=4, --gpus-per-node=4, --exclusive
+# * RayTune:  --ntasks=1, --gpus-per-node=2/4, --exclusive
+# * DDP:      --ntasks=4, --gpus-per-node=4,   --exclusive
 # * Balanced: --ntasks=1, --gpus-per-node=2
 #--------------------------------------------
 
