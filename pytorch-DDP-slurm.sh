@@ -10,6 +10,7 @@
 #SBATCH --partition=volta                           # Request specific partition.
 #SBATCH --time=48:00:00                             # Job duration (72h is the limit).
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
+#SBATCH --nodes=1                                   # Number of nodes.
 
 
 # Help function.
@@ -64,7 +65,6 @@ fi
 
 # Configure the target experiment.
 if [[ $experiment == "RayTune" ]]; then
-    #SBATCH --nodes=1                                   # Number of nodes.
     #SBATCH --ntasks=1                                  # Number of tasks.
     #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
     #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
@@ -75,7 +75,6 @@ if [[ $experiment == "RayTune" ]]; then
     echo "RayTune experiment has been successfully set up!"
 
 elif [[ $experiment == "DDP" ]]; then
-    #SBATCH --nodes=1                                   # Number of nodes.
     #SBATCH --ntasks=4                                  # Number of tasks.
     #SBATCH --gpus-per-node=4                           # Min. number of GPUs on each node.
     #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
@@ -85,7 +84,6 @@ elif [[ $experiment == "DDP" ]]; then
     echo "DDP experiment has been successfully set up!"
 
 elif [[ $experiment == "Balanced" ]]; then
-    #SBATCH --nodes=1                                   # Number of nodes.
     #SBATCH --ntasks=1                                  # Number of tasks.
     #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
     dataset_ratio="(0.900,0.0250,0.0750)"
@@ -93,6 +91,8 @@ elif [[ $experiment == "Balanced" ]]; then
     more_options="--balanced_dataset"
     echo "Balanced experiment has been successfully set up!"
 fi
+
+#SBATCH --ntasks=4
 
 # Troubleshooting.
 export LOGLEVEL=INFO
