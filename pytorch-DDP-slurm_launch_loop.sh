@@ -35,23 +35,23 @@ backbones=("resnet18")  # "resnet50"
 for m in "${models[@]}"; do
     for b in "${backbones[@]}"; do
 
+        # Check if continue.
+        read -p "Launch job with ${m} and ${b}? ('yes'/enter to launch, 'no' to continue, and 'exit' to leave): " input
+        while [[ -n $input && $input != "yes" && $input != "no" && $input != "exit" ]]; do
+            read -p "Invalid input. Please type 'yes'/enter, 'no', or 'exit': " input
+        done
+        if [[ $input == "no" || $input == "exit" ]]; then
+            break
+        fi
+
         # Run.
         command="sbatch -J ${m}_${b}_${experiment} -o out_${m}_${b}_${experiment}.out pytorch-DDP-slurm.sh ${m} ${b} ${experiment}"
         echo ${command}
         ${command}
 
-        # Check if continue.
-        read -p "Continue? (yes/enter to continue, no to exit): " input
-        while [[ -n $input && $input != "yes" && $input != "no" ]]; do
-            read -p "Invalid input. Please type 'yes'/enter or 'no': " input
-        done
-        if [[ $input == "no" ]]; then
-            break
-        fi
-
     done
 
-    if [[ $input == "no" ]]; then
+    if [[ $input == "exit" ]]; then
         break
     fi
 
