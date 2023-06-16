@@ -33,7 +33,7 @@ class GaussianBlur(object):
 class AndaluciaDataset(Dataset):
     """Sentinel2AndaluciaLULC dataset."""
 
-    def __init__(self, root_dir, level, split, train_ratio=1., transform=None, target_transform=None, verbose=True):
+    def __init__(self, root_dir, level, split, train_ratio=1., transform=None, target_transform=None, seed=42, verbose=True):
         """
         Args:
             root_dir (str): Root (parent) directory.
@@ -61,7 +61,8 @@ class AndaluciaDataset(Dataset):
         # Reduction in train set.
         if split == 'train':
             df = pd.read_csv(self.csv_file_path)
-            self.csv_dataset_info = df.sample(n=int(train_ratio*len(df.index)))
+            self.csv_dataset_info = df.sample(n=int(train_ratio*len(df.index)),
+                                              random_state=seed)
         else:
             self.csv_dataset_info = pd.read_csv(self.csv_file_path)
 
