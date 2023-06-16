@@ -72,6 +72,7 @@ if [[ $experiment != "RayTune" ]]; then
     epochs=15
     more_options="--ray_tune=gridsearch --grace_period=5 --num_samples_trials=1 --gpus_per_trial=1"
     export RAY_PICKLE_VERBOSE_DEBUG=1
+    echo "RayTune experiment has been successfully set up!"
 
 elif [[ $experiment != "DDP" ]]; then
     #SBATCH --nodes=1                                   # Number of nodes.
@@ -81,6 +82,7 @@ elif [[ $experiment != "DDP" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
     epochs=1000
     more_options="--distributed"
+    echo "DDP experiment has been successfully set up!"
 
 elif [[ $experiment != "Balanced" ]]; then
     #SBATCH --nodes=1                                   # Number of nodes.
@@ -89,7 +91,7 @@ elif [[ $experiment != "Balanced" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
     epochs=1000
     more_options="--balanced_dataset"
-
+    echo "Balanced experiment has been successfully set up!"
 fi
 
 # Troubleshooting.
