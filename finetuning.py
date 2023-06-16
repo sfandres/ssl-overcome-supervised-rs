@@ -288,6 +288,7 @@ def main(args):
         train_ratio=args.train_rate,
         transform=transform[x],
         target_transform=transform_abundances if args.task_name == 'multiclass' else None,
+        seed=args.seed,
         verbose=args.verbose
     ) for x in splits}
 
