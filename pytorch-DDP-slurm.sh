@@ -88,8 +88,8 @@ fi
 # Configure the target experiment.
 if [[ $experiment == "RayTune" ]]; then
     dataset_ratio="(0.400,0.1500,0.4500)"
-    epochs=15
-    more_options="--ray_tune=gridsearch --grace_period=5 --num_samples_trials=1 --gpus_per_trial=1"
+    epochs=12
+    more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=1 --gpus_per_trial=1"
     export RAY_PICKLE_VERBOSE_DEBUG=1
     echo "RayTune experiment has been successfully set up!"
 
