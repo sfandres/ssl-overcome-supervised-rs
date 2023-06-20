@@ -12,6 +12,7 @@ from utils.check_embeddings import (
     pca_computation,
     tsne_computation
 )
+from ssl_eval import linear_eval_backbone
 import seaborn as sns
 from utils.dataset import inv_norm_tensor
 
@@ -529,7 +530,7 @@ def train(
             cosine_scheduler.step()
 
         # ======================
-        # SAVING CHECKPOINT.
+        # SAVING CHECKPOINT AND LINEAR EVAL.
         # Custom functions for saving the checkpoints.
         if (global_rank == 0 and not args.ray_tune) and (epoch % args.save_every == 0 or epoch == args.epochs - 1):
 
@@ -549,6 +550,25 @@ def train(
                 ),
                 epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler
             )
+
+            # # Linear evaluation.
+            # model.eval()
+            # print('\nEvaluating...')
+            # linear_eval_backbone(
+            #     model.backbone,
+            #     input_dim,
+            #     29,
+            #     config['dataloader'],
+            #     config['bsz'],
+            #     local_rank,
+            #     config['paths'],
+            #     args,
+            #     general_name,
+            #     input_size=224,
+            #     verbose=False,
+            #     dropout=False
+            # )
+            # print('Evaluation done!')
 
         # ======================
         # SAVING CSV FILE.
