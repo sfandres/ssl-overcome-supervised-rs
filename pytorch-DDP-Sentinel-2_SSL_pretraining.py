@@ -326,6 +326,8 @@ def train(
     print(f"{'Backbone name:'.ljust(18)} {args.backbone_name}")
     print(f"{'Hidden layer dim.:'.ljust(18)} {config['hidden_dim']}")
     print(f"{'Output layer dim.:'.ljust(18)} {config['out_dim']}")
+    print(f"{'Momentum:'.ljust(18)} {config['momentum']}")
+    print(f"{'Weight decay:'.ljust(18)} {config['weight_decay']}")
 
     if args.model_name == 'SimSiam':
         model = SimSiam(backbone=backbone, input_dim=input_dim, proj_hidden_dim=config['out_dim'],
@@ -1075,12 +1077,14 @@ def main(args):
             warmup_epochs = 10
 
         # Build the filename.
-        filename_lr = f'ray_tune_lr_{args.backbone_name}_{args.model_name}.csv'
+        # filename_lr = f'ray_tune_lr_{args.backbone_name}_{args.model_name}.csv'
+        filename_lr = f'ray_tune_{args.backbone_name}_{args.model_name}.csv'
 
         # Load the CSV file into a pandas dataframe.
-        df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr),
-                            usecols=lambda col: col.startswith('loss')
-                            or col.startswith('config/'))
+        # df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr),
+        #                     usecols=lambda col: col.startswith('loss')
+        #                     or col.startswith('config/'))
+        df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr))
 
         # Configuration.
         print(f'\nSetting the best configuration for the model from file: {filename_lr}')
@@ -1090,11 +1094,11 @@ def main(args):
             'dataloader': dataloader,
             'bsz': bsz,
             'paths': paths,
-            'hidden_dim': df_lr.loc[0, 'config/hidden_dim'],
-            'out_dim': df_lr.loc[0, 'config/out_dim'],
-            'lr': df_lr.loc[0, 'config/lr'],
-            'momentum': 0.9,                            # CHANGE THIS TO BE LOADED.
-            'weight_decay': 0,                          # CHANGE THIS TO BE LOADED.
+            'hidden_dim': df_lr.loc[0, 'hidden_dim'],    # [0, 'config/hidden_dim'],
+            'out_dim': df_lr.loc[0, 'out_dim'],
+            'lr': df_lr.loc[0, 'lr'],
+            'momentum': df_lr.loc[0, 'momentum'],
+            'weight_decay': df_lr.loc[0, 'weight_decay'],
             'warmup_epochs': warmup_epochs,
         }
 
