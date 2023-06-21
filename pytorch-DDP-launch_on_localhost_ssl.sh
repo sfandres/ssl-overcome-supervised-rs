@@ -1,56 +1,51 @@
 #!/bin/bash
-## Shebang.
+# Shebang.
 
-
-function show_help {
-    echo "Usage: $0 [OPTION] [MODEL] [BACKBONE]"
-    echo "  -t, --training           Runs normal training."
-    echo "  -r, --resume-training    Resumes the training from a previous saved checkpoint."
-    echo "  -h, --help               Display the help message."
+# Help function.
+function display_help {
+    echo "Usage: ./$0 MODEL BACKBONE"
+    echo "Arguments:"
+    echo "  MODEL         Specify the model ('BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', or 'SimSiam')"
+    echo "  BACKBONE      Specify the backbone ('resnet18' or 'resnet50')"
+    echo "  -h, --help    Display this help message"
+    exit 0
 }
 
+# Parse arguments.
+model=$1
+backbone_name=$2
 
-## Catch the arguments.
-if [[ "$1" == "-t" ]] || [[ "$1" == "--training" ]]; then
-    echo "You chose normal training"
-    exp_options=""
+if [[ $1 == "-h" || $1 == "--help" ]]; then
+    display_help
 
-elif [[ "$1" == "-r" ]] || [[ "$1" == "--resume-training" ]]; then
-    echo "You chose resume training"
-    exp_options="--resume_training"
+elif [[ -z $model || -z $backbone_name ]]; then
+    echo "Error: Both model and backbone arguments are required."
+    display_help
 
-elif [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
-    show_help
-    exit 0
+elif [[ $model != "BarlowTwins" && $model != "MoCov2" && $model != "SimCLR" && $model != "SimCLRv2" && $model != "SimSiam" ]]; then
+    echo "Error: Invalid model. Supported models are 'BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', and 'SimSiam'."
+    display_help
 
-else
-    echo "Invalid option. Use -h or --help to display available options."
-    exit 1
+elif [[ $backbone_name != "resnet18" && $backbone_name != "resnet50" ]]; then
+    echo "Error: Invalid backbone. Supported backbones are 'resnet18' and 'resnet50'."
+    display_help
 fi
 
-if [ -z "$2" ] || [ -z "$3" ]; then
-    echo "Second (model) or third (backbone) argument is empty."
-    show_help
-    exit 0
-fi
+# Env variables.
+export RAY_PICKLE_VERBOSE_DEBUG=1
 
-## Define settings for the experiments.
-model=$2
-backbone_name=$3
-## input_data=""
+# Define settings for the experiments.
 dataset_name="Sentinel2GlobalLULC_SSL"
 dataset_ratio="(0.020,0.0196,0.9604)"
-epochs=300
+# dataset_ratio="(0.400,0.1500,0.4500)"
+# dataset_ratio="(0.900,0.0250,0.0750)"
+epochs=4
 save_every=2
-if [ "${backbone_name}" == "resnet50" ]; then
-    batch_size=32  ##128
-else
-    batch_size=64  ##512
-fi
-num_workers=4
+batch_size=32
+num_workers=2
 ini_weights="random"
 
-## Python script to be executed with the options and flags.
+# Python script to be executed with the options and flags.
 script="--standalone --nnodes=1 --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --backbone_name=$backbone_name \
 --dataset_name=$dataset_name \
@@ -60,15 +55,26 @@ script="--standalone --nnodes=1 --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pr
 --batch_size=$batch_size \
 --num_workers=$num_workers \
 --ini_weights=$ini_weights \
---distributed \
-$exp_options"
+"
 
-## Show the chosen options.
+# --ray_tune=gridsearch \
+# --grace_period=1 \
+# --num_samples_trials=1 \
+# --gpus_per_trial=1
+
+# --partially_frozen \
+# --reduced_dataset \
+# --balanced_dataset \
+# --distributed \
+# --verbose \
+# --show \
+# --input_data="" \
+
+# Show the chosen options.
 echo "---------------------"
-echo "Specific options of the current experiment: $model $backbone_name $exp_options"
-echo "Command executed:"
-echo ">> torchrun $script"
+echo "Command executed: >> torchrun $script"
 echo "---------------------"
 
-## Execute the script.
+# Execute the script.
+# torchrun $script > out_pretraining_localhost_${model}_${backbone_name}.out
 torchrun $script
