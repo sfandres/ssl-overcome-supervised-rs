@@ -5,18 +5,18 @@ import os
 
 
 def linear_eval_backbone(
-        backbone,
-        in_features,
-        out_features,
-        dataloader,
-        batch_size,
-        local_rank,
-        paths,
-        args,
-        general_name,
-        input_size: int = 224,
-        verbose: bool = False,
-        dropout: bool = False
+    backbone,
+    in_features,
+    out_features,
+    dataloader,
+    batch_size,
+    local_rank,
+    paths,
+    args,
+    general_name,
+    input_size: int = 224,
+    verbose: bool = False,
+    dropout: bool = False
 ):
 
     # Define your model.
