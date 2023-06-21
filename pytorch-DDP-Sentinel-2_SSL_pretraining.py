@@ -756,8 +756,15 @@ def main(args):
     # ImageFolder.
     #--------------------------
     # Loading the three datasets with ImageFolder.
+
     dataset = {x: torchvision.datasets.ImageFolder(
-        os.path.join(paths[args.dataset_name], x)) for x in splits}
+        os.path.join(paths[args.dataset_name], x),
+        transform[x]
+    ) for x in splits[1:]}
+
+    dataset['train'] = torchvision.datasets.ImageFolder(
+        os.path.join(paths[args.dataset_name], 'train')
+    )
 
     if args.verbose:
         for d in dataset:
@@ -866,11 +873,11 @@ def main(args):
     #--------------------------
     # Dataloader for validating and testing.
     dataloader = {x: torch.utils.data.DataLoader(
-        lightly_dataset[x],
+        dataset[x],                                     # lightly_dataset[x]
         batch_size=bsz,
-        shuffle=False,
+        shuffle=True,                                   # False
         num_workers=args.num_workers,
-        collate_fn=collate_fn[x],
+        # collate_fn=collate_fn[x],
         pin_memory=True,
         drop_last=True,
         worker_init_fn=seed_worker if not args.ray_tune else None,
