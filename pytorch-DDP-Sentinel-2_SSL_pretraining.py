@@ -551,24 +551,26 @@ def train(
                 epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler
             )
 
-            # # Linear evaluation.
-            # model.eval()
-            # print('\nEvaluating...')
-            # linear_eval_backbone(
-            #     model.backbone,
-            #     input_dim,
-            #     29,
-            #     config['dataloader'],
-            #     config['bsz'],
-            #     local_rank,
-            #     config['paths'],
-            #     args,
-            #     general_name,
-            #     input_size=224,
-            #     verbose=False,
-            #     dropout=False
-            # )
-            # print('Evaluation done!')
+            # Linear evaluation.
+            model.eval()
+            print('\nEvaluating...')
+            linear_eval_backbone(
+                epoch,
+                10,
+                model.backbone,
+                input_dim,
+                29,
+                config['dataloader'],
+                config['bsz'],
+                local_rank,
+                config['paths'],
+                args,
+                general_name,
+                input_size=224,
+                verbose=False,
+                dropout=False
+            )
+            print('Evaluation done!')
 
         # ======================
         # SAVING CSV FILE.
