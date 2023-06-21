@@ -18,7 +18,8 @@ def create_list_embeddings(model, dataloader, device):
     with torch.no_grad():
         # for i, (x, y, fnames) in enumerate(dataloader_val):
         # Now taking only the first transformed batch.
-        for i, ((x, _), y, fnames) in enumerate(dataloader['val']):
+        # for i, ((x, _), y, fnames) in enumerate(dataloader['val']):
+        for x, y in dataloader['val']:
 
             # Move the images to the GPU.
             x = x.to(device)
