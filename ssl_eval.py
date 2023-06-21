@@ -5,6 +5,8 @@ import os
 
 
 def linear_eval_backbone(
+    curr_epoch,
+    epochs,
     backbone,
     in_features,
     out_features,
@@ -63,9 +65,11 @@ def linear_eval_backbone(
     print(f'Loss: {loss_fn}')
 
     # Configure the optimizer.
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.001)  #, momentum=0.9)
 
     # Training.
+    args.task_name = 'multiclass'
+    args.transfer_learning = 'LP'
     trainer = Trainer(
         model,
         dataloader,
@@ -73,6 +77,9 @@ def linear_eval_backbone(
         optimizer,
         save_every=10,
         snapshot_path=os.path.join(paths['snapshots'], f'head_{general_name}.pt'),
-        csv_path=os.path.join(paths['csv_results'], f'head_{general_name}.csv'),
+        csv_path=os.path.join(paths['csv_results'], f'head_{general_name}_e={curr_epoch}.csv'),
+        distributed=False,
+        lightly_train=True,
+        ignore_ckpts=True
     )
-    trainer.train(10, args, test=True, save_csv=True)
+    trainer.train(epochs, args, test=True, save_csv=True)
