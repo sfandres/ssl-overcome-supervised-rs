@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
+from torch.nn.parallel import DistributedDataParallel as DDP
 import os
 from sklearn.metrics import (
     mean_squared_error,
@@ -109,7 +110,8 @@ class Trainer:
         optimizer: torch.optim.Optimizer,
         save_every: int,
         snapshot_path: str,
-        csv_path: str
+        csv_path: str,
+        distributed: bool = False
     ) -> None:
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.global_rank = int(os.environ["RANK"])
@@ -121,11 +123,14 @@ class Trainer:
         self.epochs_run = 0
         self.snapshot_path = snapshot_path
         self.csv_path = csv_path
+        self.distributed = distributed
+
         if os.path.exists(snapshot_path):
             print("\nLoading snapshot")
             self._load_snapshot(snapshot_path)
 
-        # self.model = DDP(self.model, device_ids=[self.local_rank])
+        if distributed:
+            self.model = DDP(self.model, device_ids=[self.local_rank])
 
     def _load_snapshot(self, snapshot_path: str):
         loc = f"cuda:{self.local_rank}"
@@ -161,7 +166,8 @@ class Trainer:
         batch_size = len(next(iter(self.dataloader['train']))[0])
         running_loss = 0.
         t0 = time.time()
-        # self.dataloader['train'].sampler.set_epoch(epoch)             # CAREFUL
+        if self.distributed:
+            self.dataloader['train'].sampler.set_epoch(epoch)
         self.model.train()
         for source, targets in self.dataloader['train']:
             source = source.to(self.local_rank)
@@ -177,9 +183,13 @@ class Trainer:
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
     def _save_snapshot(self, epoch: int):
+        if self.distributed:
+            model_state = self.model.module.state_dict()
+        else:
+            model_state = self.model.state_dict()
         snapshot = {
-            "MODEL_STATE": self.model.state_dict(),  # self.model.module.state_dict(),
-            "EPOCHS_RUN": epoch + 1,                 # +1 so that the training resumes at the same point.
+            "MODEL_STATE": model_state,
+            "EPOCHS_RUN": epoch + 1,                    # +1 so that the training resumes at the same point.
             "OPTIMIZER": self.optimizer.state_dict()
         }
         torch.save(snapshot, self.snapshot_path)
