@@ -111,7 +111,9 @@ class Trainer:
         save_every: int,
         snapshot_path: str,
         csv_path: str,
-        distributed: bool = False
+        distributed: bool = False,
+        lightly_train: bool = False,
+        ignore_ckpts: bool = False
     ) -> None:
         self.local_rank = int(os.environ["LOCAL_RANK"])
         self.global_rank = int(os.environ["RANK"])
@@ -124,8 +126,10 @@ class Trainer:
         self.snapshot_path = snapshot_path
         self.csv_path = csv_path
         self.distributed = distributed
+        self.lightly_train = lightly_train
+        self.ignore_ckpts = ignore_ckpts
 
-        if os.path.exists(snapshot_path):
+        if os.path.exists(snapshot_path) and not ignore_ckpts:
             print("\nLoading snapshot")
             self._load_snapshot(snapshot_path)
 
@@ -140,27 +144,29 @@ class Trainer:
         self.optimizer.load_state_dict(snapshot['OPTIMIZER'])
         print(f"Resuming training from snapshot at Epoch {self.epochs_run} <-- {snapshot_path.rsplit('/', 1)[-1]}")
 
+    def _run_evaluation(self):
+        batch_size = len(next(iter(self.dataloader['val']))[0])
+        running_loss = 0.
+        self.model.eval()
+        with torch.no_grad():
+            for source, targets in self.dataloader['val']:
+                source = source.to(self.local_rank)
+                targets = targets.to(self.local_rank)
+                output = self.model(source)
+                loss = self.loss_fn(output, targets)
+                running_loss += loss * batch_size
+        epoch_val_loss = running_loss / len(self.dataloader['val'].sampler)
+        return epoch_val_loss
+
     def _run_batch(self, source, targets):
+        source = source.to(self.local_rank)
+        targets = targets.to(self.local_rank)
         self.optimizer.zero_grad()
         output = self.model(source)
         loss = self.loss_fn(output, targets)
         loss.backward()
         self.optimizer.step()
         return loss.detach()
-
-    def _run_evaluation(self):
-        batch_size = len(next(iter(self.dataloader['validation']))[0])
-        running_loss = 0.
-        self.model.eval()
-        with torch.no_grad():
-            for source, targets in self.dataloader['validation']:
-                source = source.to(self.local_rank)
-                targets = targets.to(self.local_rank)
-                output = self.model(source)
-                loss = self.loss_fn(output, targets)
-                running_loss += loss * batch_size
-        epoch_val_loss = running_loss / len(self.dataloader['validation'].sampler)
-        return epoch_val_loss
 
     def _run_epoch(self, epoch: int):
         batch_size = len(next(iter(self.dataloader['train']))[0])
@@ -169,11 +175,14 @@ class Trainer:
         if self.distributed:
             self.dataloader['train'].sampler.set_epoch(epoch)
         self.model.train()
-        for source, targets in self.dataloader['train']:
-            source = source.to(self.local_rank)
-            targets = targets.to(self.local_rank)
-            loss = self._run_batch(source, targets)
-            running_loss += loss * batch_size
+        if not self.lightly_train:
+            for source, targets in self.dataloader['train']:
+                loss = self._run_batch(source, targets)
+                running_loss += loss * batch_size
+        else:
+            for (source, _), targets, _ in self.dataloader['train']:
+                loss = self._run_batch(source, targets)
+                running_loss += loss * batch_size
         epoch_train_loss = running_loss / len(self.dataloader['train'].sampler)
         epoch_val_loss = self._run_evaluation()
         print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Train loss: {epoch_train_loss:.4f} | "
@@ -216,7 +225,7 @@ class Trainer:
 
             print()
             epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)
-            if self.global_rank == 0 and epoch % self.save_every == 0 or epoch == max_epochs - 1:
+            if self.global_rank == 0 and not self.ignore_ckpts and (epoch % self.save_every == 0 or epoch == max_epochs - 1):
                 self._save_snapshot(epoch)
 
             if test:
