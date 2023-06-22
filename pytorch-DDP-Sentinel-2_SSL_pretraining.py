@@ -21,6 +21,7 @@ import os
 import sys
 import argparse
 import csv
+import copy
 
 # PyTorch.
 import torch
@@ -310,16 +311,6 @@ def train(
                 # zero_init_residual=True
             )
 
-    # Show model's backbone structure.
-    if args.show:
-        print(summary(
-            resnet,
-            input_size=(config['bsz'], 3,
-                        config['input_size'],
-                        config['input_size']),
-            device=local_rank)
-        )
-
     # Removing head from resnet: Encoder.
     backbone = nn.Sequential(*list(resnet.children())[:-1])
     input_dim = hidden_dim = resnet.fc.in_features
@@ -473,13 +464,25 @@ def train(
 
         # ======================
         # TRAINING COMPUTATION.
-        # Iterating through the dataloader (lightly dataset is different).
+        # Initialization.
         print(f"\nLearning rate: {optimizer.param_groups[0]['lr']}")
         collapse_level = 0.
         running_train_loss = 0.
         model.train()
+
+        # Show model's backbone structure.
+        if args.verbose:
+            summary(
+                resnet,
+                input_size=(config['bsz'], 3,
+                            config['input_size'],
+                            config['input_size']),
+                device=local_rank
+            )
+
+        # Iterating through the dataloader (lightly dataset is different).
         if args.distributed:
-            config['dataloader']['train'].sampler.set_epoch(epoch)  # Important.
+            config['dataloader']['train'].sampler.set_epoch(epoch)
         for b, ((x0, x1), _, _) in enumerate(config['dataloader']['train']):
 
             # Move images to the GPU (same batch with two transformations).
@@ -557,7 +560,7 @@ def train(
             linear_eval_backbone(
                 epoch,
                 10,
-                model.backbone,
+                copy.deepcopy(model.backbone),
                 input_dim,
                 29,
                 config['dataloader'],
