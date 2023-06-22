@@ -54,10 +54,10 @@ def linear_eval_backbone(
 
     # Show model structure.
     if verbose:
-        print(summary(
+        summary(
             model,
             input_size=(batch_size, 3, input_size, input_size),
-            device=local_rank)
+            device=local_rank
         )
 
     # Configure the loss.
