@@ -1,6 +1,6 @@
 import torch
 from torchinfo import summary
-from finetuning_trainer import Trainer
+from trainer import Trainer
 import os
 
 
