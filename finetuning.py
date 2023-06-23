@@ -641,6 +641,9 @@ def main(args):
         save_every=args.save_every,
         snapshot_path=os.path.join(paths['snapshots'], f'snapshot_{general_name}.pt'),
         csv_path=os.path.join(paths['csv_results'], f'{general_name}.csv'),
+        distributed=args.distributed,
+        lightly_train=False,
+        ignore_ckpts=False
     )
     trainer.train(args.epochs, args, test=True, save_csv=True)
 
