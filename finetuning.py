@@ -242,9 +242,9 @@ def main(args):
         )
     )
 
-    # Rename the key 'val' to 'validation'.
-    mean['validation'] = mean.pop('val')
-    std['validation'] = std.pop('val')
+    # # Rename the key 'val' to 'validation'.
+    # mean['validation'] = mean.pop('val')
+    # std['validation'] = std.pop('val')
 
     if args.verbose:
         print(f'\nMean: {mean}')
@@ -254,7 +254,7 @@ def main(args):
     # Custom transforms.
     #--------------------------
 
-    splits = ['train', 'validation', 'test']
+    splits = ['train', 'val', 'test']
 
     # Normalization transform (val and test).
     transform = {x: transforms.Compose([
