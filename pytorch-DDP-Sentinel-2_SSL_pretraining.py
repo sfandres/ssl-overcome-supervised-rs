@@ -503,7 +503,10 @@ def train(
             # the l2 normalized output is much smaller than 1 / sqrt(out_dim).
             # 0 means collapse; the closer to the upper value, the better.
             if args.model_name == 'SimSiam':
-                collapse_level = model.module.check_collapse()
+                if args.distributed:
+                    collapse_level = model.module.check_collapse()
+                else:
+                    collapse_level = model.check_collapse()
 
             # Print statistics.
             # Averaged loss across all training examples * batch_size.
@@ -559,7 +562,7 @@ def train(
             print('\nEvaluating...')
             linear_eval_backbone(
                 epoch,
-                10,
+                5,
                 copy.deepcopy(model.backbone),
                 input_dim,
                 29,
