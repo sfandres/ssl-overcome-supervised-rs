@@ -528,15 +528,17 @@ def main(args):
         input_dim = resnet.fc.in_features
 
         # Build the filename.
-        filename_lr = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
+        # filename_lr = f'ray_tune_results_lr_{args.backbone_name}_{args.model_name}.csv'
+        filename_lr = f'ray_tune_{args.backbone_name}_{args.model_name}.csv'
 
         # Load the CSV file into a pandas dataframe.
-        df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr),
-                            usecols=lambda col: col.startswith('loss')
-                            or col.startswith('config/'))
+        # df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr),
+        #                     usecols=lambda col: col.startswith('loss')
+        #                     or col.startswith('config/'))
+        df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr))
     
-        hidden_dim = df_lr.loc[0, 'config/hidden_dim']
-        out_dim = df_lr.loc[0, 'config/out_dim']
+        hidden_dim = df_lr.loc[0, 'hidden_dim']          # [0, 'config/hidden_dim']
+        out_dim = df_lr.loc[0, 'out_dim']
 
         print(f"{'Model name:'.ljust(18)} {args.model_name}")
         print(f"{'Backbone name:'.ljust(18)} {args.backbone_name}")
