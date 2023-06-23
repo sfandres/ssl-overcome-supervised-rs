@@ -132,6 +132,7 @@ dataset_name="Sentinel2GlobalLULC_SSL"
 save_every=25
 batch_size=128
 ini_weights="random"
+seed=42
 
 # Run experiment (--standalone).
 # $SLURM_GPUS_PER_TASK $SLURM_NTASKS
@@ -150,6 +151,7 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --batch_size=$batch_size \
 --num_workers=$SLURM_CPUS_PER_TASK \
 --ini_weights=$ini_weights \
+--seed=$seed \
 ${more_options}
 "
 # --input_data $input_data \

@@ -44,6 +44,7 @@ save_every=2
 batch_size=32
 num_workers=2
 ini_weights="random"
+seed=42
 
 # Python script to be executed with the options and flags.
 script="--standalone --nnodes=1 --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
@@ -55,6 +56,7 @@ script="--standalone --nnodes=1 --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pr
 --batch_size=$batch_size \
 --num_workers=$num_workers \
 --ini_weights=$ini_weights \
+--seed=$seed \
 "
 
 # --ray_tune=gridsearch \

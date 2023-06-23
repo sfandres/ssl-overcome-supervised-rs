@@ -63,7 +63,6 @@ from ray.tune.schedulers import ASHAScheduler
 import matplotlib.pyplot as plt
 
 AVAIL_SSL_MODELS = ['SimSiam', 'SimCLR', 'SimCLRv2', 'BarlowTwins', 'MoCov2']
-SEED = 42
 NUM_DECIMALS = 3
 FIG_FORMAT='.png'
 
@@ -121,6 +120,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--ini_weights', '-iw', type=str, default='random',
                         choices=['random', 'imagenet'],
                         help='initial weights (default: random).')
+
+    parser.add_argument('--seed', '-s', type=int, default=42,
+                        help='seed for the experiments (default: 42).')
 
     parser.add_argument('--show', '-s', action='store_true',
                         help='the images pops up.')
@@ -614,7 +616,7 @@ def train(
     embeddings, labels = create_list_embeddings(model, config['dataloader'], local_rank)
 
     # t-SNE computation for 2-D.
-    df = tsne_computation(embeddings, labels, SEED, n_components=2)
+    df = tsne_computation(embeddings, labels, args.seed, n_components=2)
 
     # 2-D plot.
     fig_name_save = (f'tsne_2d-{general_name}')
@@ -635,7 +637,7 @@ def train(
     plt.show() if args.show else plt.close()
 
     # PCA computation for 2-D.
-    df = pca_computation(embeddings, labels, SEED)
+    df = pca_computation(embeddings, labels, args.seed)
 
     # 2-D plot.
     fig_name_save = (f'pca_2d-{general_name}')
@@ -662,7 +664,7 @@ def main(args):
 
     # Enable reproducibility.
     print(f"\n{'torch initial seed:'.ljust(33)}{torch.initial_seed()}")
-    g = set_seed(SEED)
+    g = set_seed(args.seed)
     print(f"{'torch current seed:'.ljust(33)}{torch.initial_seed()}")
 
     # Check torch CUDA and CPUs available (for num_workers).
@@ -843,7 +845,7 @@ def main(args):
         sampler = DistributedSampler(
             dataset['train'],
             shuffle=True,
-            seed=SEED,
+            seed=args.seed,
             drop_last=True
         )
         shuffle=False
