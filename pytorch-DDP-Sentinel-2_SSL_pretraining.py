@@ -124,7 +124,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--seed', '-s', type=int, default=42,
                         help='seed for the experiments (default: 42).')
 
-    parser.add_argument('--show', '-s', action='store_true',
+    parser.add_argument('--show', '-sw', action='store_true',
                         help='the images pops up.')
 
     parser.add_argument('--verbose', '-v', action='store_true',
