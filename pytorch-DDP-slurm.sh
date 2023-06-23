@@ -23,8 +23,9 @@
 # Specific options.
 #SBATCH --ntasks=1                                  # Number of tasks.
 #SBATCH --gpus-per-node=4                           # Min. number of GPUs on each node.
-#SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 #--------------------------------------------
+
+##SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 
 #--------------------------------------------
 # INFO: Specific configurations for the experiments (copy and paste above).
