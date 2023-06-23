@@ -30,9 +30,10 @@
 #--------------------------------------------
 # INFO: Specific configurations for the experiments (copy and paste above).
 #--------------------------------------------
-# * RayTune:  --ntasks=1, --gpus-per-node=2/4, --exclusive
-# * DDP:      --ntasks=4, --gpus-per-node=4,   --exclusive
-# * Balanced: --ntasks=1, --gpus-per-node=2
+# * RayTune:   --ntasks=1, --gpus-per-node=2/4, --exclusive
+# * DDP-4GPUs: --ntasks=4, --gpus-per-node=4,   --exclusive
+# * DDP-1GPU:  --ntasks=1, --gpus-per-node=2/4,
+# * Balanced:  --ntasks=1, --gpus-per-node=2/4
 #--------------------------------------------
 
 
