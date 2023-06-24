@@ -154,6 +154,11 @@ class Trainer():
         distributed (bool, optional): Flag indicating distributed training. Defaults to False.
         lightly_train (bool, optional): Flag indicating if lightly supervised training is enabled. Defaults to False.
         ignore_ckpts (bool, optional): Flag indicating whether to ignore checkpoints. Defaults to False.
+        
+        local_rank (int): The local rank of the current process retrieved from the environment variables (torchrun).
+        global_rank (int): The global rank of the current process retrieved from the environment variables (torchrun).
+        epochs_run (int): The number of epochs run so far. Initialized as 0.
+        batch_size (int): The batch size of the training dataset.
 
     Methods:
         _load_snapshot(): Load a snapshot from the provided path.
@@ -200,6 +205,9 @@ class Trainer():
 
         # Move the model to the local rank device.
         self.model = model.to(self.local_rank)
+
+        # Retrieve the batch size and initialize current epoch.
+        self.batch_size = len(next(iter(self.dataloader['train']))[0])
         self.epochs_run = 0
 
         # Load snapshot if it exists and ignore_ckpts is False.
@@ -254,7 +262,6 @@ class Trainer():
         Returns:
             float: The validation loss.
         """
-        batch_size = len(next(iter(self.dataloader['val']))[0])
         running_loss = 0.
         self.model.eval()
         with torch.no_grad():
@@ -263,7 +270,7 @@ class Trainer():
                 targets = targets.to(self.local_rank)
                 output = self.model(source)
                 loss = self.loss_fn(output, targets)
-                running_loss += loss * batch_size
+                running_loss += loss * self.batch_size
         epoch_val_loss = running_loss / len(self.dataloader['val'].sampler)
         return epoch_val_loss
 
@@ -278,7 +285,6 @@ class Trainer():
         return loss.detach()
 
     def _run_epoch(self, epoch: int):
-        batch_size = len(next(iter(self.dataloader['train']))[0])
         running_loss = 0.
         t0 = time.time()
         if self.distributed:
@@ -287,16 +293,16 @@ class Trainer():
         if not self.lightly_train:
             for source, targets in self.dataloader['train']:
                 loss = self._run_batch(source, targets)
-                running_loss += loss * batch_size
+                running_loss += loss * self.batch_size
         else:
             for (source, _), targets, _ in self.dataloader['train']:
                 loss = self._run_batch(source, targets)
-                running_loss += loss * batch_size
+                running_loss += loss * self.batch_size
         epoch_train_loss = running_loss / len(self.dataloader['train'].sampler)
         epoch_val_loss = self._run_evaluation()
         print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Train loss: {epoch_train_loss:.4f} | "
               f"Steps: {len(self.dataloader['train'])} | Val loss: {epoch_val_loss:.4f} | "
-              f"Batch size: {batch_size} | lr: {self.optimizer.param_groups[0]['lr']} | "
+              f"Batch size: {self.batch_size} | lr: {self.optimizer.param_groups[0]['lr']} | "
               f"Duration: {(time.time()-t0):.2f}s")
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
