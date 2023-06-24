@@ -158,7 +158,7 @@ class Trainer():
     Methods:
         _load_snapshot(): Load a snapshot from the provided path.
         _save_snapshot(epoch: int): Save a snapshot of the model and optimizer state.
-        _run_evaluation(): Run evaluation on the validation dataset and calculate the validation loss.
+        _run_evaluation(): Run evaluation on the validation dataset and return the validation loss.
         _run_batch(source, targets): Run a single batch during training and compute the loss.
         _run_epoch(epoch: int): Run a single epoch of training and compute the training and validation losses.
         _save_to_csv(csv_file, data): Save data to a CSV file.
@@ -245,7 +245,15 @@ class Trainer():
         torch.save(snapshot, self.snapshot_path)
         print(f"Epoch {epoch} | Training snapshot saved at {self.snapshot_path}")
 
-    def _run_evaluation(self):
+    def _run_evaluation(
+        self
+    ) -> float:
+        """
+        Run evaluation on the validation dataset and calculate the validation loss.
+
+        Returns:
+            float: The validation loss.
+        """
         batch_size = len(next(iter(self.dataloader['val']))[0])
         running_loss = 0.
         self.model.eval()
