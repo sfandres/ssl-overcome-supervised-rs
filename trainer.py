@@ -156,7 +156,7 @@ class Trainer():
         ignore_ckpts (bool, optional): Flag indicating whether to ignore checkpoints. Defaults to False.
 
     Methods:
-        _load_snapshot(snapshot_path: str): Load a snapshot from the provided path.
+        _load_snapshot(): Load a snapshot from the provided path.
         _save_snapshot(epoch: int): Save a snapshot of the model and optimizer state.
         _run_evaluation(): Run evaluation on the validation dataset and calculate the validation loss.
         _run_batch(source, targets): Run a single batch during training and compute the loss.
@@ -206,19 +206,19 @@ class Trainer():
         # Load snapshot if it exists and ignore_ckpts is False.
         if os.path.exists(snapshot_path) and not ignore_ckpts:
             print("\nLoading snapshot...")
-            self._load_snapshot(snapshot_path)
+            self._load_snapshot()
 
         # Distributed training with DDP.
         if distributed:
             self.model = DDP(self.model, device_ids=[self.local_rank])
 
-    def _load_snapshot(self, snapshot_path: str):
+    def _load_snapshot(self):
         loc = f"cuda:{self.local_rank}"
-        snapshot = torch.load(snapshot_path, map_location=loc)
+        snapshot = torch.load(self.snapshot_path, map_location=loc)
         self.model.load_state_dict(snapshot["MODEL_STATE"])
         self.epochs_run = snapshot["EPOCHS_RUN"]
         self.optimizer.load_state_dict(snapshot['OPTIMIZER'])
-        print(f"Resuming training from snapshot at Epoch {self.epochs_run} <-- {snapshot_path.rsplit('/', 1)[-1]}")
+        print(f"Resuming training from snapshot at Epoch {self.epochs_run} <-- {self.snapshot_path.rsplit('/', 1)[-1]}")
 
     def _save_snapshot(self, epoch: int):
         if self.distributed:
