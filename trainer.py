@@ -164,9 +164,9 @@ class Trainer():
         _load_snapshot(): Load a snapshot from the provided path.
         _save_snapshot(epoch: int): Save a snapshot of the model and optimizer state.
         _run_evaluation(): Run evaluation on the validation dataset and return the validation loss.
-        _run_batch(source, targets): Run a single batch during training and compute the loss.
+        _run_batch(source: torch.Tensor, targets: torch.Tensor): Run a single batch during training and compute the loss.
         _run_epoch(epoch: int): Run a single epoch of training and compute the training and validation losses.
-        _save_to_csv(csv_file, data): Save data to a CSV file.
+        _save_to_csv(data: list): Save data to a CSV file.
         _change_from_lp_to_ft(lr: float): Change from LP to FT (transfer learning to fine-tuning).
         train(config: dict = None): Main training loop.
     """
@@ -265,26 +265,26 @@ class Trainer():
     # ===================================================
     def _run_evaluation(
         self
-    ) -> float:
+    ) -> torch.Tensor:
         """
         Run evaluation on the validation dataset.
 
         Returns:
-            float: The validation loss.
+            torch.Tensor: The validation loss.
         """
 
-        running_loss = 0.                                           # Initialize the running loss.
-        self.model.eval()                                           # Set the model to evaluation mode (e.g., Dropout and BatchNorm layers).
+        running_val_loss = 0.                                           # Initialize the running loss.
+        self.model.eval()                                               # Set the model to evaluation mode (e.g., Dropout and BatchNorm layers).
 
-        with torch.no_grad():                                       # Disable gradient computation (lighter computation).
+        with torch.no_grad():                                           # Disable gradient computation (lighter computation).
             for source, targets in self.dataloader['val']:
-                source = source.to(self.local_rank)                 # Move source and targets to the specified device.
+                source = source.to(self.local_rank)                     # Move source and targets to the specified device.
                 targets = targets.to(self.local_rank)
-                output = self.model(source)                         # Compute model output.
-                loss = self.loss_fn(output, targets)                # Compute loss.
-                running_loss += loss.detach() * self.batch_size     # Update the running loss (no gradient required).
+                output = self.model(source)                             # Compute model output.
+                loss = self.loss_fn(output, targets)                    # Compute loss.
+                running_val_loss += loss.detach() * self.batch_size     # Update the running loss (no gradient required).
 
-        epoch_val_loss = running_loss / len(self.dataloader['val'].sampler)     # Compute the average validation loss per sample.
+        epoch_val_loss = running_val_loss / len(self.dataloader['val'].sampler)     # Compute the average validation loss per sample.
 
         return epoch_val_loss
 
@@ -292,15 +292,15 @@ class Trainer():
     # ===================================================
     def _run_batch(
         self,
-        source: torch.tensor,
-        targets: torch.tensor
+        source: torch.Tensor,
+        targets: torch.Tensor
     ) -> torch.Tensor:
         """
         Run a single batch during training and compute the loss.
 
         Args:
-            source (torch.tensor): Input data for the batch.
-            targets (torch.tensor): Target data for the batch.
+            source (torch.Tensor): Input data for the batch.
+            targets (torch.Tensor): Target data for the batch.
 
         Returns:
             torch.Tensor: The computed loss.
@@ -319,32 +319,51 @@ class Trainer():
 
 
     # ===================================================
-    def _run_epoch(self, epoch: int):
-        running_loss = 0.
-        t0 = time.time()
+    def _run_epoch(
+        self,
+        epoch: int
+    ) -> tuple:
+        """
+        Run a single epoch of training and compute the training and validation losses.
+
+        Args:
+            epoch (int): Current epoch number.
+
+        Returns:
+            tuple: A tuple containing the training loss and validation loss.
+        """
+
+        running_train_loss = 0.
+        self.model.train()
+
         if self.distributed:
             self.dataloader['train'].sampler.set_epoch(epoch)
-        self.model.train()
+
+        t0 = time.time()
         if not self.lightly_train:
             for source, targets in self.dataloader['train']:
                 loss = self._run_batch(source, targets)
-                running_loss += loss * self.batch_size
+                running_train_loss += loss * self.batch_size
         else:
             for (source, _), targets, _ in self.dataloader['train']:
                 loss = self._run_batch(source, targets)
-                running_loss += loss * self.batch_size
-        epoch_train_loss = running_loss / len(self.dataloader['train'].sampler)
+                running_train_loss += loss * self.batch_size
+
+        epoch_train_loss = running_train_loss / len(self.dataloader['train'].sampler)
+
         epoch_val_loss = self._run_evaluation()
+
         print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Train loss: {epoch_train_loss:.4f} | "
               f"Steps: {len(self.dataloader['train'])} | Val loss: {epoch_val_loss:.4f} | "
               f"Batch size: {self.batch_size} | lr: {self.optimizer.param_groups[0]['lr']} | "
               f"Duration: {(time.time()-t0):.2f}s")
+
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
 
-    def _save_to_csv(self, csv_file, data):
+    def _save_to_csv(self, data: list):
         # Open the file in the append mode.
-        with open(csv_file, 'a', newline='') as file:
+        with open(self.csv_path, 'a', newline='') as file:
             csv_writer = csv.writer(file)
             csv_writer.writerow(data)
 
@@ -391,4 +410,4 @@ class Trainer():
                 data = [epoch_train_loss, epoch_val_loss] + list(acc_results.values())
 
                 data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
-                self._save_to_csv(self.csv_path, [f"{epoch:02d}"]+data_rounded)
+                self._save_to_csv([f"{epoch:02d}"]+data_rounded)
