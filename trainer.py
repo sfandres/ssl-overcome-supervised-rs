@@ -16,12 +16,36 @@ from sklearn.metrics import (
 NUM_DECIMALS = 3
 
 
+# ===================================
+# ACCURACY METRICS
+# ===================================
+
 def accuracy(
-        model: torch.nn.Module,
-        dataloader: DataLoader,
-        task_name: str,
-        device: int
-):
+    model: torch.nn.Module,
+    dataloader: DataLoader,
+    task_name: str,
+    device: int
+) -> dict:
+    """Calculates the accuracy of a model on a given dataset.
+
+    Args:
+        model (torch.nn.Module): The trained model to evaluate.
+        dataloader (DataLoader): The DataLoader object that provides the dataset.
+        task_name (str): The name of the downstream task being evaluated ('multiclass' or 'multilabel').
+        device (int): The device to use for computations.
+
+    Returns:
+        dict: A dictionary containing the accuracy of the model on the dataset.
+
+    This function takes a trained model, a data loader, the task name, and the device to perform
+    computations on. It calculates the accuracy of the model on the provided dataset according to
+    the downstream task and returns the result as a dictionary.
+
+    Example:
+        model = MyModel()
+        data_loader = DataLoader(dataset)
+        accuracy_dict = accuracy(model, data_loader, "multiclass", device=0)
+    """
 
     # Initialize the probabilities, predictions and labels lists.
     y_prob = []
@@ -110,6 +134,10 @@ def accuracy(
 
     return acc_dict
 
+
+# ===================================
+# CUSTOM TRAINER
+# ===================================
 
 class Trainer(tune.Trainable):
     def __init__(
