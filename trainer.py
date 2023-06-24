@@ -136,10 +136,36 @@ def accuracy(
 
 
 # ===================================
-# CUSTOM TRAINER
+# CUSTOM TRAINER  (tune.Trainable)
 # ===================================
 
-class Trainer(tune.Trainable):
+class Trainer():
+    """
+    Trainer class for training and evaluation.
+
+    Attributes:
+        model (torch.nn.Module): The model to be trained.
+        dataloader (DataLoader): Data loader object for training and validation data.
+        loss_fn (torch.nn.modules.loss): Loss function for training.
+        optimizer (torch.optim.Optimizer): Optimizer for updating model parameters.
+        save_every (int): Frequency of saving snapshots during training.
+        snapshot_path (str): Path to save the snapshots.
+        csv_path (str): Path to save the CSV file for tracking metrics.
+        distributed (bool, optional): Flag indicating distributed training. Defaults to False.
+        lightly_train (bool, optional): Flag indicating if lightly supervised training is enabled. Defaults to False.
+        ignore_ckpts (bool, optional): Flag indicating whether to ignore checkpoints. Defaults to False.
+
+    Methods:
+        _load_snapshot(snapshot_path: str): Load a snapshot from the provided path.
+        _save_snapshot(epoch: int): Save a snapshot of the model and optimizer state.
+        _run_evaluation(): Run evaluation on the validation dataset and calculate the validation loss.
+        _run_batch(source, targets): Run a single batch during training and compute the loss.
+        _run_epoch(epoch: int): Run a single epoch of training and compute the training and validation losses.
+        _save_to_csv(csv_file, data): Save data to a CSV file.
+        _change_from_lp_to_ft(lr: float): Change from LP to FT (transfer learning to fine-tuning).
+        train(config: dict = None): Main training loop.
+    """
+
     def __init__(
         self,
         model: torch.nn.Module,
@@ -153,24 +179,36 @@ class Trainer(tune.Trainable):
         lightly_train: bool = False,
         ignore_ckpts: bool = False
     ) -> None:
-        self.local_rank = int(os.environ["LOCAL_RANK"])
-        self.global_rank = int(os.environ["RANK"])
-        self.model = model.to(self.local_rank)
+
+        # Initialize Trainer object with the provided parameters.
+        super().__init__()
+
+        # Assign instance attributes.
+        self.model = model
         self.dataloader = dataloader
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.save_every = save_every
-        self.epochs_run = 0
         self.snapshot_path = snapshot_path
         self.csv_path = csv_path
         self.distributed = distributed
         self.lightly_train = lightly_train
         self.ignore_ckpts = ignore_ckpts
 
+        # Retrieve environment variables.
+        self.local_rank = int(os.environ["LOCAL_RANK"])
+        self.global_rank = int(os.environ["RANK"])
+
+        # Move the model to the local rank device.
+        self.model = model.to(self.local_rank)
+        self.epochs_run = 0
+
+        # Load snapshot if it exists and ignore_ckpts is False.
         if os.path.exists(snapshot_path) and not ignore_ckpts:
-            print("\nLoading snapshot")
+            print("\nLoading snapshot...")
             self._load_snapshot(snapshot_path)
 
+        # Distributed training with DDP.
         if distributed:
             self.model = DDP(self.model, device_ids=[self.local_rank])
 
@@ -181,6 +219,19 @@ class Trainer(tune.Trainable):
         self.epochs_run = snapshot["EPOCHS_RUN"]
         self.optimizer.load_state_dict(snapshot['OPTIMIZER'])
         print(f"Resuming training from snapshot at Epoch {self.epochs_run} <-- {snapshot_path.rsplit('/', 1)[-1]}")
+
+    def _save_snapshot(self, epoch: int):
+        if self.distributed:
+            model_state = self.model.module.state_dict()
+        else:
+            model_state = self.model.state_dict()
+        snapshot = {
+            "MODEL_STATE": model_state,
+            "EPOCHS_RUN": epoch + 1,                    # +1 so that the training resumes at the same point.
+            "OPTIMIZER": self.optimizer.state_dict()
+        }
+        torch.save(snapshot, self.snapshot_path)
+        print(f"Epoch {epoch} | Training snapshot saved at {self.snapshot_path}")
 
     def _run_evaluation(self):
         batch_size = len(next(iter(self.dataloader['val']))[0])
@@ -229,26 +280,13 @@ class Trainer(tune.Trainable):
               f"Duration: {(time.time()-t0):.2f}s")
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
-    def _save_snapshot(self, epoch: int):
-        if self.distributed:
-            model_state = self.model.module.state_dict()
-        else:
-            model_state = self.model.state_dict()
-        snapshot = {
-            "MODEL_STATE": model_state,
-            "EPOCHS_RUN": epoch + 1,                    # +1 so that the training resumes at the same point.
-            "OPTIMIZER": self.optimizer.state_dict()
-        }
-        torch.save(snapshot, self.snapshot_path)
-        print(f"Epoch {epoch} | Training snapshot saved at {self.snapshot_path}")
-
     def _save_to_csv(self, csv_file, data):
         # Open the file in the append mode.
         with open(csv_file, 'a', newline='') as file:
             csv_writer = csv.writer(file)
             csv_writer.writerow(data)
 
-    def _change_from_lp_to_ft(self, lr):
+    def _change_from_lp_to_ft(self, lr: float):
         for param in self.model.parameters():
             param.requires_grad = True
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=lr/10, momentum=0.9)   # TEN TIMES SMALLER
