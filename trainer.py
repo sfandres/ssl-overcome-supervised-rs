@@ -1,26 +1,34 @@
 import torch
+import os
+import time
+import csv
+import numpy as np
+
 from torch.utils.data import DataLoader
 from torch.nn.parallel import DistributedDataParallel as DDP
-import os
+from ray import tune
 from sklearn.metrics import (
     mean_squared_error,
     mean_absolute_error,
     f1_score
 )
-import time
-import csv
-import numpy as np
 
 NUM_DECIMALS = 3
 
 
-def accuracy(model, dataloader, task_name, device):
+def accuracy(
+        model: torch.nn.Module,
+        dataloader: DataLoader,
+        task_name: str,
+        device: int
+):
 
     # Initialize the probabilities, predictions and labels lists.
     y_prob = []
     y_pred = []
     y_true = []
 
+    # Calculate probabilities and predictions.
     model.eval()
     with torch.no_grad():
         for data in dataloader:
@@ -50,6 +58,7 @@ def accuracy(model, dataloader, task_name, device):
             y_pred.append(preds)
             y_true.append(labels)
 
+    # Accuracy metrics for multi-class downstream task.
     if task_name == 'multiclass':
 
         # Concatenate the lists into tensors (option 2).
@@ -76,6 +85,7 @@ def accuracy(model, dataloader, task_name, device):
             'f1_per_class': list(np.round(f1_per_class, NUM_DECIMALS))
         }
 
+    # Accuracy metrics for multi-label (abundances) downstream task.
     elif task_name == 'multilabel':
 
         # Concatenate the lists into tensors.
@@ -101,7 +111,7 @@ def accuracy(model, dataloader, task_name, device):
     return acc_dict
 
 
-class Trainer:
+class Trainer(tune.Trainable):
     def __init__(
         self,
         model: torch.nn.Module,
@@ -216,7 +226,14 @@ class Trainer:
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=lr/10, momentum=0.9)   # TEN TIMES SMALLER
         print('Changed from LP to FT w/ lr 10 times smaller')
 
-    def train(self, max_epochs: int, args, test: bool = False, save_csv: bool = True):
+    def train(self, config: dict = None):
+
+        args = config['args']
+        max_epochs = args.epochs
+        test = config['test']
+        save_csv = config['save_csv']
+
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config['lr'], momentum=0.9)
 
         for epoch in range(self.epochs_run, max_epochs):
 
