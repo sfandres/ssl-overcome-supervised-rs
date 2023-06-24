@@ -171,6 +171,7 @@ class Trainer():
         train(config: dict = None): Main training loop.
     """
 
+    # ===================================================
     def __init__(
         self,
         model: torch.nn.Module,
@@ -185,9 +186,9 @@ class Trainer():
         ignore_ckpts: bool = False
     ) -> None:
         """ Initialize Trainer object with the provided parameters. """
-        super().__init__()
 
         # Assign instance attributes.
+        super().__init__()
         self.model = model
         self.dataloader = dataloader
         self.loss_fn = loss_fn
@@ -218,18 +219,24 @@ class Trainer():
         if distributed:
             self.model = DDP(self.model, device_ids=[self.local_rank])
 
+
+    # ===================================================
     def _load_snapshot(
         self
     ) -> None:
         """ Load a snapshot from the provided path. """
-        print("\nLoading snapshot...")
-        loc = f"cuda:{self.local_rank}"
-        snapshot = torch.load(self.snapshot_path, map_location=loc)
-        self.model.load_state_dict(snapshot["MODEL_STATE"])
-        self.epochs_run = snapshot["EPOCHS_RUN"]
-        self.optimizer.load_state_dict(snapshot['OPTIMIZER'])
+
+        print('\nLoading snapshot...')
+        loc = f'cuda:{self.local_rank}'                         # Specify the device location for loading the snapshot.
+        snapshot = torch.load(self.snapshot_path,               # Load the snapshot from the specified path.
+                              map_location=loc)
+        self.model.load_state_dict(snapshot['MODEL_STATE'])     # Load the model's state dictionary from the snapshot.
+        self.epochs_run = snapshot['EPOCHS_RUN']                # Set the number of epochs run from the snapshot.
+        self.optimizer.load_state_dict(snapshot['OPTIMIZER'])   # Load the optimizer's state dictionary from the snapshot.
         print(f"Resuming training from snapshot at Epoch {self.epochs_run} <-- {self.snapshot_path.rsplit('/', 1)[-1]}")
 
+
+    # ===================================================
     def _save_snapshot(
         self,
         epoch: int
@@ -240,50 +247,78 @@ class Trainer():
         Args:
             epoch (int): Current epoch number.
         """
-        print("Saving snapshot...")
-        if self.distributed:
-            model_state = self.model.module.state_dict()
-        else:
-            model_state = self.model.state_dict()
-        snapshot = {
-            "MODEL_STATE": model_state,
-            "EPOCHS_RUN": epoch + 1,                    # +1 so that the training resumes at the same point.
-            "OPTIMIZER": self.optimizer.state_dict()
-        }
-        torch.save(snapshot, self.snapshot_path)
-        print(f"Epoch {epoch} | Training snapshot saved at {self.snapshot_path}")
 
+        print('Saving snapshot...')
+        if self.distributed:
+            model_state = self.model.module.state_dict()    # Get the state dictionary of the model (distributed training).
+        else:
+            model_state = self.model.state_dict()           # Get the state dictionary of the model (non-distributed training).
+        snapshot = {
+            'MODEL_STATE': model_state,                     # Save the model state dictionary.
+            'EPOCHS_RUN': epoch + 1,                        # Save the number of epochs run (+1 for resuming at the same point).
+            'OPTIMIZER': self.optimizer.state_dict()        # Save the optimizer state dictionary.
+        }
+        torch.save(snapshot, self.snapshot_path)            # Save the snapshot to the specified path.
+        print(f"Epoch {epoch} | Training snapshot saved at {self.snapshot_path.rsplit('/', 1)[-1]}")
+
+
+    # ===================================================
     def _run_evaluation(
         self
     ) -> float:
         """
-        Run evaluation on the validation dataset and calculate the validation loss.
+        Run evaluation on the validation dataset.
 
         Returns:
             float: The validation loss.
         """
-        running_loss = 0.
-        self.model.eval()
-        with torch.no_grad():
+
+        running_loss = 0.                                           # Initialize the running loss.
+        self.model.eval()                                           # Set the model to evaluation mode (e.g., Dropout and BatchNorm layers).
+
+        with torch.no_grad():                                       # Disable gradient computation (lighter computation).
             for source, targets in self.dataloader['val']:
-                source = source.to(self.local_rank)
+                source = source.to(self.local_rank)                 # Move source and targets to the specified device.
                 targets = targets.to(self.local_rank)
-                output = self.model(source)
-                loss = self.loss_fn(output, targets)
-                running_loss += loss * self.batch_size
-        epoch_val_loss = running_loss / len(self.dataloader['val'].sampler)
+                output = self.model(source)                         # Compute model output.
+                loss = self.loss_fn(output, targets)                # Compute loss.
+                running_loss += loss.detach() * self.batch_size     # Update the running loss (no gradient required).
+
+        epoch_val_loss = running_loss / len(self.dataloader['val'].sampler)     # Compute the average validation loss per sample.
+
         return epoch_val_loss
 
-    def _run_batch(self, source, targets):
-        source = source.to(self.local_rank)
-        targets = targets.to(self.local_rank)
-        self.optimizer.zero_grad()
-        output = self.model(source)
-        loss = self.loss_fn(output, targets)
-        loss.backward()
-        self.optimizer.step()
-        return loss.detach()
 
+    # ===================================================
+    def _run_batch(
+        self,
+        source: torch.tensor,
+        targets: torch.tensor
+    ) -> torch.Tensor:
+        """
+        Run a single batch during training and compute the loss.
+
+        Args:
+            source (torch.tensor): Input data for the batch.
+            targets (torch.tensor): Target data for the batch.
+
+        Returns:
+            torch.Tensor: The computed loss.
+        """
+
+        source = source.to(self.local_rank)         # Move the source and targets tensors to the device.
+        targets = targets.to(self.local_rank)
+
+        self.optimizer.zero_grad()                  # Clear optimizer gradients.
+        output = self.model(source)                 # Compute model output.
+        loss = self.loss_fn(output, targets)        # Compute loss.
+        loss.backward()                             # Compute gradients (backpropagation).
+        self.optimizer.step()                       # Update model parameters.
+
+        return loss.detach()                        # Detach loss from computation graph (no gradient required).
+
+
+    # ===================================================
     def _run_epoch(self, epoch: int):
         running_loss = 0.
         t0 = time.time()
@@ -306,17 +341,20 @@ class Trainer():
               f"Duration: {(time.time()-t0):.2f}s")
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
+
     def _save_to_csv(self, csv_file, data):
         # Open the file in the append mode.
         with open(csv_file, 'a', newline='') as file:
             csv_writer = csv.writer(file)
             csv_writer.writerow(data)
 
+
     def _change_from_lp_to_ft(self, lr: float):
         for param in self.model.parameters():
             param.requires_grad = True
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=lr/10, momentum=0.9)   # TEN TIMES SMALLER
         print('Changed from LP to FT w/ lr 10 times smaller')
+
 
     def train(self, config: dict = None):
 
