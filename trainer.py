@@ -179,8 +179,7 @@ class Trainer():
         lightly_train: bool = False,
         ignore_ckpts: bool = False
     ) -> None:
-
-        # Initialize Trainer object with the provided parameters.
+        """ Initialize Trainer object with the provided parameters. """
         super().__init__()
 
         # Assign instance attributes.
@@ -205,14 +204,17 @@ class Trainer():
 
         # Load snapshot if it exists and ignore_ckpts is False.
         if os.path.exists(snapshot_path) and not ignore_ckpts:
-            print("\nLoading snapshot...")
             self._load_snapshot()
 
         # Distributed training with DDP.
         if distributed:
             self.model = DDP(self.model, device_ids=[self.local_rank])
 
-    def _load_snapshot(self):
+    def _load_snapshot(
+        self
+    ) -> None:
+        """ Load a snapshot from the provided path. """
+        print("\nLoading snapshot...")
         loc = f"cuda:{self.local_rank}"
         snapshot = torch.load(self.snapshot_path, map_location=loc)
         self.model.load_state_dict(snapshot["MODEL_STATE"])
@@ -220,7 +222,17 @@ class Trainer():
         self.optimizer.load_state_dict(snapshot['OPTIMIZER'])
         print(f"Resuming training from snapshot at Epoch {self.epochs_run} <-- {self.snapshot_path.rsplit('/', 1)[-1]}")
 
-    def _save_snapshot(self, epoch: int):
+    def _save_snapshot(
+        self,
+        epoch: int
+    ) -> None:
+        """
+        Save a snapshot of the model and optimizer state.
+
+        Args:
+            epoch (int): Current epoch number.
+        """
+        print("Saving snapshot...")
         if self.distributed:
             model_state = self.model.module.state_dict()
         else:
@@ -299,7 +311,7 @@ class Trainer():
         test = config['test']
         save_csv = config['save_csv']
 
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config['lr'], momentum=0.9)
+        # self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config['lr'], momentum=0.9)
 
         for epoch in range(self.epochs_run, max_epochs):
 
