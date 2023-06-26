@@ -651,7 +651,10 @@ def main(args):
         print(f'\nLoss: {loss_fn}')
 
     # Configure the optimizer.
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9, weight_decay=0)
+    optimizer = torch.optim.SGD(model.parameters(),
+                                lr=args.learning_rate,
+                                momentum=0.9,
+                                weight_decay=0)
     if args.verbose:
         print(f'Optimizer:\n{optimizer}')
 
@@ -685,7 +688,7 @@ def main(args):
     
     else:
 
-        print(f'\nSetting a new configuration using tune.grid_search')
+        print(f'\nSetting a new configuration using tune.grid_search\n')
 
         config = {
             'args': args,
@@ -693,9 +696,9 @@ def main(args):
             'save_csv': True,
             'input_size': input_size,
             'dataloader': dataloader,
-            'bsz': args.batch_size,
-            'paths': paths,
-            'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1])
+            'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
+            'momentum': 0.9,
+            'weight_decay': 0
         }
 
         # Ray tune configuration.
