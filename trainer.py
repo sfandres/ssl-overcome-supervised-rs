@@ -466,8 +466,10 @@ class Trainer():
                     print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')         # Print the accuracy results.
 
             if self.ray_tune:
-                tune.report(loss=epoch_train_loss,                                  # Ray Tune reporting stage.
-                            f1_macro=acc_results['f1_macro'])
+                tune.report(
+                    loss=epoch_train_loss,                                          # Ray Tune reporting stage.
+                    f1_macro=round(acc_results['f1_macro'], NUM_DECIMALS)
+                )
 
             if config['save_csv'] and not self.ray_tune:
 
