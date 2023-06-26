@@ -427,8 +427,8 @@ class Trainer():
         self.optimizer.param_groups[0]['lr'] = config['lr']
         self.optimizer.param_groups[0]['momentum'] = config['momentum']
         self.optimizer.param_groups[0]['weight_decay'] = config['weight_decay']
+        print(f'New optimizer parameters:\n{self.optimizer}')
         print('Configuration completed')
-
 
     # ===================================================
     def train(
