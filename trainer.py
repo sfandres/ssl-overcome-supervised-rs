@@ -153,6 +153,7 @@ class Trainer():
         csv_path (str): Path to save the CSV file for tracking metrics.
         distributed (bool, optional): Flag indicating distributed training. Defaults to False.
         lightly_train (bool, optional): Flag indicating if lightly supervised training is enabled. Defaults to False.
+        ray_tune (bool, optional): Flag indicating if the Ray Tune tool is enabled. Defaults to False.
         ignore_ckpts (bool, optional): Flag indicating whether to ignore checkpoints. Defaults to False.
         
         local_rank (int): The local rank of the current process retrieved from the environment variables (torchrun).
@@ -183,6 +184,7 @@ class Trainer():
         csv_path: str,
         distributed: bool = False,
         lightly_train: bool = False,
+        ray_tune: bool = False,
         ignore_ckpts: bool = False
     ) -> None:
         """ Initialize Trainer object with the provided parameters. """
@@ -198,6 +200,7 @@ class Trainer():
         self.csv_path = csv_path
         self.distributed = distributed
         self.lightly_train = lightly_train
+        self.ray_tune = ray_tune
         self.ignore_ckpts = ignore_ckpts
 
         # Retrieve environment variables.
@@ -212,7 +215,7 @@ class Trainer():
         self.epochs_run = 0
 
         # Load snapshot if it exists and ignore_ckpts is False.
-        if os.path.exists(snapshot_path) and not ignore_ckpts:
+        if os.path.exists(snapshot_path) and not ignore_ckpts and not ray_tune:
             self._load_snapshot()
 
         # Distributed training with DDP.
@@ -360,6 +363,9 @@ class Trainer():
               f"Batch size: {self.batch_size} | lr: {self.optimizer.param_groups[0]['lr']} | "
               f"Duration: {(time.time()-t0):.2f}s")
 
+        if self.ray_tune:
+            tune.report(loss=epoch_train_loss.to('cpu'))                # Ray Tune reporting stage .cpu().
+
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
 
@@ -429,8 +435,8 @@ class Trainer():
             print()
             epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)               # Run the epoch and get the train and validation loss.
 
-            if ((self.global_rank == 0 and not self.ignore_ckpts) and
-                (epoch % self.save_every == 0 or epoch == args.epochs - 1)):
+            if ((self.global_rank == 0 and not self.ignore_ckpts and not self.ray_tune)
+                and (epoch % self.save_every == 0 or epoch == args.epochs - 1)):
                 self._save_snapshot(epoch)                                          # Save a snapshot of the model.
 
             if config['test']:                                                      # Compute accuracy on the test dataset.
@@ -441,7 +447,7 @@ class Trainer():
                 for metric in acc_results:
                     print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')         # Print the accuracy results.
 
-            if config['save_csv']:
+            if config['save_csv'] and not self.ray_tune:
 
                 if epoch == 0:
                     header = ['epoch', 'train_loss', 'val_loss'] + list(acc_results.keys())
