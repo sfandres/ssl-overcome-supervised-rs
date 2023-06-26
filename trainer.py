@@ -364,7 +364,7 @@ class Trainer():
               f"Duration: {(time.time()-t0):.2f}s")
 
         if self.ray_tune:
-            tune.report(loss=epoch_train_loss.to('cpu'))                # Ray Tune reporting stage .cpu().
+            tune.report(loss=float(epoch_train_loss.cpu()))             # Ray Tune reporting stage.
 
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
