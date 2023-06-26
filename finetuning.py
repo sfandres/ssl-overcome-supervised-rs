@@ -685,7 +685,7 @@ def main(args):
         }
 
         trainer.train(config) 
-    
+
     else:
 
         print(f'\nSetting a new configuration using tune.grid_search\n')
