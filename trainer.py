@@ -167,7 +167,7 @@ class Trainer():
         _run_batch(source: torch.Tensor, targets: torch.Tensor): Run a single batch during training and compute the loss.
         _run_epoch(epoch: int): Run a single epoch of training and compute the training and validation losses.
         _save_to_csv(data: list): Save data to a CSV file.
-        _change_from_lp_to_ft(lr: float): Change from LP to FT (transfer learning to fine-tuning).
+        _adjust_lr_weights_for_ft(lr: float): Change from LP to FT (transfer learning to fine-tuning).
         train(config: dict = None): Main training loop.
     """
 
@@ -333,25 +333,27 @@ class Trainer():
             tuple: A tuple containing the training loss and validation loss.
         """
 
-        running_train_loss = 0.
-        self.model.train()
+        running_train_loss = 0.                                         # Track the running training loss.
+        self.model.train()                                              # Set the model to training mode.
 
         if self.distributed:
-            self.dataloader['train'].sampler.set_epoch(epoch)
+            self.dataloader['train'].sampler.set_epoch(epoch)           # Set the epoch for distributed training (if enabled).
 
-        t0 = time.time()
-        if not self.lightly_train:
-            for source, targets in self.dataloader['train']:
-                loss = self._run_batch(source, targets)
-                running_train_loss += loss * self.batch_size
+        t0 = time.time()                                                # Record the starting time of the epoch.
+
+        if not self.lightly_train:                                      # Check if lightly supervised training is disabled.
+            for source, targets in self.dataloader['train']:            # Iterate over the training data batches.
+                loss = self._run_batch(source, targets)                 # Run a single training batch and compute the loss.
+                running_train_loss += loss * self.batch_size            # Accumulate the training loss.
         else:
-            for (source, _), targets, _ in self.dataloader['train']:
+            for (source, _), targets, _ in self.dataloader['train']:    # Iterate over the lightly supervised training data batches.
                 loss = self._run_batch(source, targets)
                 running_train_loss += loss * self.batch_size
 
-        epoch_train_loss = running_train_loss / len(self.dataloader['train'].sampler)
+        epoch_train_loss = (running_train_loss /
+                            len(self.dataloader['train'].sampler))      # Compute the average training loss for the epoch.
 
-        epoch_val_loss = self._run_evaluation()
+        epoch_val_loss = self._run_evaluation()                         # Run the evaluation for the epoch.
 
         print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Train loss: {epoch_train_loss:.4f} | "
               f"Steps: {len(self.dataloader['train'])} | Val loss: {epoch_val_loss:.4f} | "
@@ -361,21 +363,51 @@ class Trainer():
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
 
-    def _save_to_csv(self, data: list):
-        # Open the file in the append mode.
-        with open(self.csv_path, 'a', newline='') as file:
-            csv_writer = csv.writer(file)
-            csv_writer.writerow(data)
+    # ===================================================
+    def _save_to_csv(
+        self,
+        data: list
+    ) -> None:
+        """
+        Saves the given data to a CSV file.
+
+        Args:
+            data (list): Data to be saved in the CSV file.
+        """
+
+        with open(self.csv_path, 'a', newline='') as file:      # Open the CSV file in append mode.
+            csv_writer = csv.writer(file)                       # Create a CSV writer object.
+            csv_writer.writerow(data)                           # Write the data as a row in the CSV file.
 
 
-    def _change_from_lp_to_ft(self, lr: float):
-        for param in self.model.parameters():
-            param.requires_grad = True
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=lr/10, momentum=0.9)   # TEN TIMES SMALLER
-        print('Changed from LP to FT w/ lr 10 times smaller')
+    # ===================================================
+    def _adjust_lr_weights_for_ft(
+        self,
+        lr: float
+    ) -> None:
+        """
+        Changes to FT, which means a smaller learning rate and the weights being unfrozen (when LP+FT).
+
+        Args:
+            lr (float): Learning rate used so far for the optimizer.
+        """
+
+        print('Unfreezing the weights and updating the learning rate...')
+        for param in self.model.parameters():               # Iterate over the model parameters.
+            param.requires_grad = True                      # Enable gradient computation for the parameters.
+        self.optimizer = torch.optim.SGD(                   # Create a new optimizer with a smaller learning rate.
+            self.model.parameters(),
+            lr=lr/10,
+            momentum=0.9
+        )
+        print('Changed from LP to FT w/ a smaller learning rate and unfrozen weights')
 
 
-    def train(self, config: dict = None):
+    # ===================================================
+    def train(
+        self,
+        config: dict = None
+    ) -> None:
 
         args = config['args']
         max_epochs = args.epochs
@@ -387,7 +419,7 @@ class Trainer():
         for epoch in range(self.epochs_run, max_epochs):
 
             if epoch == max_epochs // 2 and args.transfer_learning == 'LP+FT':
-                self._change_from_lp_to_ft(args.learning_rate)
+                self._adjust_lr_weights_for_ft(args.learning_rate)
 
             print()
             epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)
