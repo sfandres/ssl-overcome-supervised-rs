@@ -658,8 +658,10 @@ def main(args):
     if args.verbose:
         print(f'Optimizer:\n{optimizer}')
 
-    # Training.
+    # Build general name.
     general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_lr={args.learning_rate}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
+
+    # Training.
     trainer = Trainer(
         model,
         dataloader,
@@ -680,7 +682,7 @@ def main(args):
 
         config = {
             'args': args,
-            'test': True,
+            'accuracy': 'test',
             'save_csv': True
         }
 
@@ -692,13 +694,11 @@ def main(args):
 
         config = {
             'args': args,
-            'test': True,
-            'save_csv': True,
-            'input_size': input_size,
-            'dataloader': dataloader,
+            'accuracy': 'val',
+            'save_csv': False,
             'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-            'momentum': 0.9,
-            'weight_decay': 0
+            'momentum': tune.grid_search([0.99, 0.9]),
+            'weight_decay': tune.grid_search([0, 1e-4, 1e-5])
         }
 
         # Ray tune configuration.
@@ -731,7 +731,8 @@ def main(args):
         df = result.results_df
         df = df.sort_values(by=['loss'], ascending=True)
 
-        # Create the name of the file and write the results to a CSV file.
+        # Overwrite the name of the file (wo/ lr) and write the results to a CSV file.
+        general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
         filename = f'ray_tune_{general_name}.csv'
         df.to_csv(os.path.join(paths['ray_tune'], filename))
 
