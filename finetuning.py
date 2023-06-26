@@ -9,10 +9,8 @@ from utils.simsiam import SimSiam
 from utils.simclr import SimCLR
 from utils.mocov2 import MoCov2
 from utils.barlowtwins import BarlowTwins
-import pandas as pd
 from utils.graphs import simple_bar_plot
-import time
-import matplotlib.pyplot as plt
+from trainer import Trainer
 
 # Arguments and paths.
 import os
@@ -31,16 +29,19 @@ from torchvision.models import (
     ResNet50_Weights
 )
 
-# PyTorch TensorBoard support
+# PyTorch TensorBoard support.
 from torch.utils.tensorboard import SummaryWriter
 import csv
 
 # Data management.
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # Performance metrics.
 from sklearn.metrics import f1_score
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+import time
 
 # PyTorch DDP.
 import torch.multiprocessing as mp
@@ -48,7 +49,11 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
-from trainer import Trainer
+# Hyperparameter tunning.
+from functools import partial
+from ray import tune
+from ray.tune import CLIReporter
+from ray.tune.schedulers import ASHAScheduler
 
 AVAIL_SSL_MODELS = ['BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', 'SimSiam']
 MODEL_CHOICES = ['Random', 'Supervised'] + AVAIL_SSL_MODELS
@@ -143,14 +148,29 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--distributed', '-d', action='store_true',
                         help='enables distributed training.')
 
+    # Specific for Ray Tune.
+    parser.add_argument('--ray_tune', '-rt', type=str,
+                        choices=['gridsearch', 'loguniform'],
+                        help='enables Ray Tune (tunes everything or only lr).')
+
+    parser.add_argument('--grace_period', '-rtgp', type=int,
+                        help='only stop trials at least this old in time.')
+
+    parser.add_argument('--num_samples_trials', '-rtnst', type=int,
+                        help='number of samples to tune the hyperparameters.')
+
+    parser.add_argument('--gpus_per_trial', '-rtgpt', type=int,
+                        help='number of gpus to be used per trial.')
+
     return parser.parse_args(sys.argv[1:])
 
 
-def ddp_setup():
+def ddp_setup() -> None:
     """
     Initializes the default distributed process group,
     and this will also initialize the distributed package.
     """
+
     init_process_group(backend="nccl")
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
 
@@ -168,7 +188,6 @@ def transform_abundances(
     max_val, max_idx = torch.max(abundances, dim=0)
 
     return max_idx.item()
-
 
 
 def main(args):
@@ -346,8 +365,8 @@ def main(args):
         num_workers=args.num_workers,
         pin_memory=True,
         drop_last=True,
-        worker_init_fn=seed_worker,
-        generator=g
+        worker_init_fn=seed_worker if not args.ray_tune else None,
+        generator=g if not args.ray_tune else None
     ) for x in splits[1:]}
 
     # Dataloader for training.
@@ -359,8 +378,8 @@ def main(args):
         num_workers=args.num_workers,
         pin_memory=True,
         drop_last=True,
-        worker_init_fn=seed_worker,
-        generator=g
+        worker_init_fn=seed_worker if not args.ray_tune else None,
+        generator=g if not args.ray_tune else None
     )
 
     if args.verbose:
@@ -636,16 +655,84 @@ def main(args):
     # Training.
     general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_lr={args.learning_rate}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
     trainer = Trainer(
-        model, dataloader, loss_fn,
+        model,
+        dataloader,
+        loss_fn,
         optimizer,
         save_every=args.save_every,
         snapshot_path=os.path.join(paths['snapshots'], f'snapshot_{general_name}.pt'),
         csv_path=os.path.join(paths['csv_results'], f'{general_name}.csv'),
         distributed=args.distributed,
         lightly_train=False,
+        ray_tune = args.ray_tune,
         ignore_ckpts=False
     )
-    trainer.train(args.epochs, args, test=True, save_csv=True)
+
+    if not args.ray_tune:
+
+        print(f'\nNormal training')
+
+        config = {
+            'args': args,
+            'test': True,
+            'save_csv': True
+        }
+
+        trainer.train(config) 
+    
+    else:
+
+        print(f'\nSetting a new configuration using tune.grid_search')
+
+        config = {
+            'args': args,
+            'test': True,
+            'save_csv': True,
+            'input_size': input_size,
+            'dataloader': dataloader,
+            'bsz': args.batch_size,
+            'paths': paths,
+            'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1])
+        }
+
+        # Ray tune configuration.
+        scheduler = ASHAScheduler(
+            metric='loss',
+            mode='min',
+            max_t=args.epochs,                  # max_num_epochs
+            grace_period=args.grace_period
+        )
+
+        reporter = CLIReporter(
+            # ``parameter_columns=["l1", "l2", "lr", "batch_size"]``,
+            # metric_columns=["loss", "accuracy", "training_iteration"])
+            metric_columns=['loss', 'training_iteration']
+        )
+
+        result = tune.run(
+            partial(trainer.train),
+            resources_per_trial={'cpu': args.num_workers, 'gpu': args.gpus_per_trial},
+            name=args.model_name,
+            config=config,
+            num_samples=args.num_samples_trials,
+            local_dir=paths['ray_tune'],
+            scheduler=scheduler,
+            verbose=1,
+            progress_reporter=reporter
+        )
+
+        # Sorted dataframe for the last reported results of all of the trials.
+        df = result.results_df
+        df = df.sort_values(by=['loss'], ascending=True)
+
+        # Create the name of the file and write the results to a CSV file.
+        filename = f'ray_tune_{general_name}.csv'
+        df.to_csv(os.path.join(paths['ray_tune'], filename))
+
+        # Print.
+        best_trial = result.get_best_trial("loss", "min", "last")
+        print(f"Best trial config: {best_trial.config}")
+        print(f"Best trial final val loss: {best_trial.last_result['loss']}")
 
     return 0
 
