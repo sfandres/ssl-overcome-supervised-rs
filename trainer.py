@@ -443,6 +443,7 @@ class Trainer():
         """
 
         args = config['args']                                                       # Retrieve the arguments from the configuration.
+        print(f"Dataloader to compute accuracy: {config['accuracy']}")
 
         if args.ray_tune:
             self._ray_tune_setup(config)                                            # Adjust optimizer according to the Ray Tune configuration.
@@ -459,9 +460,9 @@ class Trainer():
                 and (epoch % self.save_every == 0 or epoch == args.epochs - 1)):
                 self._save_snapshot(epoch)                                          # Save a snapshot of the model.
 
-            if config['test']:                                                      # Compute accuracy on the test dataset.
+            if config['accuracy']:                                                  # Compute accuracy on the target dataloader.
                 acc_results = accuracy(self.model,
-                                       self.dataloader['test'],
+                                       self.dataloader[config['accuracy']],
                                        args.task_name,
                                        self.local_rank)
                 for metric in acc_results:
