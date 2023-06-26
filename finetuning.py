@@ -697,22 +697,27 @@ def main(args):
             'accuracy': 'val',
             'save_csv': False,
             'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-            'momentum': tune.grid_search([0.99, 0.9]),
-            'weight_decay': tune.grid_search([0, 1e-4, 1e-5])
+            'momentum': 0.9,
+            # 'momentum': tune.grid_search([0.99, 0.9]),
+            'weight_decay': 0,
+            # 'weight_decay': tune.grid_search([0, 1e-4, 1e-5])
         }
+
+        # tune_metric = ('loss', 'min', True)
+        tune_metric = ('f1_macro', 'max', False)
 
         # Ray tune configuration.
         scheduler = ASHAScheduler(
-            metric='loss',
-            mode='min',
+            metric=tune_metric[0],
+            mode=tune_metric[1],
             max_t=args.epochs,                  # max_num_epochs
             grace_period=args.grace_period
         )
 
         reporter = CLIReporter(
-            # ``parameter_columns=["l1", "l2", "lr", "batch_size"]``,
-            # metric_columns=["loss", "accuracy", "training_iteration"])
-            metric_columns=['loss', 'training_iteration']
+            # ``parameter_columns=['l1', 'l2', 'lr', 'batch_size']``,
+            # metric_columns=['loss', 'accuracy', 'training_iteration'])
+            metric_columns=['loss', 'f1_macro', 'training_iteration']
         )
 
         result = tune.run(
@@ -729,7 +734,7 @@ def main(args):
 
         # Sorted dataframe for the last reported results of all of the trials.
         df = result.results_df
-        df = df.sort_values(by=['loss'], ascending=True)
+        df = df.sort_values(by=tune_metric[0], ascending=tune_metric[2])
 
         # Overwrite the name of the file (wo/ lr) and write the results to a CSV file.
         general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
@@ -737,9 +742,10 @@ def main(args):
         df.to_csv(os.path.join(paths['ray_tune'], filename))
 
         # Print.
-        best_trial = result.get_best_trial("loss", "min", "last")
-        print(f"Best trial config: {best_trial.config}")
-        print(f"Best trial final val loss: {best_trial.last_result['loss']}")
+        best_trial = result.get_best_trial('loss', 'min', 'last')
+        print(f"\nBest trial config:\n{best_trial.config}")
+        print(f"\nBest trial final val loss: {best_trial.last_result['loss']}")
+        print(f"Best trial final {tune_metric[0]} accuracy: {best_trial.last_result[tune_metric[0]]}")
 
     return 0
 
