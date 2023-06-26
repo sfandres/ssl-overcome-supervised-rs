@@ -145,14 +145,17 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--torch_compile', '-tc', action='store_true',
                         help='PyTorch 2.0 compile enabled.')
 
-    parser.add_argument('--distributed', '-d', action='store_true',
-                        help='enables distributed training.')
+    # Create a mutually exclusive group.
+    group = parser.add_mutually_exclusive_group()
 
-    # Specific for Ray Tune.
-    parser.add_argument('--ray_tune', '-rt', type=str,
+    group.add_argument('--distributed', '-d', action='store_true',
+                       help='enables distributed training.')
+
+    group.add_argument('--ray_tune', '-rt', type=str,
                         choices=['gridsearch', 'loguniform'],
                         help='enables Ray Tune (tunes everything or only lr).')
 
+    # Specific for Ray Tune.
     parser.add_argument('--grace_period', '-rtgp', type=int,
                         help='only stop trials at least this old in time.')
 
@@ -670,7 +673,7 @@ def main(args):
 
     if not args.ray_tune:
 
-        print(f'\nNormal training')
+        print(f'\nNormal training (DDP set to {args.distributed})')
 
         config = {
             'args': args,
