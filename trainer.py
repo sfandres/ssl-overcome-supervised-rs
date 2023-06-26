@@ -392,7 +392,7 @@ class Trainer():
             lr (float): Learning rate used so far for the optimizer.
         """
 
-        print('Unfreezing the weights and updating the learning rate...')
+        print('\nUnfreezing the weights and updating the learning rate...')
         for param in self.model.parameters():               # Iterate over the model parameters.
             param.requires_grad = True                      # Enable gradient computation for the parameters.
         self.optimizer = torch.optim.SGD(                   # Create a new optimizer with a smaller learning rate.
@@ -408,38 +408,50 @@ class Trainer():
         self,
         config: dict = None
     ) -> None:
+        """
+        Trains the model based on the provided configuration.
 
-        args = config['args']
-        max_epochs = args.epochs
-        test = config['test']
-        save_csv = config['save_csv']
+        Args:
+            config (dict, optional): Configuration for training. Defaults to None.
+        """
 
-        # self.optimizer = torch.optim.SGD(self.model.parameters(), lr=config['lr'], momentum=0.9)
+        args = config['args']                                                       # Retrieve the arguments from the configuration.
 
-        for epoch in range(self.epochs_run, max_epochs):
+        # self.optimizer = torch.optim.SGD(self.model.parameters(),
+        #                                  lr=config['lr'],
+        #                                  momentum=0.9)
 
-            if epoch == max_epochs // 2 and args.transfer_learning == 'LP+FT':
-                self._adjust_lr_weights_for_ft(args.learning_rate)
+        for epoch in range(self.epochs_run, args.epochs):                           # Iterate over the epochs.
+
+            if epoch == args.epochs // 2 and args.transfer_learning == 'LP+FT':
+                self._adjust_lr_weights_for_ft(args.learning_rate)                  # Adjust learning rate and weights for fine-tuning.
 
             print()
-            epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)
-            if self.global_rank == 0 and not self.ignore_ckpts and (epoch % self.save_every == 0 or epoch == max_epochs - 1):
-                self._save_snapshot(epoch)
+            epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)               # Run the epoch and get the train and validation loss.
 
-            if test:
-                acc_results = accuracy(self.model, self.dataloader['test'], args.task_name, self.local_rank)
+            if ((self.global_rank == 0 and not self.ignore_ckpts) and
+                (epoch % self.save_every == 0 or epoch == args.epochs - 1)):
+                self._save_snapshot(epoch)                                          # Save a snapshot of the model.
+
+            if config['test']:                                                      # Compute accuracy on the test dataset.
+                acc_results = accuracy(self.model,
+                                       self.dataloader['test'],
+                                       args.task_name,
+                                       self.local_rank)
                 for metric in acc_results:
-                    print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')
+                    print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')         # Print the accuracy results.
 
-            if save_csv:
+            if config['save_csv']:
 
                 if epoch == 0:
                     header = ['epoch', 'train_loss', 'val_loss'] + list(acc_results.keys())
                     with open(self.csv_path, 'w', newline='') as file:
                         csv_writer = csv.writer(file)
-                        csv_writer.writerow(header)
+                        csv_writer.writerow(header)                                 # Write the header row in the CSV file (if first epoch).
 
                 data = [epoch_train_loss, epoch_val_loss] + list(acc_results.values())
 
-                data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
-                self._save_to_csv([f"{epoch:02d}"]+data_rounded)
+                data_rounded = [format(elem, f'.{NUM_DECIMALS}f')
+                                if not isinstance(elem, list) else elem
+                                for elem in data]
+                self._save_to_csv([f"{epoch:02d}"]+data_rounded)                    # Save epoch, train loss, val loss, and other metrics to CSV.
