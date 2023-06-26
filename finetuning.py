@@ -651,7 +651,7 @@ def main(args):
         print(f'\nLoss: {loss_fn}')
 
     # Configure the optimizer.
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9, weight_decay=0)
     if args.verbose:
         print(f'Optimizer:\n{optimizer}')
 
