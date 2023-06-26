@@ -366,9 +366,6 @@ class Trainer():
               f"Batch size: {self.batch_size} | lr: {self.optimizer.param_groups[0]['lr']} | "
               f"Duration: {(time.time()-t0):.2f}s")
 
-        if self.ray_tune:
-            tune.report(loss=float(epoch_train_loss.cpu()))             # Ray Tune reporting stage.
-
         return round(float(epoch_train_loss), NUM_DECIMALS), round(float(epoch_val_loss), NUM_DECIMALS)
 
 
@@ -445,7 +442,7 @@ class Trainer():
         args = config['args']                                                       # Retrieve the arguments from the configuration.
         print(f"Dataloader to compute accuracy: {config['accuracy']}")
 
-        if args.ray_tune:
+        if self.ray_tune:
             self._ray_tune_setup(config)                                            # Adjust optimizer according to the Ray Tune configuration.
 
         for epoch in range(self.epochs_run, args.epochs):                           # Iterate over the epochs.
@@ -467,6 +464,10 @@ class Trainer():
                                        self.local_rank)
                 for metric in acc_results:
                     print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')         # Print the accuracy results.
+
+            if self.ray_tune:
+                tune.report(loss=epoch_train_loss,                                  # Ray Tune reporting stage.
+                            f1_macro=acc_results['f1_macro'])
 
             if config['save_csv'] and not self.ray_tune:
 
