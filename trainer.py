@@ -424,9 +424,9 @@ class Trainer():
         """
 
         print('\nAdjusting optimizer according to the Ray Tune configuration...')
-        self.optimizer = torch.optim.SGD(self.model.parameters(),
-                                         lr=config['lr'],
-                                         momentum=0.9)
+        self.optimizer.param_groups[0]['lr'] = config['lr']
+        self.optimizer.param_groups[0]['momentum'] = config['momentum']
+        self.optimizer.param_groups[0]['weight_decay'] = config['weight_decay']
         print('Configuration completed')
 
 
