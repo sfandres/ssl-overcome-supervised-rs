@@ -161,7 +161,7 @@ class Trainer():
         epochs_run (int): The number of epochs run so far. Initialized as 0.
         batch_size (int): The batch size of the training dataset.
 
-    Methods:
+    Private methods:
         _load_snapshot(): Load a snapshot from the provided path.
         _save_snapshot(epoch: int): Save a snapshot of the model and optimizer state.
         _run_evaluation(): Run evaluation on the validation dataset and return the validation loss.
@@ -169,6 +169,9 @@ class Trainer():
         _run_epoch(epoch: int): Run a single epoch of training and compute the training and validation losses.
         _save_to_csv(data: list): Save data to a CSV file.
         _adjust_lr_weights_for_ft(lr: float): Change from LP to FT (transfer learning to fine-tuning).
+        _ray_tune_setup(config: dict = None): Adjust the optimizer according to the Ray Tune hyperparameters.
+
+    Public methods:
         train(config: dict = None): Main training loop.
     """
 
@@ -408,6 +411,24 @@ class Trainer():
         )
         print('Changed from LP to FT w/ a smaller learning rate and unfrozen weights')
 
+    # ===================================================
+    def _ray_tune_setup(
+        self,
+        config: dict = None
+    ) -> None:
+        """
+        Sets up the Ray Tune integration.
+
+        Args:
+            config (dict, optional): Configuration for the Ray Tune experiment.
+        """
+
+        print('\nAdjusting optimizer according to the Ray Tune configuration...')
+        self.optimizer = torch.optim.SGD(self.model.parameters(),
+                                         lr=config['lr'],
+                                         momentum=0.9)
+        print('Configuration completed')
+
 
     # ===================================================
     def train(
@@ -423,9 +444,8 @@ class Trainer():
 
         args = config['args']                                                       # Retrieve the arguments from the configuration.
 
-        # self.optimizer = torch.optim.SGD(self.model.parameters(),
-        #                                  lr=config['lr'],
-        #                                  momentum=0.9)
+        if args.ray_tune:
+            self._ray_tune_setup(config)                                            # Adjust optimizer according to the Ray Tune configuration.
 
         for epoch in range(self.epochs_run, args.epochs):                           # Iterate over the epochs.
 
