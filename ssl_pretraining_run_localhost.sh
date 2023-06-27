@@ -48,7 +48,7 @@ ini_weights="random"
 seed=42
 
 # Python script to be executed with the options and flags.
-script="--standalone --nnodes=1 --nproc_per_node=1 pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
+script="--standalone --nnodes=1 --nproc_per_node=1 ssl_pretraining.py $model \
 --backbone_name=$backbone_name \
 --dataset_name=$dataset_name \
 --dataset_ratio=$dataset_ratio \

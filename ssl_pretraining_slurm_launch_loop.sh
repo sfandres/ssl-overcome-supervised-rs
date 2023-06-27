@@ -45,7 +45,7 @@ for m in "${models[@]}"; do
         fi
 
         # Run.
-        command="sbatch -J ${m}_${b}_${experiment} -o out_${m}_${b}_${experiment}.out pytorch-DDP-slurm.sh ${m} ${b} ${experiment}"
+        command="sbatch -J ${m}_${b}_${experiment} -o out_${m}_${b}_${experiment}.out ssl_pretraining_slurm.sh ${m} ${b} ${experiment}"
         echo ${command}
         ${command}
 

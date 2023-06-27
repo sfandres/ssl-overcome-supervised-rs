@@ -143,7 +143,7 @@ command="torchrun --standalone \
 --rdzv_id=$RANDOM \
 --rdzv_backend=c10d \
 --rdzv_endpoint=$head_node_ip:29500 \
-pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
+ssl_pretraining.py $model \
 --backbone_name=$backbone_name \
 --dataset_name=$dataset_name \
 --dataset_ratio=$dataset_ratio \
