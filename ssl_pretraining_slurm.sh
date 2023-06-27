@@ -25,20 +25,20 @@
 #--------------------------------------------
 # INFO: Specific configurations for the experiments (copy and paste above).
 #--------------------------------------------
-# * RayTune:   --ntasks=1, --gpus-per-node=2/4, --exclusive
-# * DDP-4GPUs: --ntasks=4, --gpus-per-node=4,   --exclusive
-# * DDP-1GPU:  --ntasks=1, --gpus-per-node=2/4,
-# * Balanced:  --ntasks=1, --gpus-per-node=2/4
+# * RayTune:            --ntasks=1, --gpus-per-node=2/4, --exclusive
+# * DDP-4GPUs:          --ntasks=4, --gpus-per-node=4,   --exclusive
+# * Imbalanced (1-GPU): --ntasks=1, --gpus-per-node=2/4,
+# * Balanced (1-GPU):   --ntasks=1, --gpus-per-node=2/4
 #--------------------------------------------
 
 
 # Help function.
 function display_help {
-    echo "Usage: ./$0 MODEL BACKBONE"
+    echo "Usage: ./$0 MODEL BACKBONE EXPERIMENT"
     echo "Arguments:"
     echo "  MODEL         Specify the model ('BarlowTwins', 'MoCov2', 'SimCLR', 'SimCLRv2', or 'SimSiam')"
     echo "  BACKBONE      Specify the backbone ('resnet18' or 'resnet50')"
-    echo "  EXPERIMENT    Type of experiment to carry out ('RayTune', 'DDP', or 'Balanced')"
+    echo "  EXPERIMENT    Type of experiment to carry out ('RayTune', 'DDP', 'Imbalanced', or 'Balanced')"
     echo "  -h, --help    Display this help message"
     exit 0
 }
@@ -74,8 +74,8 @@ if [[ -z $experiment ]]; then
     echo "Error: Selecting a type of experiment is required."
     display_help
 
-elif [[ $experiment != "RayTune" && $experiment != "DDP" && $experiment != "Balanced" ]]; then
-    echo "Error: Invalid type of experiment. Supported ones are 'RayTune', 'DDP', and 'Balanced'."
+elif [[ $experiment != "RayTune" && $experiment != "DDP" && $experiment != "Imbalanced" && $experiment != "Balanced" ]]; then
+    echo "Error: Invalid type of experiment. Supported ones are 'RayTune', 'DDP', 'Imbalanced', and 'Balanced'."
     display_help
 
 else
@@ -92,13 +92,19 @@ if [[ $experiment == "RayTune" ]]; then
 
 elif [[ $experiment == "DDP" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=1000
+    epochs=800
     more_options="--distributed"
     echo "DDP experiment has been successfully set up!"
 
+elif [[ $experiment == "Imbalanced" ]]; then
+    dataset_ratio="(0.900,0.0250,0.0750)"
+    epochs=800
+    more_options=""
+    echo "Imbalanced experiment has been successfully set up!"
+
 elif [[ $experiment == "Balanced" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=1000
+    epochs=800
     more_options="--balanced_dataset"
     echo "Balanced experiment has been successfully set up!"
 fi
@@ -125,13 +131,15 @@ conda activate lulc2-conda
 # input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 save_every=25
-eval_every=25
+eval_every=50
 batch_size=128
 ini_weights="random"
 seed=42
 
 # Run experiment (--standalone).
 # $SLURM_GPUS_PER_TASK $SLURM_NTASKS
+# --input_data $input_data \
+# --partially_frozen \
 command="torchrun --standalone \
 --nnodes=$SLURM_JOB_NUM_NODES \
 --nproc_per_node=$SLURM_NTASKS \
@@ -151,8 +159,6 @@ ssl_pretraining.py $model \
 --seed=$seed \
 ${more_options}
 "
-# --input_data $input_data \
-# --partially_frozen \
 
 # Show the chosen options.
 echo "---------------------"
