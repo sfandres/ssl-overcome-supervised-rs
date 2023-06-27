@@ -682,6 +682,7 @@ def main(args):
 
         config = {
             'args': args,
+            'epochs': args.epochs,
             'accuracy': 'test',
             'save_csv': True
         }
@@ -694,6 +695,7 @@ def main(args):
 
         config = {
             'args': args,
+            'epochs': args.epochs,
             'accuracy': 'val',
             'save_csv': False,
             'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
