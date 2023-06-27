@@ -6,7 +6,7 @@ import time
 import pandas as pd
 
 
-def create_list_embeddings(model, dataloader, device):
+def create_list_embeddings(model, dataloader, device, distributed=False):
 
     # Empty lists.
     embeddings = []
@@ -26,7 +26,10 @@ def create_list_embeddings(model, dataloader, device):
             y = y.to(device)
 
             # Embed the images with the pre-trained backbone.
-            emb = model.backbone(x).flatten(start_dim=1)
+            if distributed:
+                emb = model.module.backbone(x).flatten(start_dim=1)
+            else:
+                emb = model.backbone(x).flatten(start_dim=1)
 
             # Store the embeddings and filenames in lists.
             embeddings.append(emb)
