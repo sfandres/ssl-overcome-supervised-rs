@@ -80,6 +80,15 @@ def linear_eval_backbone(
         csv_path=os.path.join(paths['csv_results'], f'head_{general_name}_e={curr_epoch}.csv'),
         distributed=False,
         lightly_train=True,
+        ray_tune = False,
         ignore_ckpts=True
     )
-    trainer.train(epochs, args, test=True, save_csv=True)
+
+    config = {
+        'args': args,
+        'epochs': epochs,
+        'accuracy': 'test',
+        'save_csv': True
+    }
+
+    trainer.train(config)
