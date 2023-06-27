@@ -4,7 +4,7 @@
 function display_help {
     echo "Usage: $0 EXPERIMENT"
     echo "Arguments:"
-    echo "  EXPERIMENT    Type of experiment to carry out ('RayTune', 'DDP', or 'Balanced')"
+    echo "  EXPERIMENT    Type of experiment to carry out ('RayTune', 'DDP', 'Imbalanced', or 'Balanced')"
     echo "  -h, --help    Display this help message"
     exit 0
 }
@@ -19,8 +19,8 @@ elif [[ -z $experiment ]]; then
     echo "Error: Selecting a type of experiment is required."
     display_help
 
-elif [[ $experiment != "RayTune" && $experiment != "DDP" && $experiment != "Balanced" ]]; then
-    echo "Error: Invalid type of experiment. Supported ones are 'RayTune', 'DDP', and 'Balanced'."
+elif [[ $experiment != "RayTune" && $experiment != "DDP" && $experiment != "Imbalanced" && $experiment != "Balanced" ]]; then
+    echo "Error: Invalid type of experiment. Supported ones are 'RayTune', 'DDP', 'Imbalanced', and 'Balanced'."
     display_help
 
 else
