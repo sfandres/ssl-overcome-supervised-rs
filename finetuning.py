@@ -699,10 +699,10 @@ def main(args):
             'accuracy': 'val',
             'save_csv': False,
             'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-            'momentum': 0.9,
-            # 'momentum': tune.grid_search([0.99, 0.9]),
-            'weight_decay': 0,
-            # 'weight_decay': tune.grid_search([0, 1e-4, 1e-5])
+            # 'momentum': 0.9,
+            'momentum': tune.grid_search([0.99, 0.9]),
+            # 'weight_decay': 0,
+            'weight_decay': tune.grid_search([0, 1e-4, 1e-5])
         }
 
         # tune_metric = ('loss', 'min', True)
