@@ -445,16 +445,16 @@ class Trainer():
         if self.ray_tune:
             self._ray_tune_setup(config)                                            # Adjust optimizer according to the Ray Tune configuration.
 
-        for epoch in range(self.epochs_run, args.epochs):                           # Iterate over the epochs.
+        for epoch in range(self.epochs_run, config['epochs']):                           # Iterate over the epochs.
 
-            if epoch == args.epochs // 2 and args.transfer_learning == 'LP+FT':
+            if epoch == config['epochs'] // 2 and args.transfer_learning == 'LP+FT':
                 self._adjust_lr_weights_for_ft(args.learning_rate)                  # Adjust learning rate and weights for fine-tuning.
 
             print()
             epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)               # Run the epoch and get the train and validation loss.
 
             if ((self.global_rank == 0 and not self.ignore_ckpts and not self.ray_tune)
-                and (epoch % self.save_every == 0 or epoch == args.epochs - 1)):
+                and (epoch % self.save_every == 0 or epoch == config['epochs'] - 1)):
                 self._save_snapshot(epoch)                                          # Save a snapshot of the model.
 
             if config['accuracy']:                                                  # Compute accuracy on the target dataloader.
