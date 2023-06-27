@@ -105,11 +105,11 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--epochs', '-e', type=int, default=25,
                         help='number of epochs for training (default: 25).')
 
-    parser.add_argument('--save_every', '-se', type=int, default=5,
-                        help='save model checkpoint every n epochs (default: 5).')
+    parser.add_argument('--save_every', '-se', type=int, default=0,
+                        help='save model checkpoint every n epochs (default: 0, no checkpoints).')
 
-    parser.add_argument('--eval_every', '-ee', type=int, default=5,
-                        help='online linear evaluation every n epochs (default: 5).')
+    parser.add_argument('--eval_every', '-ee', type=int, default=0,
+                        help='online linear evaluation every n epochs (default: 0, no evaluation).')
 
     parser.add_argument('--batch_size', '-bs', type=int, default=64,
                         help='number of images in a batch during training '
@@ -554,9 +554,9 @@ def train(
         )
 
         # ======================
-        # SAVING CHECKPOINT AND LINEAR EVAL.
+        # SAVING CHECKPOINT.
         # Custom functions for saving the checkpoints.
-        if (global_rank == 0 and not args.ray_tune) and (epoch % args.save_every == 0 or epoch == args.epochs - 1):
+        if (global_rank == 0 and not args.ray_tune and not args.save_every == 0) and (epoch % args.save_every == 0 or epoch == args.epochs - 1):
 
             if args.distributed:
                 model_state_dict = model.module.state_dict()
@@ -575,38 +575,39 @@ def train(
                 epoch, model_state_dict, optimizer, warmup_scheduler, cosine_scheduler
             )
 
-            # Linear evaluation.
-            if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
+        # ======================
+        # LINEAR EVALUATION.
+        if (global_rank == 0 and not args.ray_tune and not args.eval_every == 0) and (epoch % args.eval_every == 0 or epoch == args.epochs - 1):
 
-                if epoch == args.epochs - 1:
-                    eval_epochs = 50
-                else:
-                    eval_epochs = 10
+            if epoch == args.epochs - 1:
+                eval_epochs = 50
+            else:
+                eval_epochs = 10
 
-                if args.distributed:
-                    fronzen_backbone = copy.deepcopy(model.module.backbone)
-                else:
-                    fronzen_backbone = copy.deepcopy(model.backbone)
+            if args.distributed:
+                fronzen_backbone = copy.deepcopy(model.module.backbone)
+            else:
+                fronzen_backbone = copy.deepcopy(model.backbone)
 
-                model.eval()
-                print(f'\nEvaluating ({eval_epochs} epochs)...')
-                linear_eval_backbone(
-                    epoch,
-                    eval_epochs,
-                    fronzen_backbone,
-                    input_dim,
-                    29,
-                    config['dataloader'],
-                    config['bsz'],
-                    local_rank,
-                    config['paths'],
-                    args,
-                    general_name,
-                    input_size=224,
-                    verbose=False,
-                    dropout=False
-                )
-                print('Evaluation done!')
+            model.eval()
+            print(f'\nEvaluating ({eval_epochs} epochs)...')
+            linear_eval_backbone(
+                epoch,
+                eval_epochs,
+                fronzen_backbone,
+                input_dim,
+                29,
+                config['dataloader'],
+                config['bsz'],
+                local_rank,
+                config['paths'],
+                args,
+                general_name,
+                input_size=224,
+                verbose=False,
+                dropout=False
+            )
+            print('Evaluation done!')
 
         # ======================
         # SAVING CSV FILE.
