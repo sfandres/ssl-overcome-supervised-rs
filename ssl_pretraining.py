@@ -582,12 +582,18 @@ def train(
                     eval_epochs = 50
                 else:
                     eval_epochs = 10
+
+                if args.distributed:
+                    fronzen_backbone = copy.deepcopy(model.module.backbone)
+                else:
+                    fronzen_backbone = copy.deepcopy(model.backbone)
+
                 model.eval()
                 print(f'\nEvaluating ({eval_epochs} epochs)...')
                 linear_eval_backbone(
                     epoch,
                     eval_epochs,
-                    copy.deepcopy(model.backbone),
+                    fronzen_backbone,
                     input_dim,
                     29,
                     config['dataloader'],
@@ -622,7 +628,7 @@ def train(
             tune.report(loss=epoch_train_loss.cpu())
 
     print('\nGenerating the embeddings...')
-    embeddings, labels = create_list_embeddings(model, config['dataloader'], local_rank)
+    embeddings, labels = create_list_embeddings(model, config['dataloader'], local_rank, distributed=args.distributed)
 
     # t-SNE computation for 2-D.
     df = tsne_computation(embeddings, labels, args.seed, n_components=2)
