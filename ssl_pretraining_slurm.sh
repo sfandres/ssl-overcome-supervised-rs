@@ -130,6 +130,7 @@ conda activate lulc2-conda
 # input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
 save_every=25
+eval_every=25
 batch_size=128
 ini_weights="random"
 seed=42
@@ -148,6 +149,7 @@ pytorch-DDP-Sentinel-2_SSL_pretraining.py $model \
 --dataset_ratio=$dataset_ratio \
 --epochs=$epochs \
 --save_every=$save_every \
+--eval_every=$eval_every \
 --batch_size=$batch_size \
 --num_workers=$SLURM_CPUS_PER_TASK \
 --ini_weights=$ini_weights \

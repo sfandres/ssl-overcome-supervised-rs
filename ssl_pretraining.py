@@ -108,6 +108,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--save_every', '-se', type=int, default=5,
                         help='save model checkpoint every n epochs (default: 5).')
 
+    parser.add_argument('--eval_every', '-ee', type=int, default=5,
+                        help='online linear evaluation every n epochs (default: 5).')
+
     parser.add_argument('--batch_size', '-bs', type=int, default=64,
                         help='number of images in a batch during training '
                              '(default: 64).')
@@ -538,6 +541,19 @@ def train(
             cosine_scheduler.step()
 
         # ======================
+        # EPOCH STATISTICS.
+        # Show some stats per epoch completed.
+        print(
+            f"[GPU:{global_rank}] | "
+            f"[Epoch: {epoch}] | "
+            f"Train loss: {epoch_train_loss:.4f} | "
+            f"Steps (nb): {len(config['dataloader']['train'])} | "
+            # f"Val loss: {epoch_val_loss:.4f} | "
+            f"Duration: {(time.time()-t0):.2f} s | "
+            f"Collapse (SimSiam): {collapse_level:.4f}/{no_collapse:.4f}\n"
+        )
+
+        # ======================
         # SAVING CHECKPOINT AND LINEAR EVAL.
         # Custom functions for saving the checkpoints.
         if (global_rank == 0 and not args.ray_tune) and (epoch % args.save_every == 0 or epoch == args.epochs - 1):
@@ -560,25 +576,31 @@ def train(
             )
 
             # Linear evaluation.
-            model.eval()
-            print('\nEvaluating...')
-            linear_eval_backbone(
-                epoch,
-                5,
-                copy.deepcopy(model.backbone),
-                input_dim,
-                29,
-                config['dataloader'],
-                config['bsz'],
-                local_rank,
-                config['paths'],
-                args,
-                general_name,
-                input_size=224,
-                verbose=False,
-                dropout=False
-            )
-            print('Evaluation done!')
+            if epoch % args.eval_every == 0 or epoch == args.epochs - 1:
+
+                if epoch == args.epochs - 1:
+                    eval_epochs = 50
+                else:
+                    eval_epochs = 10
+                model.eval()
+                print(f'\nEvaluating ({eval_epochs} epochs)...')
+                linear_eval_backbone(
+                    epoch,
+                    eval_epochs,
+                    copy.deepcopy(model.backbone),
+                    input_dim,
+                    29,
+                    config['dataloader'],
+                    config['bsz'],
+                    local_rank,
+                    config['paths'],
+                    args,
+                    general_name,
+                    input_size=224,
+                    verbose=False,
+                    dropout=False
+                )
+                print('Evaluation done!')
 
         # ======================
         # SAVING CSV FILE.
@@ -593,19 +615,6 @@ def train(
 
             data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
             save_to_csv(csv_path, [f"{epoch:02d}"]+data_rounded)
-
-        # ======================
-        # EPOCH STATISTICS.
-        # Show some stats per epoch completed.
-        print(
-            f"[GPU:{global_rank}] | "
-            f"[Epoch: {epoch}] | "
-            f"Train loss: {epoch_train_loss:.4f} | "
-            f"Steps (nb): {len(config['dataloader']['train'])} | "
-            # f"Val loss: {epoch_val_loss:.4f} | "
-            f"Duration: {(time.time()-t0):.2f} s | "
-            f"Collapse (SimSiam): {collapse_level:.4f}/{no_collapse:.4f}\n"
-        )
 
         # ======================
         # RAY TUNE REPORTING STAGE.
