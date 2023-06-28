@@ -706,7 +706,10 @@ def main(args):
         }
 
         # tune_metric = ('loss', 'min', True)
-        tune_metric = ('f1_macro', 'max', False)
+        if args.task_name == 'multiclass':
+            tune_metric = ('f1_macro', 'max', False)
+        elif args.task_name == 'multilabel':
+            tune_metric = ('rmse', 'min', True)
 
         # Ray tune configuration.
         scheduler = ASHAScheduler(
@@ -719,7 +722,7 @@ def main(args):
         reporter = CLIReporter(
             # ``parameter_columns=['l1', 'l2', 'lr', 'batch_size']``,
             # metric_columns=['loss', 'accuracy', 'training_iteration'])
-            metric_columns=['loss', 'f1_macro', 'training_iteration']
+            metric_columns=['loss', tune_metric[0], 'training_iteration']
         )
 
         result = tune.run(
