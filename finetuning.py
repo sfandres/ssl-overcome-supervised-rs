@@ -747,10 +747,10 @@ def main(args):
         df.to_csv(os.path.join(paths['ray_tune'], filename))
 
         # Print.
-        best_trial = result.get_best_trial('loss', 'min', 'last')
-        print(f"\nBest trial config:\n{best_trial.config}")
-        print(f"\nBest trial final val loss: {best_trial.last_result['loss']}")
-        print(f"Best trial final {tune_metric[0]} accuracy: {best_trial.last_result[tune_metric[0]]}")
+        # best_trial = result.get_best_trial('loss', 'min', 'last')
+        # print(f"\nBest trial config:\n{best_trial.config}")
+        # print(f"\nBest trial final val loss: {best_trial.last_result['loss']}")
+        # print(f"Best trial final {tune_metric[0]} accuracy: {best_trial.last_result[tune_metric[0]]}")
 
     return 0
 
