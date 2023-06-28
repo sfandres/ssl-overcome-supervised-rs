@@ -2,8 +2,8 @@
 
 # Define the variables.
 backbones=("resnet18")                          # "resnet18" "resnet50"
-train_rates=("0.05" "0.1")                      # "0.01" "0.05" "0.1" 0.25" "0.5" "1.0"
-downstream=("multiclass")                       # "multiclass" "multilabel"
+train_rates=("0.01" "0.05" "0.1")               # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0"
+downstream=("multiclass" "multilabel")          # "multiclass" "multilabel"
 learning_rates=("0.01")                         # Not used for Ray Tune; then 10 times smaller if LP+FT is enabled
 models=("Supervised")                           # "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam"
 ini_weights=("random" "imagenet")               # "random" "imagenet"
@@ -15,6 +15,11 @@ seed=42
 epochs=12
 # more_options=""
 more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=3 --gpus_per_trial=1"
+
+# Troubleshooting.
+# export LOGLEVEL=INFO
+# export NCCL_DEBUG=INFO
+export RAY_PICKLE_VERBOSE_DEBUG=1
 
 # Loop over the sbatch commands.
 for b in "${backbones[@]}"; do
