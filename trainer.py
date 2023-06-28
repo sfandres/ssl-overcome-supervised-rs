@@ -465,11 +465,17 @@ class Trainer():
                 for metric in acc_results:
                     print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')         # Print the accuracy results.
 
-            if self.ray_tune:
-                tune.report(
-                    loss=epoch_train_loss,                                          # Ray Tune reporting stage.
-                    f1_macro=round(acc_results['f1_macro'], NUM_DECIMALS)
-                )
+            if self.ray_tune:                                                       # Ray Tune reporting stage.
+                if args.task_name == 'multiclass':
+                    tune.report(
+                        loss=epoch_train_loss,
+                        f1_macro=round(acc_results['f1_macro'], NUM_DECIMALS)
+                    )
+                elif args.task_name == 'multilabel':
+                    tune.report(
+                        loss=epoch_train_loss,
+                        rmse=round(acc_results['rmse'], NUM_DECIMALS)
+                    )
 
             if config['save_csv'] and not self.ray_tune:
 
