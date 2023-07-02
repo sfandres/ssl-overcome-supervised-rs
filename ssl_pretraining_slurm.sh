@@ -21,7 +21,7 @@
 # #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 #--------------------------------------------
 
-# Current exp configuration --> Imbalanced
+# Current exp configuration --> Imbalanced/Balanced
 
 #--------------------------------------------
 # INFO: Specific configurations for the experiments (copy and paste above).
