@@ -132,7 +132,7 @@ conda activate lulc2-conda
 # Define the general settings.
 # input_data="/p/project/prcoe12"
 dataset_name="Sentinel2GlobalLULC_SSL"
-save_every=25
+save_every=5
 eval_every=100
 batch_size=128
 ini_weights="random"
