@@ -179,7 +179,7 @@ def ddp_setup() -> None:
 
 
 def transform_abundances(
-        abundances: torch.Tensor
+    abundances: torch.Tensor
 ) -> torch.Tensor:
     """
     Transforms the abundances from tensor to max value.
@@ -191,6 +191,60 @@ def transform_abundances(
     max_val, max_idx = torch.max(abundances, dim=0)
 
     return max_idx.item()
+
+
+def visualize_model(
+    model: torch.nn.Module,
+    dataloader: torch.utils.data.DataLoader,
+    device: int,
+    num_images: bool = 2
+) -> None:
+    """Shows the predictions for a number of images (multilabel only).
+
+    Args:
+        model (torch.nn.Module): The trained model to evaluate.
+        dataloader (DataLoader): The DataLoader object that provides the dataset.
+        device (int): The device to use for computations.
+        num_images (int, optional): The number of images to show.
+    """
+
+    was_training = model.training
+    model.eval()
+    images_so_far = 0
+    fig = plt.figure()
+
+    with torch.no_grad():
+        for i, (inputs, labels) in enumerate(dataloader['val']):
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            outputs = model(inputs)
+            # _, preds = torch.max(outputs, 1)
+
+            probs = torch.sigmoid(outputs)                      # Convert logits to probabilities using a sigmoid function.
+            preds_sum = probs.sum(dim=1, keepdim=True)          # Scale predicted abundances to sum to 1 across all the classes.
+            preds = probs / preds_sum
+
+            np.set_printoptions(suppress=True)                  # Prevent numpy exponential notation on print, default False.
+
+            for j in range(inputs.size()[0]):
+                images_so_far += 1
+                ax = plt.subplot(num_images//2, 2, images_so_far)
+                ax.axis('off')
+                # ax.set_title(f'predicted: {class_names[preds[j]]}')
+
+                print(f'\n[Batch {i} - Img {j}] Ground-truth and predictions (check sum: {preds[j].sum()}):')
+                print(f'{np.array(labels[j].cpu())}')
+                print(f'{np.array(preds[j].cpu())}')
+
+                img = inputs.cpu().data[j]
+                plt.imshow(torch.permute(img, (1, 2, 0)))
+
+                if images_so_far == num_images:
+                    model.train(mode=was_training)
+                    return 0
+
+    model.train(mode=was_training)
 
 
 def main(args):
@@ -687,7 +741,12 @@ def main(args):
             'save_csv': True
         }
 
-        trainer.train(config) 
+        trainer.train(config)
+
+        if args.task_name == 'multilabel':
+            visualize_model(model, dataloader, device, num_images=4)
+            plt.ioff()
+            plt.show()
 
     else:
 
