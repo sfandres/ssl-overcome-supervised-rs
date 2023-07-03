@@ -734,6 +734,7 @@ def main(args):
             local_dir=paths['ray_tune'],
             scheduler=scheduler,
             verbose=1,
+            raise_on_failed_trial=False,        # Not raise TuneError if errors in trials.
             progress_reporter=reporter
         )
 
