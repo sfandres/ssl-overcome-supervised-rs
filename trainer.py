@@ -37,10 +37,6 @@ def accuracy(
     Returns:
         dict: A dictionary containing the accuracy of the model on the dataset.
 
-    This function takes a trained model, a data loader, the task name, and the device to perform
-    computations on. It calculates the accuracy of the model on the provided dataset according to
-    the downstream task and returns the result as a dictionary.
-
     Example:
         model = MyModel()
         data_loader = DataLoader(dataset)
@@ -55,46 +51,36 @@ def accuracy(
     # Calculate probabilities and predictions.
     model.eval()
     with torch.no_grad():
-        for data in dataloader:
+        for inputs, labels in dataloader:
 
-            # Dataset.
-            inputs, labels = data[0].to(device), data[1].to(device)
+            inputs = inputs.to(device)                              # Inputs and labels from the dataset.
+            labels = labels.to(device)
 
-            # Forward pass.
-            outputs = model(inputs)
+            outputs = model(inputs)                                 # Forward pass.
 
-            # Get model predictions.
             if task_name == 'multiclass':
-                # Convert logits to probabilities using a softmax function.
-                probs = torch.softmax(outputs, dim=1)
-                # Take the argmax of the probabilities to obtain the predicted class labels.
-                preds = torch.argmax(probs, dim=1)
+                probs = torch.softmax(outputs, dim=1)               # Convert logits to probabilities using a softmax function.
+                preds = torch.argmax(probs, dim=1)                  # Take the argmax of the probabilities to obtain the predicted class labels.
 
             elif task_name == 'multilabel':
-                # Convert logits to probabilities using a sigmoid function.
-                probs = torch.sigmoid(outputs)
-                # Scale predicted abundances to sum to 1 across all the classes for each sample.
-                preds_sum = probs.sum(dim=1, keepdim=True)
+                probs = torch.sigmoid(outputs)                      # Convert logits to probabilities using a sigmoid function.
+                preds_sum = probs.sum(dim=1, keepdim=True)          # Scale predicted abundances to sum to 1 across all the classes.
                 preds = probs / preds_sum
 
-            # Append true and predicted labels to the lists (option 2).
-            y_prob.append(probs)
+            y_prob.append(probs)                                    # Append true and predicted labels to the lists.
             y_pred.append(preds)
             y_true.append(labels)
 
-    # Accuracy metrics for multi-class downstream task.
-    if task_name == 'multiclass':
+    # Accuracy metrics.
+    if task_name == 'multiclass':                                   # Downstream task --> multiclass.
 
-        # Concatenate the lists into tensors (option 2).
-        y_prob_cpu = torch.cat(y_prob).to('cpu')
+        y_prob_cpu = torch.cat(y_prob).to('cpu')                    # Concatenate the lists into tensors.
         y_pred_cpu = torch.cat(y_pred).to('cpu')
         y_true_cpu = torch.cat(y_true).to('cpu')
 
-        # Compute top1 and top5 accuracy (option 2).
         top1_accuracy = torch.sum(torch.eq(y_pred_cpu, y_true_cpu)).item() / len(y_true_cpu)
         top5_accuracy = torch.sum(torch.topk(y_prob_cpu, k=5, dim=1)[1] == y_true_cpu.view(-1, 1)).item() / len(y_true_cpu)
 
-        # F1 metrics.
         f1_micro = f1_score(y_true_cpu, y_pred_cpu, average='micro')
         f1_macro = f1_score(y_true_cpu, y_pred_cpu, average='macro')
         f1_weighted = f1_score(y_true_cpu, y_pred_cpu, average='weighted')
@@ -109,19 +95,15 @@ def accuracy(
             'f1_per_class': list(np.round(f1_per_class, NUM_DECIMALS))
         }
 
-    # Accuracy metrics for multi-label (abundances) downstream task.
-    elif task_name == 'multilabel':
+    elif task_name == 'multilabel':                                 # Downstream task --> multilabel.
 
-        # Concatenate the lists into tensors.
-        y_prob_cpu = torch.cat(y_prob).to('cpu')
+        y_prob_cpu = torch.cat(y_prob).to('cpu')                    # Concatenate the lists into tensors.
         y_pred_cpu = torch.cat(y_pred).to('cpu')
         y_true_cpu = torch.cat(y_true).to('cpu')
 
-        # Compute global RMSE and MAE.
         rmse = mean_squared_error(y_true_cpu, y_pred_cpu, squared=False)
         mae = mean_absolute_error(y_true_cpu, y_pred_cpu)
 
-        # Compute RMSE and MAE per class.
         rmse_per_class = mean_squared_error(y_true_cpu, y_pred_cpu, multioutput='raw_values', squared=False)
         mae_per_class = mean_absolute_error(y_true_cpu, y_pred_cpu, multioutput='raw_values')
 
@@ -192,8 +174,7 @@ class Trainer():
     ) -> None:
         """ Initialize Trainer object with the provided parameters. """
 
-        # Assign instance attributes.
-        super().__init__()
+        super().__init__()                                                          # Assign instance attributes.
         self.model = model
         self.dataloader = dataloader
         self.loss_fn = loss_fn
@@ -206,24 +187,19 @@ class Trainer():
         self.ray_tune = ray_tune
         self.ignore_ckpts = ignore_ckpts
 
-        # Retrieve environment variables.
-        self.local_rank = int(os.environ["LOCAL_RANK"])
+        self.local_rank = int(os.environ["LOCAL_RANK"])                             # Retrieve environment variables.
         self.global_rank = int(os.environ["RANK"])
 
-        # Move the model to the local rank device.
-        self.model = model.to(self.local_rank)
+        self.model = model.to(self.local_rank)                                      # Move the model to the local rank device.
 
-        # Retrieve the batch size and initialize current epoch.
-        self.batch_size = len(next(iter(self.dataloader['train']))[0])
+        self.batch_size = len(next(iter(self.dataloader['train']))[0])              # Retrieve the batch size and initialize current epoch.
         self.epochs_run = 0
 
-        # Load snapshot if it exists and ignore_ckpts is False.
         if os.path.exists(snapshot_path) and not ignore_ckpts and not ray_tune:
-            self._load_snapshot()
+            self._load_snapshot()                                                   # Load snapshot if it exists and not other flags.
 
-        # Distributed training with DDP.
         if distributed:
-            self.model = DDP(self.model, device_ids=[self.local_rank])
+            self.model = DDP(self.model, device_ids=[self.local_rank])              # Distributed training with DDP.
 
 
     # ===================================================
