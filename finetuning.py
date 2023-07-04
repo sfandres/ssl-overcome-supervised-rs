@@ -155,6 +155,9 @@ def get_args() -> argparse.Namespace:
                         choices=['gridsearch', 'loguniform'],
                         help='enables Ray Tune (tunes everything or only lr).')
 
+    parser.add_argument('--load_best_hyperparameters', '-lbh', action='store_true',
+                        help='load the best hyperparameters found by Ray Tune.')
+
     # Specific for Ray Tune.
     parser.add_argument('--grace_period', '-rtgp', type=int,
                         help='only stop trials at least this old in time.')
@@ -715,6 +718,9 @@ def main(args):
     # Build general name.
     general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_lr={args.learning_rate}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
 
+    # Overwrite the name of the file (wo/ lr) and write the results to a CSV file.
+    ray_tune_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
+
     # Training.
     trainer = Trainer(
         model,
@@ -730,25 +736,7 @@ def main(args):
         ignore_ckpts=False
     )
 
-    if not args.ray_tune:
-
-        print(f'\nNormal training (DDP set to {args.distributed})')
-
-        config = {
-            'args': args,
-            'epochs': args.epochs,
-            'accuracy': 'test',
-            'save_csv': True
-        }
-
-        trainer.train(config)
-
-        if args.task_name == 'multilabel':
-            visualize_model(model, dataloader, device, num_images=4)
-            plt.ioff()
-            plt.show()
-
-    else:
+    if args.ray_tune:
 
         print(f'\nSetting a new configuration using tune.grid_search\n')
 
@@ -758,9 +746,7 @@ def main(args):
             'accuracy': 'val',
             'save_csv': False,
             'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
-            # 'momentum': 0.9,
             'momentum': tune.grid_search([0.99, 0.9]),
-            # 'weight_decay': 0,
             'weight_decay': tune.grid_search([0, 1e-4, 1e-5])
         }
 
@@ -801,16 +787,59 @@ def main(args):
         df = result.results_df
         df = df.sort_values(by=tune_metric[0], ascending=tune_metric[2])
 
-        # Overwrite the name of the file (wo/ lr) and write the results to a CSV file.
-        general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
-        filename = f'ray_tune_{general_name}.csv'
-        df.to_csv(os.path.join(paths['ray_tune'], filename))
+        # Write the results to a CSV file.
+        df.to_csv(os.path.join(paths['ray_tune'], f'ray_tune_{ray_tune_name}.csv'))
 
         # Print.
         # best_trial = result.get_best_trial('loss', 'min', 'last')
         # print(f"\nBest trial config:\n{best_trial.config}")
         # print(f"\nBest trial final val loss: {best_trial.last_result['loss']}")
         # print(f"Best trial final {tune_metric[0]} accuracy: {best_trial.last_result[tune_metric[0]]}")
+
+    elif args.load_best_hyperparameters:
+
+        print(f'\nNormal training with the best hyperparameters loaded from file (DDP set to {args.distributed})')
+
+        # Load the CSV file into a pandas dataframe.
+        filename_extra = os.path.join(
+            os.path.join('finetuning', args.transfer_learning),
+            f'ray_tune_{ray_tune_name}.csv'
+        )
+        print(f'Model loaded from {filename_extra}')
+
+        df = pd.read_csv(os.path.join(paths['best_configs'], filename_extra),
+                         usecols=lambda col: col.startswith('loss')
+                         or col.startswith('config/'))
+
+        config = {
+            'args': args,
+            'epochs': args.epochs,
+            'accuracy': 'test',
+            'save_csv': True,
+            'lr': df.loc[0, 'config/lr'],
+            'momentum': df.loc[0, 'config/momentum'],
+            'weight_decay': df.loc[0, 'config/weight_decay']
+        }
+
+        trainer.train(config)
+
+    else:
+
+        print(f'\nNormal training with custom hyperparameters (DDP set to {args.distributed})')
+
+        config = {
+            'args': args,
+            'epochs': args.epochs,
+            'accuracy': 'test',
+            'save_csv': True
+        }
+
+        trainer.train(config)
+
+    if args.task_name == 'multilabel':
+        visualize_model(model, dataloader, device, num_images=4)
+        plt.ioff()
+        plt.show()
 
     return 0
 
