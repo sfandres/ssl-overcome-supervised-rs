@@ -836,10 +836,10 @@ def main(args):
 
         trainer.train(config)
 
-    if args.task_name == 'multilabel':
-        visualize_model(model, dataloader, device, num_images=4)
-        plt.ioff()
-        plt.show()
+    # if args.task_name == 'multilabel':
+    #     visualize_model(model, dataloader, device, num_images=4)
+    #     plt.ioff()
+    #     plt.show()
 
     return 0
 
