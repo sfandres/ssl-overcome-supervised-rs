@@ -415,33 +415,33 @@ class Trainer():
             config (dict, optional): Configuration for training. Defaults to None.
         """
 
-        args = config['args']                                                       # Retrieve the arguments from the configuration.
+        args = config['args']                                                           # Retrieve the arguments from the configuration.
         print(f"Dataloader to compute accuracy: {config['accuracy']}")
 
-        if self.ray_tune:
-            self._ray_tune_setup(config)                                            # Adjust optimizer according to the Ray Tune configuration.
+        if self.ray_tune or args.load_best_hyperparameters:
+            self._ray_tune_setup(config)                                                # Adjust optimizer according to the Ray Tune configuration.
 
-        for epoch in range(self.epochs_run, config['epochs']):                           # Iterate over the epochs.
+        for epoch in range(self.epochs_run, config['epochs']):                          # Iterate over the epochs.
 
             if epoch == config['epochs'] // 2 and args.transfer_learning == 'LP+FT':
-                self._adjust_lr_weights_for_ft(args.learning_rate)                  # Adjust learning rate and weights for fine-tuning.
+                self._adjust_lr_weights_for_ft(args.learning_rate)                      # Adjust learning rate and weights for fine-tuning.
 
             print()
-            epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)               # Run the epoch and get the train and validation loss.
+            epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)                   # Run the epoch and get the train and validation loss.
 
             if ((self.global_rank == 0 and not self.ignore_ckpts and not self.ray_tune)
                 and (epoch % self.save_every == 0 or epoch == config['epochs'] - 1)):
-                self._save_snapshot(epoch)                                          # Save a snapshot of the model.
+                self._save_snapshot(epoch)                                              # Save a snapshot of the model.
 
-            if config['accuracy']:                                                  # Compute accuracy on the target dataloader.
+            if config['accuracy']:                                                      # Compute accuracy on the target dataloader.
                 acc_results = accuracy(self.model,
                                        self.dataloader[config['accuracy']],
                                        args.task_name,
                                        self.local_rank)
                 for metric in acc_results:
-                    print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')         # Print the accuracy results.
+                    print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')             # Print the accuracy results.
 
-            if self.ray_tune:                                                       # Ray Tune reporting stage.
+            if self.ray_tune:                                                           # Ray Tune reporting stage.
                 if args.task_name == 'multiclass':
                     tune.report(
                         loss=epoch_train_loss,
