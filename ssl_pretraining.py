@@ -576,6 +576,20 @@ def train(
             )
 
         # ======================
+        # SAVING CSV FILE.
+        if global_rank == 0 and not args.ray_tune:
+            if epoch == 0:
+                header = ['epoch', 'train_loss']
+                with open(csv_path, 'w', newline='') as file:
+                    csv_writer = csv.writer(file)
+                    csv_writer.writerow(header)
+
+            data = [epoch_train_loss]
+
+            data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
+            save_to_csv(csv_path, [f"{epoch:02d}"]+data_rounded)
+
+        # ======================
         # LINEAR EVALUATION.
         if (global_rank == 0 and not args.ray_tune and not args.eval_every == 0) and (epoch % args.eval_every == 0 or epoch == args.epochs - 1):
 
@@ -608,20 +622,6 @@ def train(
                 dropout=False
             )
             print('Evaluation done!')
-
-        # ======================
-        # SAVING CSV FILE.
-        if global_rank == 0 and not args.ray_tune:
-            if epoch == 0:
-                header = ['epoch', 'train_loss']
-                with open(csv_path, 'w', newline='') as file:
-                    csv_writer = csv.writer(file)
-                    csv_writer.writerow(header)
-
-            data = [epoch_train_loss]
-
-            data_rounded = [format(elem, f'.{NUM_DECIMALS}f') if not isinstance(elem, list) else elem for elem in data]
-            save_to_csv(csv_path, [f"{epoch:02d}"]+data_rounded)
 
         # ======================
         # RAY TUNE REPORTING STAGE.
