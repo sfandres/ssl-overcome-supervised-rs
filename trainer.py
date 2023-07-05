@@ -195,9 +195,6 @@ class Trainer():
         self.batch_size = len(next(iter(self.dataloader['train']))[0])              # Retrieve the batch size and initialize current epoch.
         self.epochs_run = 0
 
-        if os.path.exists(snapshot_path) and not ignore_ckpts and not ray_tune:
-            self._load_snapshot()                                                   # Load snapshot if it exists and not other flags.
-
         if distributed:
             self.model = DDP(self.model, device_ids=[self.local_rank])              # Distributed training with DDP.
 
@@ -425,7 +422,11 @@ class Trainer():
         args = config['args']                                                           # Retrieve the arguments from the configuration.
         print(f"Dataloader to compute accuracy: {config['accuracy']}")
 
-        if self.ray_tune or args.load_best_hyperparameters:
+        if (os.path.exists(self.snapshot_path) and not
+            self.ignore_ckpts and not self.ray_tune):
+            self._load_snapshot()                                                       # Load snapshot if it exists and not other flags.
+
+        elif self.ray_tune or args.load_best_hyperparameters:
             self._initial_optimizer_setup(config)                                       # Adjust optimizer according to the provided configuration.
 
         for epoch in range(self.epochs_run, config['epochs']):                          # Iterate over the epochs.
