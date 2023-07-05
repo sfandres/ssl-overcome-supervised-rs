@@ -718,9 +718,6 @@ def main(args):
     # Build general name.
     general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_lr={args.learning_rate}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
 
-    # Overwrite the name of the file (wo/ lr) and write the results to a CSV file.
-    ray_tune_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
-
     # Training.
     trainer = Trainer(
         model,
@@ -787,7 +784,8 @@ def main(args):
         df = result.results_df
         df = df.sort_values(by=tune_metric[0], ascending=tune_metric[2])
 
-        # Write the results to a CSV file.
+        # Overwrite the name of the file (wo/ lr) and write the results to a CSV file.
+        ray_tune_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
         df.to_csv(os.path.join(paths['ray_tune'], f'ray_tune_{ray_tune_name}.csv'))
 
         # Print.
@@ -801,14 +799,14 @@ def main(args):
         print(f'\nNormal training with the best hyperparameters loaded from file (DDP set to {args.distributed})')
 
         # Create filenames.
-        filename_lp = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl=LP_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
-        filename_ft = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl=FT_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
+        lp_ray_tune_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl=LP_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
+        ft_ray_tune_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl=FT_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
 
         # Path to the files.
         path_to_lp_csv = os.path.join(os.path.join('finetuning', 'LP'),
-                                      f'ray_tune_{filename_lp}.csv')
+                                      f'ray_tune_{lp_ray_tune_name}.csv')
         path_to_ft_csv = os.path.join(os.path.join('finetuning', 'FT'),
-                                      f'ray_tune_{filename_ft}.csv')
+                                      f'ray_tune_{ft_ray_tune_name}.csv')
 
         # Load both dataframes.
         df_lp = pd.read_csv(os.path.join(paths['best_configs'], path_to_lp_csv),
@@ -819,13 +817,18 @@ def main(args):
                             or col.startswith('config/'))
 
         # Select the corresponding hyperparameters.
-        if args.transfer_learning == 'LP' or args.transfer_learning == 'LP+FT':
+        if args.transfer_learning == 'LP':
             df_init = df_lp
-            print(f'Initial hyperparameters loaded from {path_to_lp_csv}')
+            print(f'LP hyperparameters loaded from {path_to_lp_csv}')
+        elif args.transfer_learning == 'LP+FT':
+            df_init = df_lp
+            print(f'LP hyperparameters loaded from {path_to_lp_csv}')
+            print(f'FT hyperparameters loaded from {path_to_ft_csv}')
         else:
             df_init = df_ft
-            print(f'Initial hyperparameters loaded from {path_to_ft_csv}')
+            print(f'FT hyperparameters loaded from {path_to_ft_csv}')
 
+        # Set configuration.
         config = {
             'args': args,
             'epochs': args.epochs,
@@ -839,8 +842,14 @@ def main(args):
             'weight_decay2': df_ft.loc[0, 'config/weight_decay']
         }
 
-        print('Initial hyperparameters -->', config['lr'], config['momentum'], config['weight_decay'])
-        print('FT hyperparameters -->', config['lr2'], config['momentum2'], config['weight_decay2'])
+        # Adapt attributes accordingly.
+        load_best_name = f"{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_lr={config['lr']}_m={config['momentum']}_wd={config['weight_decay']}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}"
+        trainer.snapshot_path = os.path.join(paths['snapshots'], f'snapshot_{load_best_name}.pt')
+        trainer.csv_path = os.path.join(paths['csv_results'], f'{load_best_name}.csv')
+
+        print('LP hyperparameters -->', config['lr'], config['momentum'], config['weight_decay'])
+        if args.transfer_learning == 'LP+FT':
+            print('FT hyperparameters -->', config['lr2'], config['momentum2'], config['weight_decay2'])
 
         trainer.train(config)
 
