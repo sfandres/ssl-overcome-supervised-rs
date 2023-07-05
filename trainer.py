@@ -377,16 +377,19 @@ class Trainer():
         print('\nUnfreezing the weights and updating the optimizer configuration (LP --> FT)...')
         for param in self.model.parameters():               # Iterate over the model parameters.
             param.requires_grad = True                      # Enable gradient computation for the parameters.
-        # self.optimizer = torch.optim.SGD(                   # Create a new optimizer with a smaller learning rate.
-        #     self.model.parameters(),
-        #     lr=lr/10,
-        #     momentum=0.9
-        # )
-        self.optimizer.param_groups[0]['lr'] = config['lr2']
-        self.optimizer.param_groups[0]['momentum'] = config['momentum2']
-        self.optimizer.param_groups[0]['weight_decay'] = config['weight_decay2']
-        print('Configuration completed!')
+        if 'lr2' in config and 'momentum2' in config and 'weight_decay2' in config:
+            self.optimizer.param_groups[0]['lr'] = config['lr2']
+            self.optimizer.param_groups[0]['momentum'] = config['momentum2']
+            self.optimizer.param_groups[0]['weight_decay'] = config['weight_decay2']
+            print('Configuration completed from dictionary!')
+        else:
+            self.optimizer = torch.optim.SGD(               # Create a new optimizer with a smaller learning rate.
+                self.model.parameters(),
+                lr=self.optimizer.param_groups[0]['lr']/10,
+            )
+            print('Configuration completed with learning rate ten times smaller!')
         print(f'New optimizer parameters:\n{self.optimizer}')
+
 
     # ===================================================
     def _initial_optimizer_setup(
