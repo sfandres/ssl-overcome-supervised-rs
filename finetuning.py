@@ -800,26 +800,47 @@ def main(args):
 
         print(f'\nNormal training with the best hyperparameters loaded from file (DDP set to {args.distributed})')
 
-        # Load the CSV file into a pandas dataframe.
-        filename_extra = os.path.join(
-            os.path.join('finetuning', args.transfer_learning),
-            f'ray_tune_{ray_tune_name}.csv'
-        )
-        print(f'Model loaded from {filename_extra}')
+        # Create filenames.
+        filename_lp = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl=LP_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
+        filename_ft = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl=FT_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
 
-        df = pd.read_csv(os.path.join(paths['best_configs'], filename_extra),
-                         usecols=lambda col: col.startswith('loss')
-                         or col.startswith('config/'))
+        # Path to the files.
+        path_to_lp_csv = os.path.join(os.path.join('finetuning', 'LP'),
+                                      f'ray_tune_{filename_lp}.csv')
+        path_to_ft_csv = os.path.join(os.path.join('finetuning', 'FT'),
+                                      f'ray_tune_{filename_ft}.csv')
+
+        # Load both dataframes.
+        df_lp = pd.read_csv(os.path.join(paths['best_configs'], path_to_lp_csv),
+                            usecols=lambda col: col.startswith('loss')
+                            or col.startswith('config/'))
+        df_ft = pd.read_csv(os.path.join(paths['best_configs'], path_to_ft_csv),
+                            usecols=lambda col: col.startswith('loss')
+                            or col.startswith('config/'))
+
+        # Select the corresponding hyperparameters.
+        if args.transfer_learning == 'LP' or args.transfer_learning == 'LP+FT':
+            df_init = df_lp
+            print(f'Initial hyperparameters loaded from {path_to_lp_csv}')
+        else:
+            df_init = df_ft
+            print(f'Initial hyperparameters loaded from {path_to_ft_csv}')
 
         config = {
             'args': args,
             'epochs': args.epochs,
             'accuracy': 'test',
             'save_csv': True,
-            'lr': df.loc[0, 'config/lr'],
-            'momentum': df.loc[0, 'config/momentum'],
-            'weight_decay': df.loc[0, 'config/weight_decay']
+            'lr': df_init.loc[0, 'config/lr'],
+            'momentum': df_init.loc[0, 'config/momentum'],
+            'weight_decay': df_init.loc[0, 'config/weight_decay'],
+            'lr2': df_ft.loc[0, 'config/lr'],
+            'momentum2': df_ft.loc[0, 'config/momentum'],
+            'weight_decay2': df_ft.loc[0, 'config/weight_decay']
         }
+
+        print('Initial hyperparameters -->', config['lr'], config['momentum'], config['weight_decay'])
+        print('FT hyperparameters -->', config['lr2'], config['momentum2'], config['weight_decay2'])
 
         trainer.train(config)
 
