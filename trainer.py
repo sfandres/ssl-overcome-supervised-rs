@@ -151,7 +151,7 @@ class Trainer():
         _run_epoch(epoch: int): Run a single epoch of training and compute the training and validation losses.
         _save_to_csv(data: list): Save data to a CSV file.
         _adjust_lr_weights_for_ft(lr: float): Change from LP to FT (transfer learning to fine-tuning).
-        _ray_tune_setup(config: dict = None): Adjust the optimizer according to the Ray Tune hyperparameters.
+        _initial_hyperparameters_setup(config: dict = None): Adjust the optimizer according to the provided hyperparameters (Ray Tune).
 
     Public methods:
         train(config: dict = None): Main training loop.
@@ -385,18 +385,18 @@ class Trainer():
         print('Changed from LP to FT w/ a smaller learning rate and unfrozen weights')
 
     # ===================================================
-    def _ray_tune_setup(
+    def _initial_hyperparameters_setup(
         self,
         config: dict = None
     ) -> None:
         """
-        Sets up the Ray Tune integration.
+        Sets up the provided configuration of hyperparameters (for Ray Tune).
 
         Args:
-            config (dict, optional): Configuration for the Ray Tune experiment.
+            config (dict, optional): Provided configuration for the experiment.
         """
 
-        print('\nAdjusting optimizer according to the Ray Tune configuration...')
+        print('\nAdjusting optimizer according to the provided configuration...')
         self.optimizer.param_groups[0]['lr'] = config['lr']
         self.optimizer.param_groups[0]['momentum'] = config['momentum']
         self.optimizer.param_groups[0]['weight_decay'] = config['weight_decay']
@@ -419,7 +419,7 @@ class Trainer():
         print(f"Dataloader to compute accuracy: {config['accuracy']}")
 
         if self.ray_tune or args.load_best_hyperparameters:
-            self._ray_tune_setup(config)                                                # Adjust optimizer according to the Ray Tune configuration.
+            self._initial_hyperparameters_setup(config)                                 # Adjust optimizer according to the provided configuration.
 
         for epoch in range(self.epochs_run, config['epochs']):                          # Iterate over the epochs.
 
