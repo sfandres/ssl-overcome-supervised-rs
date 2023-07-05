@@ -70,6 +70,7 @@ def linear_eval_backbone(
     # Training.
     args.task_name = 'multiclass'
     args.transfer_learning = 'LP'
+    args.load_best_hyperparameters = None
     trainer = Trainer(
         model,
         dataloader,
