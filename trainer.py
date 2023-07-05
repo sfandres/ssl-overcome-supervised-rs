@@ -151,7 +151,7 @@ class Trainer():
         _run_epoch(epoch: int): Run a single epoch of training and compute the training and validation losses.
         _save_to_csv(data: list): Save data to a CSV file.
         _adjust_optimizer_for_ft(config: dict): Change from LP to FT (transfer learning to fine-tuning).
-        _initial_hyperparameters_setup(config: dict): Adjust the optimizer according to the provided hyperparameters (Ray Tune).
+        _initial_optimizer_setup(config: dict): Adjust the optimizer according to the provided hyperparameters (Ray Tune).
 
     Public methods:
         train(config: dict = None): Main training loop.
@@ -389,12 +389,12 @@ class Trainer():
         print(f'New optimizer parameters:\n{self.optimizer}')
 
     # ===================================================
-    def _initial_hyperparameters_setup(
+    def _initial_optimizer_setup(
         self,
         config: dict
     ) -> None:
         """
-        Sets up the provided configuration of hyperparameters (for Ray Tune).
+        Sets up the optimizer according to the provided configuration of hyperparameters (for Ray Tune).
 
         Args:
             config (dict): Provided configuration for the experiment.
@@ -423,7 +423,7 @@ class Trainer():
         print(f"Dataloader to compute accuracy: {config['accuracy']}")
 
         if self.ray_tune or args.load_best_hyperparameters:
-            self._initial_hyperparameters_setup(config)                                 # Adjust optimizer according to the provided configuration.
+            self._initial_optimizer_setup(config)                                       # Adjust optimizer according to the provided configuration.
 
         for epoch in range(self.epochs_run, config['epochs']):                          # Iterate over the epochs.
 
