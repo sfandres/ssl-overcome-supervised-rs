@@ -150,8 +150,8 @@ class Trainer():
         _run_batch(source: torch.Tensor, targets: torch.Tensor): Run a single batch during training and compute the loss.
         _run_epoch(epoch: int): Run a single epoch of training and compute the training and validation losses.
         _save_to_csv(data: list): Save data to a CSV file.
-        _adjust_lr_weights_for_ft(lr: float): Change from LP to FT (transfer learning to fine-tuning).
-        _initial_hyperparameters_setup(config: dict = None): Adjust the optimizer according to the provided hyperparameters (Ray Tune).
+        _adjust_optimizer_for_ft(config: dict): Change from LP to FT (transfer learning to fine-tuning).
+        _initial_hyperparameters_setup(config: dict): Adjust the optimizer according to the provided hyperparameters (Ray Tune).
 
     Public methods:
         train(config: dict = None): Main training loop.
@@ -363,37 +363,41 @@ class Trainer():
 
 
     # ===================================================
-    def _adjust_lr_weights_for_ft(
+    def _adjust_optimizer_for_ft(
         self,
-        lr: float
+        config: dict
     ) -> None:
         """
-        Changes to FT, which means a smaller learning rate and the weights being unfrozen (when LP+FT).
+        Changes to FT, which means a new optimizer configuration and unfrozen weights (when LP+FT).
 
         Args:
-            lr (float): Learning rate used so far for the optimizer.
+            config (dict): Provided configuration for the experiment.
         """
 
         print('\nUnfreezing the weights and updating the learning rate...')
         for param in self.model.parameters():               # Iterate over the model parameters.
             param.requires_grad = True                      # Enable gradient computation for the parameters.
-        self.optimizer = torch.optim.SGD(                   # Create a new optimizer with a smaller learning rate.
-            self.model.parameters(),
-            lr=lr/10,
-            momentum=0.9
-        )
-        print('Changed from LP to FT w/ a smaller learning rate and unfrozen weights')
+        # self.optimizer = torch.optim.SGD(                   # Create a new optimizer with a smaller learning rate.
+        #     self.model.parameters(),
+        #     lr=lr/10,
+        #     momentum=0.9
+        # )
+        self.optimizer.param_groups[0]['lr'] = config['lr2']
+        self.optimizer.param_groups[0]['momentum'] = config['momentum2']
+        self.optimizer.param_groups[0]['weight_decay'] = config['weight_decay2']
+        print(f'New optimizer parameters:\n{self.optimizer}')
+        print('Changed from LP to FT w/ a new optimizer configuration and unfrozen weights')
 
     # ===================================================
     def _initial_hyperparameters_setup(
         self,
-        config: dict = None
+        config: dict
     ) -> None:
         """
         Sets up the provided configuration of hyperparameters (for Ray Tune).
 
         Args:
-            config (dict, optional): Provided configuration for the experiment.
+            config (dict): Provided configuration for the experiment.
         """
 
         print('\nAdjusting optimizer according to the provided configuration...')
@@ -424,7 +428,7 @@ class Trainer():
         for epoch in range(self.epochs_run, config['epochs']):                          # Iterate over the epochs.
 
             if epoch == config['epochs'] // 2 and args.transfer_learning == 'LP+FT':
-                self._adjust_lr_weights_for_ft(args.learning_rate)                      # Adjust learning rate and weights for fine-tuning.
+                self._adjust_optimizer_for_ft(config)                                   # Adjust the optimizer hyperparameters for fine-tuning.
 
             print()
             epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)                   # Run the epoch and get the train and validation loss.
