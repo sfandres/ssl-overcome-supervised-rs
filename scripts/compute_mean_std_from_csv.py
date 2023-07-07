@@ -106,9 +106,9 @@ def main(args):
               f"{task}")
 
         # Target metric.
-        if task == "multiclass":
+        if task == 'multiclass':
             col_name = 'f1_per_class'
-        elif task == "multilabel":
+        elif task == 'multilabel':
             col_name = 'rmse_per_class'
         else:
             col_name = None
