@@ -54,7 +54,7 @@ def main(args):
 
     # Filter the files to include only the ones with the desired pattern.
     filtered_files = [f for f in files
-                      if 'multiclass' in f]
+                      if '_s=' in f]
 
     # Sort the files based on the first part of the filename.
     sorted_files = sorted(
@@ -92,24 +92,37 @@ def main(args):
             print(f'{i} --> {file}')
 
     # Create the col for the last metric.
-    col_name = 'f1_per_class'
 
     # Iterate over the groups of files.
     for group in arranged_files:
 
+        print()
         dataframes = []
         last_rows = []
 
+        # Get task from first item.
+        task = group[0].split('_tr=')[0]
+        print(f"{'Task:'.ljust(8)}"
+              f"{task}")
+
+        # Target metric.
+        if task == "multiclass":
+            col_name = 'f1_per_class'
+        elif task == "multilabel":
+            col_name = 'rmse_per_class'
+        else:
+            col_name = None
+
+        # Get prefix from first item.
+        prefix = group[0].split('_s=')[0]
+        print(f"{'Prefix:'.ljust(8)}"
+              f"{prefix}")
+
         # Iterate over the csv files.
-        print()
         for file in group:
 
             print(f"{'File:'.ljust(8)}"                                 # Show file.
                   f"{file}")
-
-            prefix = file.split('_s=')[0]                               # Get prefix.
-            # print(f"{'Prefix:'.ljust(8)}"
-            #       f"{prefix}")
 
             df = pd.read_csv(os.path.join(args.input, file))            # Create the dataframe.
 
