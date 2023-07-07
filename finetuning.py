@@ -729,7 +729,7 @@ def main(args):
         csv_path=os.path.join(paths['csv_results'], f'{general_name}.csv'),
         distributed=args.distributed,
         lightly_train=False,
-        ray_tune = args.ray_tune,
+        ray_tune=args.ray_tune,
         ignore_ckpts=False
     )
 
