@@ -598,7 +598,7 @@ def main(args):
         print(f'\nModel {args.backbone_name} with pretrained weights using {args.model_name} SSL')
 
         # Load snapshot from pretraining.
-        snapshot_name = f'snapshot_pt_{args.model_name}_{args.backbone_name}_balanced={args.balanced_dataset}_weights={args.ini_weights}.pt'
+        snapshot_name = f'snapshot_{args.model_name}_{args.backbone_name}_bd={args.balanced_dataset}_iw={args.ini_weights}.pt'
         snapshot = torch.load(os.path.join(paths['input'], snapshot_name))
         print(f'Model loaded from {snapshot_name}')
 
