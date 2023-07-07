@@ -716,7 +716,7 @@ def main(args):
         print(f'Optimizer:\n{optimizer}')
 
     # Build general name.
-    general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_s={args.seed:02d}_lr={args.learning_rate}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}'
+    general_name = f'{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_bd={args.balanced_dataset}_tl={args.transfer_learning}_iw={args.ini_weights}_s={args.seed:02d}_lr={args.learning_rate}_do={args.dropout}'
 
     # Training.
     trainer = Trainer(
@@ -843,7 +843,7 @@ def main(args):
         }
 
         # Adapt attributes accordingly.
-        load_best_name = f"{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_tl={args.transfer_learning}_s={args.seed:02d}_lr={config['lr']}_m={config['momentum']}_wd={config['weight_decay']}_bd={args.balanced_dataset}_iw={args.ini_weights}_do={args.dropout}"
+        load_best_name = f"{args.task_name}_tr={args.train_rate:.3f}_{args.backbone_name}_{args.model_name}_bd={args.balanced_dataset}_tl={args.transfer_learning}_iw={args.ini_weights}_s={args.seed:02d}_lr={config['lr']}_m={config['momentum']}_wd={config['weight_decay']}_do={args.dropout}"
         trainer.snapshot_path = os.path.join(paths['snapshots'], f'snapshot_{load_best_name}.pt')
         trainer.csv_path = os.path.join(paths['csv_results'], f'{load_best_name}.csv')
 
