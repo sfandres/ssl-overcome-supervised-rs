@@ -1,3 +1,20 @@
+"""Writes to a csv the mean and std values of the merged
+   dataframes generated from the different experimental trials.
+
+Usage: compute_mean_std_from_csv.py [-h] [--input INPUT] [--output OUTPUT]
+
+Script that merges the input .csv files.
+
+options:
+  -h, --help       show this help message and exit
+  --input INPUT    path to the input directory where the csv files are stored.
+  --output OUTPUT  path to the output directory where the generated csv files will be stored.
+
+Author:
+    A.J. Sanchez-Fernandez - 07/07/2023
+"""
+
+
 import pandas as pd
 import numpy as np
 import argparse
@@ -54,58 +71,56 @@ def main(args):
     # Iterate through the sorted files.
     for file in sorted_files:
 
-        prefix = file.split('_s=')[0]                                # Get the prefix.
+        prefix = file.split('_s=')[0]                               # Get the prefix.
         
-        if prefix != current_prefix:                                 # If the prefix is different from the previous file, start a new group.
+        if prefix != current_prefix:                                # If the prefix is different from the previous file, start a new group.
             if current_group:
-                arranged_files.append(current_group)                 # Start a new group with the current file.
+                arranged_files.append(current_group)                # Start a new group with the current file.
             current_group = [file]
             current_prefix = prefix
         else:
-            current_group.append(file)                               # Add the file to the current group.
+            current_group.append(file)                              # Add the file to the current group.
 
+    # Add the last group to the arranged_files list.
     if current_group:
-        arranged_files.append(current_group)                         # Add the last group to the arranged_files list.
+        arranged_files.append(current_group)                         
 
-    for i, group in enumerate(arranged_files):                       # Print the arranged files.
+    # Print the arranged files.
+    for i, group in enumerate(arranged_files):
         print()
         for file in group:
             print(f'{i} --> {file}')
 
+    # Create the col for the last metric.
+    col_name = 'f1_per_class'
 
-    for group in arranged_files:                       # Print the arranged files.
+    # Iterate over the groups of files.
+    for group in arranged_files:
 
         dataframes = []
         last_rows = []
 
-        # Create the col for the last metric.
-        col_name = 'f1_per_class'
-
         # Iterate over the csv files.
+        print()
         for file in group:
 
-            # Show file.
-            print(f"{'File:'.ljust(8)}"
-                f"{file}")
+            print(f"{'File:'.ljust(8)}"                                 # Show file.
+                  f"{file}")
 
-            # Get prefix.
-            prefix = file.split('_s=')[0]
-            print(f"{'Prefix:'.ljust(8)}"
-                f"{prefix}")
+            prefix = file.split('_s=')[0]                               # Get prefix.
+            # print(f"{'Prefix:'.ljust(8)}"
+            #       f"{prefix}")
 
-            # Create the dataframe.
-            df = pd.read_csv(os.path.join(args.input, file))
+            df = pd.read_csv(os.path.join(args.input, file))            # Create the dataframe.
 
-            # Convert the last row of the last column to list and then np.array.
-            column_list_str = df.iloc[-1, -1]
-            list_floats = [float(x) for x in column_list_str.strip('[]').split(',')]
+            column_list_str = df.iloc[-1, -1]                           # Convert the last row of the last column to list and then np.array.
+            list_floats = [float(x) for x
+                           in column_list_str.strip('[]').split(',')]
             array_floats = np.array(list_floats, dtype=float)
 
-            # Remove the last column (no longer needed).
-            df = df.drop(col_name, axis=1)
+            df = df.drop(col_name, axis=1)                              # Remove the last column (no longer needed).
 
-            # Save the last metric and dataframe.
-            last_rows.append(array_floats)
+            last_rows.append(array_floats)                              # Save the last metric and dataframe.
             dataframes.append(df)
 
         # Merge the dataframes based on columns.
@@ -137,15 +152,12 @@ def main(args):
         df_means['epoch'] = df_means['epoch'].astype('int')
         df_stds['epoch'] = df_means['epoch'].astype('int')
 
-        # Create a new DataFrame with mean +- std values
+        # Create a new DataFrame with mean+-std values wo/ col_name.
         df_both = pd.DataFrame()
-
         df_both['epoch'] = df_means['epoch']
-
         for column in df_means.columns:
             if column != 'epoch':
-                df_both[column] = df_means[column].astype(str) + ' +- ' + df_stds[column].astype(str)
-
+                df_both[column] = df_means[column].astype(str) + '+-' + df_stds[column].astype(str)
         df_both = df_both.drop(col_name, axis=1)
 
         # Save the mean and standard deviation dataframes to CSV files.
