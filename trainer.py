@@ -110,8 +110,8 @@ def accuracy(
         acc_dict = {
             'rmse': rmse,
             'mae': mae,
-            'rmse_per_class': list(np.round(rmse_per_class, NUM_DECIMALS)),
-            'mae_per_class': list(np.round(mae_per_class, NUM_DECIMALS))
+            'rmse_per_class': list(np.round(rmse_per_class, NUM_DECIMALS))
+            # 'mae_per_class': list(np.round(mae_per_class, NUM_DECIMALS))
         }
 
     return acc_dict
