@@ -61,7 +61,10 @@ def main(args):
     # Get a list of all directories.
     dirs = os.listdir(args.input)
     filtered_dirs = sorted([d for d in dirs if 'p' in d])
-    print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}") if args.verbose else None
+    x = [1, 5, 10, 25, 50]
+    if args.verbose:
+        print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}")
+        print(f"{'Target ratios:'.ljust(16)}{x}")
 
     # Set the transfer learning algorithms.
     transfer_learning_algs = ['_tl=LP_', '_tl=FT_', '_tl=LP+FT_']
@@ -124,39 +127,17 @@ def main(args):
                 res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :]['f1_macro']
                 std_values.append(res_std_last_epoch)
 
+                print(ratio)
+
             # Show information.
             print('Target files:')
             for mfile, sfile, mvalue, svalue in zip(mean_files, std_files, mean_values, std_values):
                 print(mfile, '-->', mvalue)
                 print(sfile, '-->', svalue)
 
-
-
-
-
-
-                # # Filter current files.
-                # curr_mean = [f for f in mean_files
-                #              if ('pp_mean_' in f and filter1 in f and filter2 in f)][0]
-                # curr_std = [f for f in std_files
-                #             if ('pp_std_' in f and filter1 in f and filter2 in f)][0]
-
-                # # Create final filenames.
-                # curr_mean_filename = os.path.join(curr_path, curr_mean)
-                # curr_std_filename = os.path.join(curr_path, curr_std)
-                # if args.verbose:
-                #     print(f"\n{'- File:'.ljust(9)}{curr_mean_filename}")
-                #     print(f"{'- File:'.ljust(9)}{curr_std_filename}")
-
-                # # Read the CSV file into a pandas DataFrame.
-                # res_mean_last_epoch = pd.read_csv(curr_mean_filename).iloc[-1, :]['f1_macro']
-                # res_std_last_epoch = pd.read_csv(curr_std_filename).iloc[-1, :]['f1_macro']
-
-                # # Append results.
-                # # results[model].append((res_mean_last_epoch, res_std_last_epoch))
-                # print(res_mean_last_epoch)
-                # print(res_std_last_epoch)
-
+            # Create the graph.
+            # plt.plot(x, mean_values)
+            # plt.show()
 
     return 0
 
