@@ -22,6 +22,7 @@ import numpy as np
 import argparse
 import sys
 import os
+from datetime import datetime
 from matplotlib import pyplot as plt
 
 
@@ -41,8 +42,11 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--input', '-i', required=True,    # nargs='+',
                         help='path to the folder where the csv file(s) are stored.')
 
-    parser.add_argument('--output', '-o', required=True,
+    parser.add_argument('--output', '-o', default='./',
                         help='path to the folder where the figure will be saved.')
+
+    parser.add_argument('--save_fig', '-sf', type=str, choices=['png', 'pdf'],
+                        help='format of the output image (default: png).')
 
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='provides additional details for debugging purposes.')
@@ -58,17 +62,18 @@ def main(args):
         print(f"{'Input folder:'.ljust(16)}{args.input}")
         print(f"{'Output folder:'.ljust(16)}{args.output}")
 
-    # Get task from first item.
+    # Get task from first item and set target metric.
     task = args.input.split('/')[-2]
-    print(f"{'Task:'.ljust(16)}{task}")
-
-    # Set target metric.
     if task == 'multiclass':
-        target_metric = 'f1_macro'
+        metric = 'f1_macro'
+        loc = 'lower right'
     elif task == 'multilabel':
-        target_metric = 'rmse'
+        metric = 'rmse'
+        loc = 'upper right'
     else:
-        target_metric = None
+        metric = None
+        loc = None
+    print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
 
     # Get a list of all directories.
     dirs = os.listdir(args.input)
@@ -77,7 +82,7 @@ def main(args):
     if args.verbose:
         print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}")
         print(f"{'Target ratios:'.ljust(16)}{x}")
-        print(f"{'Target metric:'.ljust(16)}{target_metric}")
+        print(f"{'Target metric:'.ljust(16)}{metric}")
 
     # Set the transfer learning algorithms.
     transfer_learning_algs = ['_tl=LP_', '_tl=FT_', '_tl=LP+FT_']
@@ -89,12 +94,12 @@ def main(args):
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
-    for tla in transfer_learning_algs:
+    for transfer in transfer_learning_algs:
 
         # Show information.
         if args.verbose:
             print(f"\n---------------------------------------------------") 
-            print(f"{'Curr TL:'.ljust(13)}{tla}")
+            print(f"{'Curr TL:'.ljust(13)}{transfer}")
 
         # Create fig.
         fig = plt.figure(figsize=(12, 6))
@@ -114,7 +119,7 @@ def main(args):
                 filter2 = '_iw=random'
             mean_files, std_files = [], []
             mean_values, std_values = [], []
-            print(f"\n{'Curr model:'.ljust(13)}{model}")
+            print(f"\n{'Curr model:'.ljust(13)}{model}") if args.verbose else None
 
             # Iterate over the dirs.
             for ratio in filtered_dirs:
@@ -125,7 +130,7 @@ def main(args):
 
                 # Get a list of all directories.
                 files = os.listdir(curr_path)
-                filtered_files = sorted([f for f in files if tla in f])
+                filtered_files = sorted([f for f in files if transfer in f])
 
                 # Filter current files.
                 curr_mean_file = [f for f in filtered_files
@@ -138,32 +143,45 @@ def main(args):
                 std_files.append(os.path.join(curr_path, curr_std_file))
 
                 # Append mean and std values.
-                res_mean_last_epoch = pd.read_csv(os.path.join(curr_path, curr_mean_file)).iloc[-1, :][target_metric]
+                res_mean_last_epoch = pd.read_csv(os.path.join(curr_path, curr_mean_file)).iloc[-1, :][metric]
                 mean_values.append(res_mean_last_epoch)
-                res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :][target_metric]
+                res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :][metric]
                 std_values.append(res_std_last_epoch)
 
             # Show information.
-            print('Target files:')
-            for mfile, sfile, mvalue, svalue in zip(mean_files, std_files, mean_values, std_values):
-                print(mfile, '-->', mvalue)
-                print(sfile, '-->', svalue)
+            if args.verbose:
+                print('Target files:')
+                for mfile, sfile, mvalue, svalue in zip(mean_files, std_files, mean_values, std_values):
+                    print(mfile, '-->', mvalue)
+                    print(sfile, '-->', svalue)
 
             # Plot the current model's values.
             y = np.array(mean_values)
             lower_y = y - np.array(std_values)
             upper_y = y + np.array(std_values)
-            plt.plot(x, y, 'x-')
+            plt.plot(x, y, 'x-', label=model)
             plt.fill_between(x, lower_y, upper_y, alpha=0.1)
 
         # Configure current plot.
-        plt.title(tla)
+        plt.title(transfer)
         plt.xlabel('Train ratio (%)', labelpad=10)
-        plt.ylabel(target_metric, labelpad=10)
+        plt.ylabel(metric, labelpad=10)
         plt.xticks(x)
+        plt.legend(loc=loc)
         plt.subplots_adjust(bottom=0.15)
         plt.tight_layout()
-        plt.show()
+
+        # Save figure or show.
+        if args.save_fig:
+            save_path = os.path.join(
+                args.output,
+                f'fig{transfer}{metric}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}'
+            )
+            fig.savefig(save_path,
+                        bbox_inches='tight')
+            print(f'\nFigure saved at {save_path}')
+        else:
+            plt.show()
 
     return 0
 
