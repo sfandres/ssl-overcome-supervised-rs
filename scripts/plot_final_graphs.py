@@ -43,14 +43,56 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--output', '-o', required=True,
                         help='path to the folder where the figure will be saved.')
 
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='provides additional details for debugging purposes.')
+
     return parser.parse_args(sys.argv[1:])
 
 
 def main(args):
 
     # Print target folders.
-    print(f'Input folder: {args.input}')
-    print(f'Output folder: {args.output}')
+    if args.verbose:
+        print(f"\n{'Input folder:'.ljust(16)}{args.input}")
+        print(f"{'Output folder:'.ljust(16)}{args.output}")
+
+    # Get a list of all files in the directory.
+    files = os.listdir(args.input)
+
+    # Filter the files to include only the ones with the desired pattern.
+    results = {}
+    lp_mean = sorted([f for f in files
+                      if ('pp_mean_' in f and '_tl=LP_' in f)])
+    lp_std = sorted([f for f in files
+                     if ('pp_std_' in f and '_tl=LP_' in f)])
+    ft_mean = sorted([f for f in files
+                      if ('pp_mean_' in f and '_tl=FT_' in f)])
+    ft_std = sorted([f for f in files
+                     if ('pp_std_' in f and '_tl=FT_' in f)])
+    lpft_mean = sorted([f for f in files
+                        if ('pp_mean_' in f and '_tl=LP+FT_' in f)])
+    lpft_std = sorted([f for f in files
+                       if ('pp_std_' in f and '_tl=LP+FT_' in f)])
+    results['lp'] = {'mean': lp_mean, 'std': lp_std}
+    results['ft'] = {'mean': ft_mean, 'std': ft_std}
+    results['lpft'] = {'mean': lpft_mean, 'std': lpft_std}
+
+    # Verbose.
+    if args.verbose:
+        print('\nFiles being loaded:')
+        for tl in results:
+            print(f'{tl}:')
+            for metric in results[tl]:
+                print(f"{f'* {metric}:'.ljust(8)} {results[tl][metric]}")
+
+    # Iterate over the different transfer learning algorithms.
+    for transfer_learning in results:
+
+        # Read the CSV file into a pandas DataFrame.
+        filename = os.path.join(args.input, results[transfer_learning]['mean'][0])
+        print(f'\nfilename: {filename}')
+        res_last_epoch = pd.read_csv(filename).iloc[-1, :]
+        print(res_last_epoch)
 
     return 0
 
