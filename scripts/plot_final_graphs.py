@@ -54,11 +54,44 @@ def main(args):
 
     # Print target folders.
     if args.verbose:
-        print(f"\n{'Input folder:'.ljust(16)}{args.input}")
+        print(f"\n---------------------------------------------------") 
+        print(f"{'Input folder:'.ljust(16)}{args.input}")
         print(f"{'Output folder:'.ljust(16)}{args.output}")
 
-    # Get a list of all files in the directory.
-    files = os.listdir(args.input)
+    # Get a list of all directories.
+    dirs = os.listdir(args.input)
+    filtered_dirs = sorted([d for d in dirs if 'p' in d])
+    print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}") if args.verbose else None
+
+    # Set the transfer learning algorithms.
+    transfer_learning_algs = ['_tl=LP_', '_tl=FT_', '_tl=LP+FT_']
+    print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
+
+    # Iterate over the algorithms.
+    for tla in transfer_learning_algs:
+
+        # Show information.
+        if args.verbose:
+            print(f"\n---------------------------------------------------") 
+            print(f"{'Current TL:'.ljust(13)}{tla}")
+
+        # Iterate over the dirs.
+        for dir in filtered_dirs:
+
+            # Build current path.
+            curr_path = os.path.join(args.input, dir)
+            print(f"\n{'* Path:'.ljust(9)}{curr_path}") if args.verbose else None
+
+            # Get a list of all directories.
+            files = os.listdir(curr_path)
+            filtered_files = sorted([f for f in files if tla in f])
+            print(f"{'* Target files:'}\n{filtered_files}") if args.verbose else None
+
+
+
+
+
+
 
     # Filter the files to include only the ones with the desired pattern.
     results = {}
