@@ -62,9 +62,11 @@ def main(args):
     dirs = os.listdir(args.input)
     filtered_dirs = sorted([d for d in dirs if 'p' in d])
     x = [1, 5, 10, 25, 50]
+    target_metric = 'f1_macro'
     if args.verbose:
         print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}")
         print(f"{'Target ratios:'.ljust(16)}{x}")
+        print(f"{'Target metric:'.ljust(16)}{target_metric}")
 
     # Set the transfer learning algorithms.
     transfer_learning_algs = ['_tl=LP_', '_tl=FT_', '_tl=LP+FT_']
@@ -82,6 +84,9 @@ def main(args):
         if args.verbose:
             print(f"\n---------------------------------------------------") 
             print(f"{'Curr TL:'.ljust(13)}{tla}")
+
+        # Create fig.
+        fig = plt.figure(figsize=(12, 6))
 
         # Iterate over the models.
         for model in models:
@@ -122,9 +127,9 @@ def main(args):
                 std_files.append(os.path.join(curr_path, curr_std_file))
 
                 # Append mean and std values.
-                res_mean_last_epoch = pd.read_csv(os.path.join(curr_path, curr_mean_file)).iloc[-1, :]['f1_macro']
+                res_mean_last_epoch = pd.read_csv(os.path.join(curr_path, curr_mean_file)).iloc[-1, :][target_metric]
                 mean_values.append(res_mean_last_epoch)
-                res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :]['f1_macro']
+                res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :][target_metric]
                 std_values.append(res_std_last_epoch)
 
                 print(ratio)
@@ -135,9 +140,21 @@ def main(args):
                 print(mfile, '-->', mvalue)
                 print(sfile, '-->', svalue)
 
-            # Create the graph.
-            # plt.plot(x, mean_values)
-            # plt.show()
+            # Plot the current model's values.
+            y = np.array(mean_values)
+            lower_y = y - np.array(std_values)
+            upper_y = y + np.array(std_values)
+            plt.plot(x, y, 'x-')
+            plt.fill_between(x, lower_y, upper_y, alpha=0.1)
+
+        # Configure current plot.
+        plt.title(tla)
+        plt.xlabel('Train ratio (%)', labelpad=10)
+        plt.ylabel(target_metric, labelpad=10)
+        plt.xticks(x)
+        plt.subplots_adjust(bottom=0.15)
+        plt.tight_layout()
+        plt.show()
 
     return 0
 
