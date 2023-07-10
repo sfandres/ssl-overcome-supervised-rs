@@ -72,6 +72,9 @@ def main(args):
     models = ['Supervised-ImageNet', 'Supervised-random']
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
+    # Create a dictionary to add the found results.
+    results = {}
+
     # Iterate over the algorithms.
     for tla in transfer_learning_algs:
 
@@ -79,6 +82,10 @@ def main(args):
         if args.verbose:
             print(f"\n---------------------------------------------------") 
             print(f"{'Current TL:'.ljust(13)}{tla}")
+
+        # Initialize dict.
+        results[tla] = {}
+        print(results)
 
         # Iterate over the dirs.
         for dir in filtered_dirs:
@@ -97,7 +104,7 @@ def main(args):
             # print(f"{'* Target files:'}\n{mean_files}\n{std_files}") if args.verbose else None
 
             # Iterate over the models.
-            for i, model in enumerate(models):
+            for model in models:
 
                 # Create the last filters according to the target model.
                 if model == 'SSL':
@@ -116,29 +123,22 @@ def main(args):
                 curr_std = [f for f in std_files
                             if ('pp_std_' in f and filter1 in f and filter2 in f)][0]
 
+                # Create final filenames.
                 curr_mean_filename = os.path.join(curr_path, curr_mean)
                 curr_std_filename = os.path.join(curr_path, curr_std)
-
                 if args.verbose:
                     print(f"\n{'- File:'.ljust(9)}{curr_mean_filename}")
                     print(f"{'- File:'.ljust(9)}{curr_std_filename}")
 
+                # Read the CSV file into a pandas DataFrame.
+                res_mean_last_epoch = pd.read_csv(curr_mean_filename).iloc[-1, :]['f1_macro']
+                res_std_last_epoch = pd.read_csv(curr_std_filename).iloc[-1, :]['f1_macro']
 
-            # # Read the CSV file into a pandas DataFrame.
-            # filename = os.path.join(curr_path, mean_files[0])
-            # print(f'\nfilename: {filename}')
-            # res_last_epoch = pd.read_csv(filename).iloc[-1, :]
-            # print(res_last_epoch)
+                # Append results.
+                # results[model].append((res_mean_last_epoch, res_std_last_epoch))
+                print(res_mean_last_epoch)
+                print(res_std_last_epoch)
 
-
-    # # Iterate over the different transfer learning algorithms.
-    # for transfer_learning in results:
-
-    #     # Read the CSV file into a pandas DataFrame.
-    #     filename = os.path.join(args.input, results[transfer_learning]['mean'][0])
-    #     print(f'\nfilename: {filename}')
-    #     res_last_epoch = pd.read_csv(filename).iloc[-1, :]
-    #     print(res_last_epoch)
 
     return 0
 
