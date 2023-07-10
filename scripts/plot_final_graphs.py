@@ -1,16 +1,19 @@
 """Creates the final figures from the csv files that contain
    the mean and std values of the merged dataframes.
 
-Usage: plot_final_graphs.py [-h] --input INPUT --output OUTPUT
+Usage: plot_final_graphs.py [-h] --input INPUT [--output OUTPUT] [--save_fig {png,pdf}] [--verbose]
 
 Script that creates the figures for the paper.
 
 options:
   -h, --help            show this help message and exit
   --input INPUT, -i INPUT
-                        path to the folder where the csv file(s) are stored.
+                        path to the parent folder where the different train ratio folders are stored.
   --output OUTPUT, -o OUTPUT
                         path to the folder where the figure will be saved.
+  --save_fig {png,pdf}, -sf {png,pdf}
+                        format of the output image (default: png).
+  --verbose, -v         provides additional details for debugging purposes.
 
 Author:
     A.J. Sanchez-Fernandez - 10/07/2023
@@ -40,7 +43,7 @@ def get_args() -> argparse.Namespace:
     )
 
     parser.add_argument('--input', '-i', required=True,    # nargs='+',
-                        help='path to the folder where the csv file(s) are stored.')
+                        help='path to the parent folder where the different train ratio folders are stored.')
 
     parser.add_argument('--output', '-o', default='./',
                         help='path to the folder where the figure will be saved.')
