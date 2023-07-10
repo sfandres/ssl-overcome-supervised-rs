@@ -22,6 +22,7 @@ import numpy as np
 import argparse
 import sys
 import os
+from matplotlib import pyplot as plt
 
 
 def get_args() -> argparse.Namespace:
@@ -74,8 +75,8 @@ def main(args):
     lpft_std = sorted([f for f in files
                        if ('pp_std_' in f and '_tl=LP+FT_' in f)])
     results['lp'] = {'mean': lp_mean, 'std': lp_std}
-    results['ft'] = {'mean': ft_mean, 'std': ft_std}
-    results['lpft'] = {'mean': lpft_mean, 'std': lpft_std}
+    # results['ft'] = {'mean': ft_mean, 'std': ft_std}
+    # results['lpft'] = {'mean': lpft_mean, 'std': lpft_std}
 
     # Verbose.
     if args.verbose:
