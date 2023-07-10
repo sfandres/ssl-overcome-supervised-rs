@@ -58,11 +58,22 @@ def main(args):
         print(f"{'Input folder:'.ljust(16)}{args.input}")
         print(f"{'Output folder:'.ljust(16)}{args.output}")
 
+    # Get task from first item.
+    task = args.input.split('/')[-2]
+    print(f"{'Task:'.ljust(16)}{task}")
+
+    # Set target metric.
+    if task == 'multiclass':
+        target_metric = 'f1_macro'
+    elif task == 'multilabel':
+        target_metric = 'rmse'
+    else:
+        target_metric = None
+
     # Get a list of all directories.
     dirs = os.listdir(args.input)
     filtered_dirs = sorted([d for d in dirs if 'p' in d])
     x = [1, 5, 10, 25, 50]
-    target_metric = 'f1_macro'
     if args.verbose:
         print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}")
         print(f"{'Target ratios:'.ljust(16)}{x}")
@@ -131,8 +142,6 @@ def main(args):
                 mean_values.append(res_mean_last_epoch)
                 res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :][target_metric]
                 std_values.append(res_std_last_epoch)
-
-                print(ratio)
 
             # Show information.
             print('Target files:')
