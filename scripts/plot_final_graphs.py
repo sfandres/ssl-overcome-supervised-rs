@@ -79,12 +79,12 @@ def main(args):
     print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
 
     # Get a list of all directories.
+    x = [1, 5, 10, 25, 50]
     dirs = os.listdir(args.input)
     filtered_dirs = sorted([d for d in dirs if 'p' in d])
-    x = [1, 5, 10, 25, 50]
     if args.verbose:
-        print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}")
         print(f"{'Target ratios:'.ljust(16)}{x}")
+        print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}")
         print(f"{'Target metric:'.ljust(16)}{metric}")
 
     # Set the transfer learning algorithms.
@@ -92,8 +92,7 @@ def main(args):
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
 
     # Set the models.
-    # models = ['SSL', 'Supervised-ImageNet', 'Supervised-random']
-    models = ['Supervised-ImageNet', 'Supervised-random']
+    models = ['Supervised-ImageNet', 'Supervised-random']                   # 'SSL'
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
