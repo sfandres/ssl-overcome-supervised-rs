@@ -177,8 +177,7 @@ def main(args):
                 args.output,
                 f'fig{transfer}{metric}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}'
             )
-            fig.savefig(save_path,
-                        bbox_inches='tight')
+            fig.savefig(save_path, bbox_inches='tight')
             print(f'\nFigure saved at {save_path}')
         else:
             plt.show()
