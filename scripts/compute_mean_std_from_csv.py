@@ -177,6 +177,8 @@ def main(args):
         df_means.to_csv(os.path.join(args.output, f'pp_mean_{prefix}.csv'), index=False)
         df_stds.to_csv(os.path.join(args.output, f'pp_std_{prefix}.csv'), index=False)
         df_both.to_csv(os.path.join(args.output, f'pp_both_{prefix}.csv'), index=False)
+    
+    return 0
 
 
 if __name__ == "__main__":
