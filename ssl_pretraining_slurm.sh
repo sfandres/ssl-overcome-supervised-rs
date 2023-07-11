@@ -3,7 +3,7 @@
 
 # General resource requests.
 #--------------------------------------------
-# --> COMMON OPTIONS
+#---> COMMON OPTIONS
 #--------------------------------------------
 #SBATCH --time=24:00:00                             # Job duration (72h is the limit).
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
@@ -11,15 +11,15 @@
 #SBATCH --mem=0                                     # Real memory required per node.
 #SBATCH --gres=gpu:1                                # The specified resources will be allocated to the job on each node.
 #--------------------------------------------
-# --> TURGALIUM
+#---> TURGALIUM
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
 #--------------------------------------------
-# --> NGPU.URG
+#---> NGPU.URG
 #--------------------------------------------
 #   #SBATCH --partition=dgx                             # Request specific partition (dios, dgx).
 #--------------------------------------------
-# --> UNUSED OPTIONS
+#---> UNUSED OPTIONS
 #--------------------------------------------
 #   #SBATCH --nodes=1                                   # Number of nodes.
 #   #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
