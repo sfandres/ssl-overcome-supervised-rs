@@ -141,7 +141,7 @@ ini_weights="random"
 seed=42
 
 # Run experiment (--standalone).
-# $SLURM_GPUS_PER_TASK $SLURM_NTASKS $SLURM_CPUS_PER_TASK
+# $SLURM_GPUS_PER_TASK $SLURM_NTASKS
 # --input_data $input_data \
 # --partially_frozen \
 command="torchrun --standalone \
@@ -158,7 +158,7 @@ ssl_pretraining.py $model \
 --save_every=$save_every \
 --eval_every=$eval_every \
 --batch_size=$batch_size \
---num_workers=4 \
+--num_workers=$SLURM_CPUS_PER_TASK \
 --ini_weights=$ini_weights \
 --seed=$seed \
 ${more_options}
