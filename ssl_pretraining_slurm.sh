@@ -19,7 +19,7 @@
 #--------------------------------------------
 #---> NGPU.URG
 #--------------------------------------------
-#   #SBATCH --partition=dgx                             # Request specific partition (dios, dgx).
+#   #SBATCH --partition=dios                            # Request specific partition (dios, dgx).
 
 #--------------------------------------------
 #---> UNUSED OPTIONS
