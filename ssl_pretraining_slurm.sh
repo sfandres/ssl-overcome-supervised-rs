@@ -10,14 +10,17 @@
 #SBATCH --ntasks=1                                  # Number of tasks.
 #SBATCH --mem=0                                     # Real memory required per node.
 #SBATCH --gres=gpu:1                                # The specified resources will be allocated to the job on each node.
+
 #--------------------------------------------
 #---> TURGALIUM
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
+
 #--------------------------------------------
 #---> NGPU.URG
 #--------------------------------------------
 #   #SBATCH --partition=dgx                             # Request specific partition (dios, dgx).
+
 #--------------------------------------------
 #---> UNUSED OPTIONS
 #--------------------------------------------
