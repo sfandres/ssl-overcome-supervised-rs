@@ -127,10 +127,16 @@ echo Nodes array:  $nodes_array
 echo Head node:    $head_node
 echo Head node IP: $head_node_ip
 
-# Load virtual environment.
-# source /p/project/joaiml/hetgrad/anaconda3/etc/profile.d/conda.sh
+# Load virtual environment (turgalium).
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate lulc2-conda
+
+# Load virtual environment (ngpu.ugr).
+# export PATH="/opt/anaconda/anaconda3/bin:$PATH"
+# export PATH="/opt/anaconda/bin:$PATH"
+# eval "$(conda shell.bash hook)"
+# conda activate /mnt/homeGPU/Environments/lulc2-conda
+# export TFHUB_CACHE_DIR=.
 
 # Define the general settings.
 # input_data="/p/project/prcoe12"
