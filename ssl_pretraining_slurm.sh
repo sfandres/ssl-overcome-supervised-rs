@@ -17,7 +17,7 @@
 #--------------------------------------------
 #SBATCH --ntasks=1                                  # Number of tasks.
 #SBATCH --mem=0                                     # Real memory required per node.
-#SBATCH --gres=gpu:volta:2                          # The specified resources will be allocated to the job on each node.
+#SBATCH --gres=gpu:volta:1                          # The specified resources will be allocated to the job on each node.
 #--------------------------------------------
 
 # #SBATCH --nodes=1                                   # Number of nodes.
