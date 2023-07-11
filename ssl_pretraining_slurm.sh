@@ -17,13 +17,13 @@
 #--------------------------------------------
 # --> NGPU.URG
 #--------------------------------------------
-#SBATCH --partition=dgx                             # Request specific partition (dios, dgx).
+#   #SBATCH --partition=dgx                             # Request specific partition (dios, dgx).
 #--------------------------------------------
 # --> UNUSED OPTIONS
 #--------------------------------------------
-# #SBATCH --nodes=1                                   # Number of nodes.
-# #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
-# #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
+#   #SBATCH --nodes=1                                   # Number of nodes.
+#   #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
+#   #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 
 
 # Current exp configuration --> Imbalanced/Balanced
