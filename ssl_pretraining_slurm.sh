@@ -9,6 +9,7 @@
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
 #SBATCH --time=24:00:00                             # Job duration (72h is the limit).
+#SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --mail-type=ALL                             # Type of notification via email.
 #SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
 #--------------------------------------------
@@ -19,7 +20,6 @@
 #SBATCH --gres=gpu:volta:1                          # The specified resources will be allocated to the job on each node.
 #--------------------------------------------
 
-# #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 # #SBATCH --nodes=1                                   # Number of nodes.
 # #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
 # #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
