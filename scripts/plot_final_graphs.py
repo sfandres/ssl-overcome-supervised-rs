@@ -79,7 +79,7 @@ def main(args):
     print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
 
     # Get a list of all directories.
-    x = [1, 5, 10, 25, 50]
+    x = [1, 5, 10, 25, 50, 100]
     dirs = os.listdir(args.input)
     filtered_dirs = sorted([d for d in dirs if 'p' in d])
     if args.verbose:
