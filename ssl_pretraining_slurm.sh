@@ -1,33 +1,34 @@
 #!/bin/bash
 
-# General resource requests.
 
+# General resource requests.
 #--------------------------------------------
-# TURGALIUM.
+# --> COMMON OPTIONS
 #--------------------------------------------
-# Common options.
-#--------------------------------------------
-#SBATCH --partition=volta                           # Request specific partition.
 #SBATCH --time=24:00:00                             # Job duration (72h is the limit).
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
-#SBATCH --mail-type=ALL                             # Type of notification via email.
-#SBATCH --mail-user=sfandres@unex.es                # User to receive the email notification.
-#--------------------------------------------
-# Specific options.
-#--------------------------------------------
 #SBATCH --ntasks=1                                  # Number of tasks.
 #SBATCH --mem=0                                     # Real memory required per node.
-#SBATCH --gres=gpu:volta:1                          # The specified resources will be allocated to the job on each node.
+#SBATCH --gres=gpu:1                                # The specified resources will be allocated to the job on each node.
 #--------------------------------------------
-
+# --> TURGALIUM
+#--------------------------------------------
+#SBATCH --partition=volta                           # Request specific partition.
+#--------------------------------------------
+# --> NGPU.URG
+#--------------------------------------------
+#SBATCH --partition=dgx                             # Request specific partition (dios, dgx).
+#--------------------------------------------
+# --> UNUSED OPTIONS
+#--------------------------------------------
 # #SBATCH --nodes=1                                   # Number of nodes.
 # #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
 # #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 
-# Current exp configuration --> Imbalanced/Balanced
 
+# Current exp configuration --> Imbalanced/Balanced
 #--------------------------------------------
-# INFO: Specific configurations for the experiments (copy and paste above).
+# --> INFO: Specific configurations for the experiments.
 #--------------------------------------------
 # * RayTune:            --ntasks=1, --gpus-per-node=2/4, --exclusive
 # * DDP-4GPUs:          --ntasks=4, --gpus-per-node=4,   --exclusive
