@@ -138,7 +138,7 @@ conda activate lulc2-conda
 # export PATH="/opt/anaconda/anaconda3/bin:$PATH"
 # export PATH="/opt/anaconda/bin:$PATH"
 # eval "$(conda shell.bash hook)"
-# conda activate /mnt/homeGPU/Environments/lulc2-conda
+# conda activate /home/asanchez/.conda/envs/lulc2-conda
 # export TFHUB_CACHE_DIR=.
 
 # Define the general settings.
@@ -180,4 +180,6 @@ echo "Command executed: >> srun $command"
 echo "---------------------"
 
 # Run.
+mail -s "Sbatch $model began" sfandres@unex.es <<< "Starting..."
 srun $command
+mail -s "Sbatch $model ended" sfandres@unex.es <<< "Completed!"
