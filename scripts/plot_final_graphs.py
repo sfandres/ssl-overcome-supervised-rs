@@ -163,13 +163,17 @@ def main(args):
             upper_y = y + np.array(std_values)
             plt.plot(x, y, 'x-', label=model)
             plt.fill_between(x, lower_y, upper_y, alpha=0.1)
+            for j, k in zip(x, y):
+                plt.text(j-1, k+0.025, str(round(k, 2)).lstrip('0'), ha='center', va='top')
 
         # Configure current plot.
         plt.title(transfer)
         plt.xlabel('Train ratio (%)', labelpad=10)
-        plt.ylabel(metric, labelpad=10)
         plt.xticks(x)
+        plt.ylabel(metric, labelpad=10)
+        plt.ylim(0, 1)
         plt.legend(loc=loc)
+        plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25)
         plt.subplots_adjust(bottom=0.15)
         plt.tight_layout()
 
