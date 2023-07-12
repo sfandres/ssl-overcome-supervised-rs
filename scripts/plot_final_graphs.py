@@ -113,12 +113,15 @@ def main(args):
             if model == 'SSL':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
+                text_space = 0.05
             elif model == 'Supervised-ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
+                text_space = 0.05
             elif model == 'Supervised-random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
+                text_space = 0.05
             mean_files, std_files = [], []
             mean_values, std_values = [], []
             print(f"\n{'Curr model:'.ljust(13)}{model}") if args.verbose else None
@@ -164,7 +167,7 @@ def main(args):
             plt.plot(x, y, 'x-', label=model)
             plt.fill_between(x, lower_y, upper_y, alpha=0.1)
             for j, k in zip(x, y):
-                plt.text(j-1, k+0.025, str(round(k, 2)).lstrip('0'), ha='center', va='top')
+                plt.text(j-1, k+text_space, str(round(k, 2)), ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
         # Configure current plot.
         plt.title(transfer)
