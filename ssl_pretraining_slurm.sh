@@ -15,6 +15,7 @@
 #---> TURGALIUM
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
+#SBATCH --exclude=aap[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
 
 #--------------------------------------------
 #---> NGPU.URG
@@ -25,7 +26,7 @@
 #---> UNUSED OPTIONS
 #--------------------------------------------
 #   #SBATCH --nodes=1                                   # Number of nodes.
-#   #SBATCH --gpus-per-node=2                           # Min. number of GPUs on each node.
+#   #SBATCH --gpus-per-node=2                           # Specify the number of GPUs required for the job on each node.
 #   #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 
 
