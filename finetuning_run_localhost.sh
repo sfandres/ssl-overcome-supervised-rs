@@ -34,12 +34,12 @@ for b in "${backbones[@]}"; do
                         if [ "$m" = "Supervised" ]; then
                             for iw in "${ini_weights[@]}"; do
                                 command="torchrun finetuning.py $m $d -bn $b -tr $tr -e $epochs -lr $learning_rate -se $save_every -bs $batch_size -nw $num_workers -iw $iw -tl $tl -s $s $more_options"
-                                echo $command; $command >> out_finetuning_$d.out
+                                echo $command; $command >> out_finetuning_$d_$m.out
                             done
                         else
                             for bd in "${balanced_dataset[@]}"; do
                                 command="torchrun finetuning.py $m $d -bn $b -tr $tr -e $epochs -lr $learning_rate -se $save_every -bs $batch_size -nw $num_workers -iw random -tl $tl -s $s $bd $more_options"
-                                echo $command; $command >> out_finetuning_$d.out
+                                echo $command; $command >> out_finetuning_$d_$m.out
                             done
                         fi
                     done
