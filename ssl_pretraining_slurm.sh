@@ -139,6 +139,7 @@ conda activate lulc2-conda
 # export PATH="/opt/anaconda/anaconda3/bin:$PATH"
 # export PATH="/opt/anaconda/bin:$PATH"
 # eval "$(conda shell.bash hook)"
+# source /opt/anaconda/etc/profile.d/conda.sh
 # conda activate lulc2-conda
 # export TFHUB_CACHE_DIR=.
 
