@@ -5,18 +5,18 @@ backbones=("resnet18")                                      # "resnet18" "resnet
 train_rates=("0.01" "0.05" "0.1" "0.25" "0.5" "1.0")        # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0"
 downstream=("multiclass" "multilabel")                      # "multiclass" "multilabel"
 models=("BarlowTwins")                                      # "Supervised" "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam"
-ini_weights=("random" "imagenet")                           # "random" "imagenet"
-balanced_dataset=(" " "-bd")                                # " " "-bd"
-transfer_learning=("LP" "FT" "LP+FT")                       # "LP" "FT" "LP+FT"
-seeds=("42" "5" "97")                                       # Random: "42" "5" "97"
-epochs=100                                                  # 12 for Ray Tune
+ini_weights=("random")                                      # "random" "imagenet"
+balanced_dataset=(" ")                                      # " " "-bd" (" " for Ray Tune)
+transfer_learning=("LP" "FT")                               # "LP" "FT" "LP+FT" (only the first two for Ray Tune)
+seeds=("42")                                                # Random: "42" (only this for Ray Tune) "5" "97"
+epochs=12                                                   # 12 for Ray Tune; otherwise 100
 learning_rate=0.01                                          # Not used for Ray Tune or --load_best_hyperparameters
 save_every=5
 batch_size=64
 num_workers=2
 # more_options=""
-# more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=3 --gpus_per_trial=1"
-more_options="--load_best_hyperparameters"
+more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=3 --gpus_per_trial=1"
+# more_options="--load_best_hyperparameters"
 
 # Troubleshooting.
 # export LOGLEVEL=INFO
