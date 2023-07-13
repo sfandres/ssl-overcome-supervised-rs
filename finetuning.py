@@ -722,6 +722,7 @@ def main(args):
     trainer = Trainer(
         model,
         dataloader,
+        args.batch_size,
         loss_fn,
         optimizer,
         save_every=args.save_every,
