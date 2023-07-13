@@ -13,7 +13,8 @@ epochs=12                                                   # 12 for Ray Tune; o
 learning_rate=0.01                                          # Not used for Ray Tune or --load_best_hyperparameters
 save_every=5
 batch_size=64
-num_workers=2
+# num_workers=2
+num_workers=4
 # more_options=""
 more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=3 --gpus_per_trial=1"
 # more_options="--load_best_hyperparameters"
