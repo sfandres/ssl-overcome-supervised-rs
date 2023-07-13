@@ -162,6 +162,7 @@ class Trainer():
         self,
         model: torch.nn.Module,
         dataloader: DataLoader,
+        batch_size: int,
         loss_fn: torch.nn.modules.loss,
         optimizer: torch.optim.Optimizer,
         save_every: int,
@@ -177,6 +178,7 @@ class Trainer():
         super().__init__()                                                          # Assign instance attributes.
         self.model = model
         self.dataloader = dataloader
+        self.batch_size = batch_size
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.save_every = save_every
@@ -192,8 +194,7 @@ class Trainer():
 
         self.model = model.to(self.local_rank)                                      # Move the model to the local rank device.
 
-        self.batch_size = len(next(iter(self.dataloader['train']))[0])              # Retrieve the batch size and initialize current epoch.
-        self.epochs_run = 0
+        self.epochs_run = 0                                                         # Initialize current epoch.
 
         if distributed:
             self.model = DDP(self.model, device_ids=[self.local_rank])              # Distributed training with DDP.
