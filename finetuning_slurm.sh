@@ -14,13 +14,13 @@
 #--------------------------------------------
 #---> TURGALIUM
 #--------------------------------------------
-#SBATCH --partition=volta                           # Request specific partition.
-#SBATCH --exclude=aap[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
+#   #SBATCH --partition=volta                           # Request specific partition.
+#   #SBATCH --exclude=aap[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
 
 #--------------------------------------------
 #---> NGPU.URG
 #--------------------------------------------
-#   #SBATCH --partition=dios                            # Request specific partition (dios, dgx).
+#SBATCH --partition=dios                            # Request specific partition (dios, dgx).
 
 #--------------------------------------------
 #---> UNUSED OPTIONS
