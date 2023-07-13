@@ -74,6 +74,7 @@ def linear_eval_backbone(
     trainer = Trainer(
         model,
         dataloader,
+        batch_size,
         loss_fn,
         optimizer,
         save_every=10,
