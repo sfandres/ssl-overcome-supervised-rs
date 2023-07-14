@@ -5,7 +5,7 @@
 #--------------------------------------------
 #---> COMMON OPTIONS
 #--------------------------------------------
-#SBATCH --time=00:00:20                             # Job duration (72h is the limit).
+#SBATCH --time=00:10:00                             # Job duration (72h is the limit).
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --ntasks=1                                  # Number of tasks.
 #SBATCH --mem=0                                     # Real memory required per node.
