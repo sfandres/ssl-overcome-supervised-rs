@@ -335,7 +335,7 @@ class Trainer():
 
         epoch_val_loss = self._run_evaluation()                         # Run the evaluation for the epoch.
 
-        print(f"[GPU{self.global_rank}] | [Epoch: {epoch}] | Train loss: {epoch_train_loss:.4f} | "
+        print(f"[N{self.global_rank}-GPU{self.local_rank}] | [Epoch: {epoch}] | Train loss: {epoch_train_loss:.4f} | "
               f"Steps: {len(self.dataloader['train'])} | Val loss: {epoch_val_loss:.4f} | "
               f"Batch size: {self.batch_size} | lr: {self.optimizer.param_groups[0]['lr']} | "
               f"Duration: {(time.time()-t0):.2f}s")
@@ -438,7 +438,8 @@ class Trainer():
             print()
             epoch_train_loss, epoch_val_loss = self._run_epoch(epoch)                   # Run the epoch and get the train and validation loss.
 
-            if ((self.global_rank == 0 and not self.ignore_ckpts and not self.ray_tune)
+            if ((self.global_rank == 0 and self.local_rank == 0)
+                and not self.ignore_ckpts and not self.ray_tune
                 and (epoch % self.save_every == 0 or epoch == config['epochs'] - 1)):
                 self._save_snapshot(epoch)                                              # Save a snapshot of the model.
 
