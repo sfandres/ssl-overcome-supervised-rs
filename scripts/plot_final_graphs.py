@@ -70,9 +70,13 @@ def main(args):
     if task == 'multiclass':
         metric = 'f1_macro'
         loc = 'lower right'
+        y_lim = 0.8
+        text_space = 0.05
     elif task == 'multilabel':
         metric = 'rmse'
         loc = 'upper right'
+        y_lim = 0.2
+        text_space = 0.01
     else:
         metric = None
         loc = None
@@ -92,7 +96,7 @@ def main(args):
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
 
     # Set the models.
-    models = ['Supervised-ImageNet', 'Supervised-random']                   # 'SSL'
+    models = ['SSL', 'Supervised-ImageNet', 'Supervised-random']
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
@@ -113,15 +117,12 @@ def main(args):
             if model == 'SSL':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
-                text_space = 0.05
             elif model == 'Supervised-ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
-                text_space = 0.05
             elif model == 'Supervised-random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
-                text_space = 0.05
             mean_files, std_files = [], []
             mean_values, std_values = [], []
             print(f"\n{'Curr model:'.ljust(13)}{model}") if args.verbose else None
@@ -167,14 +168,14 @@ def main(args):
             plt.plot(x, y, 'x-', label=model)
             plt.fill_between(x, lower_y, upper_y, alpha=0.1)
             for j, k in zip(x, y):
-                plt.text(j-1, k+text_space, str(round(k, 2)), ha='center', va='top')     # str(round(k, 2)).lstrip('0')
+                plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
         # Configure current plot.
         plt.title(transfer)
         plt.xlabel('Train ratio (%)', labelpad=10)
         plt.xticks(x)
         plt.ylabel(metric, labelpad=10)
-        plt.ylim(0, 1)
+        plt.ylim(0, y_lim)
         plt.legend(loc=loc)
         plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25)
         plt.subplots_adjust(bottom=0.15)
