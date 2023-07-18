@@ -28,6 +28,23 @@ import os
 from datetime import datetime
 from matplotlib import pyplot as plt
 
+def set_plt() -> None:
+    """
+    Configure matplotlib figures.
+    """
+
+    SMALL_SIZE = 15
+    MEDIUM_SIZE = 18
+    BIGGER_SIZE = 20
+
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=MEDIUM_SIZE)    # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 
 def get_args() -> argparse.Namespace:
     """
@@ -62,6 +79,9 @@ def get_args() -> argparse.Namespace:
 
 
 def main(args):
+
+    # Configure matplotlib.
+    set_plt()
 
     # Print target folders.
     if args.verbose:
@@ -110,7 +130,7 @@ def main(args):
             print(f"{'Curr TL:'.ljust(13)}{transfer}")
 
         # Create fig.
-        fig = plt.figure(figsize=(12, 6))
+        fig = plt.figure(figsize=(10, 6))
 
         # Iterate over the models.
         for model in models:
@@ -172,10 +192,16 @@ def main(args):
             # for j, k in zip(x, y):
             #     plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
+        # Adjust labels for the plot.
+        if metric == 'f1_macro':
+            metric_label = 'Macro F1 score'
+        elif metric == 'rmse':
+            metric_label = 'RMSE'
+
         # Configure current plot.
-        plt.xlabel('Train ratio (%)', labelpad=10)
+        plt.xlabel('Train ratio (%)', labelpad=15)
         plt.xticks(x)
-        plt.ylabel(metric, labelpad=10)
+        plt.ylabel(metric_label, labelpad=15)
         plt.ylim(0, y_lim)
         plt.legend(loc=loc)
         plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25)
@@ -186,7 +212,7 @@ def main(args):
         if args.save_fig:
             save_path = os.path.join(
                 args.output,
-                f'{task}{transfer}{metric}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
+                f'{task}_{metric}{transfer[:-1]}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
             )
             fig.savefig(save_path, bbox_inches='tight')
             print(f'\nFigure saved at {save_path}')
