@@ -212,7 +212,7 @@ def main(args):
         if args.save_fig:
             save_path = os.path.join(
                 args.output,
-                f'{task}_{metric}{transfer[:-1]}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
+                f'exp_{task}_{metric}{transfer[:-1]}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
             )
             fig.savefig(save_path, bbox_inches='tight')
             print(f'\nFigure saved at {save_path}')
