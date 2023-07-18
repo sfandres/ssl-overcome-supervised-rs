@@ -95,7 +95,6 @@ def main(args):
 
     # Get task from first item and set target metric.
     task = args.input.split('/')[-2]
-    metric = args.metric
     if task == 'multiclass':
         loc = 'lower right'
         y_lim = 0.8
@@ -115,7 +114,7 @@ def main(args):
     if args.verbose:
         print(f"{'Target ratios:'.ljust(16)}{x}")
         print(f"{'Target dirs:'.ljust(16)}{filtered_dirs}")
-        print(f"{'Target metric:'.ljust(16)}{metric}")
+        print(f"{'Target metric:'.ljust(16)}{args.metric}")
 
     # Set the transfer learning algorithms.
     transfer_learning_algs = ['_tl=LP_', '_tl=FT_', '_tl=LP+FT_']
@@ -175,11 +174,11 @@ def main(args):
                 std_files.append(os.path.join(curr_path, curr_std_file))
 
                 # Get last values.
-                res_mean_last_epoch = pd.read_csv(os.path.join(curr_path, curr_mean_file)).iloc[-1, :][metric]
-                res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :][metric]
+                res_mean_last_epoch = pd.read_csv(os.path.join(curr_path, curr_mean_file)).iloc[-1, :][args.metric]
+                res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :][args.metric]
 
                 # Convert the list of strings to a list of integers.
-                if 'per_class' in metric:
+                if 'per_class' in args.metric:
                     res_mean_last_epoch = [float(x) for x in res_mean_last_epoch.strip('[]').split(',')]
                     res_std_last_epoch = [float(x) for x in res_std_last_epoch.strip('[]').split(',')]
 
@@ -197,19 +196,24 @@ def main(args):
                 print(std_values)
 
             # Plot the current model's values.
-            y = np.array(mean_values)
-            lower_y = y - np.array(std_values)
-            upper_y = y + np.array(std_values)
-            plt.plot(x, y, 'x-', label=model, markersize=MARKER_SIZE)
-            plt.fill_between(x, lower_y, upper_y, alpha=0.1)
-            # for j, k in zip(x, y):
-            #     plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
+            if 'per_class' in args.metric:
+                None
+            else:
+                y = np.array(mean_values)
+                lower_y = y - np.array(std_values)
+                upper_y = y + np.array(std_values)
+                plt.plot(x, y, 'x-', label=model, markersize=MARKER_SIZE)
+                plt.fill_between(x, lower_y, upper_y, alpha=0.1)
+                # for j, k in zip(x, y):
+                #     plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
         # Adjust labels for the plot.
-        if metric == 'f1_macro':
+        if args.metric == 'f1_macro':
             metric_label = 'Macro F1 score'
-        elif metric == 'rmse':
+        elif args.metric == 'rmse':
             metric_label = 'RMSE'
+        else:
+            metric_label = args.metric
 
         # Configure current plot.
         plt.xlabel('Train ratio (%)', labelpad=15)
@@ -225,7 +229,7 @@ def main(args):
         if args.save_fig:
             save_path = os.path.join(
                 args.output,
-                f'exp_{task}_m={metric}{transfer[:-1]}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
+                f'exp_{task}_m={args.metric}{transfer[:-1]}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
             )
             fig.savefig(save_path, bbox_inches='tight')
             print(f'Figure saved at {save_path}')
