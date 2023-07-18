@@ -107,6 +107,14 @@ def main(args):
         loc = None
     print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
 
+    # Adjust labels for the plot.
+    if args.metric == 'f1_macro':
+        metric_label = 'Macro F1 score'
+    elif args.metric == 'rmse':
+        metric_label = 'RMSE'
+    else:
+        metric_label = args.metric
+
     # Get a list of all directories.
     x = [1, 5, 10, 25, 50, 100]
     dirs = os.listdir(args.input)
@@ -121,7 +129,7 @@ def main(args):
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
 
     # Set the models.
-    models = ['Barlow Twins', 'ImageNet', 'Random']
+    models = ['Random', 'ImageNet', 'Barlow Twins']
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
@@ -133,27 +141,33 @@ def main(args):
             print(f"{'Curr TL:'.ljust(13)}{transfer}")
 
         # Create fig.
-        fig = plt.figure(figsize=(8, 6))
+        if 'per_class' in args.metric:
+            fig = plt.figure(figsize=(18, 6))
+        else:
+            fig = plt.figure(figsize=(8, 6))
 
         # Iterate over the models.
-        for model in models:
+        for nm, model in enumerate(models):
 
             # Create the last filters according to the target model.
             if model == 'Barlow Twins':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
+                bar_color = 'blue'
             elif model == 'ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
+                bar_color = 'orange'
             elif model == 'Random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
+                bar_color = 'green'
             mean_files, std_files = [], []
             mean_values, std_values = [], []
             print(f"\n{'Curr model:'.ljust(13)}{model}") if args.verbose else None
 
             # Iterate over the dirs.
-            for ratio in filtered_dirs:
+            for nf, ratio in enumerate(filtered_dirs):
 
                 # Build current path.
                 curr_path = os.path.join(args.input, ratio)
@@ -196,30 +210,27 @@ def main(args):
                 print(std_values)
 
             # Plot the current model's values.
+            x_axis = np.arange(len(x))
             if 'per_class' in args.metric:
-                None
+                y_trans = np.transpose(mean_values)
+                bar_width = 0.05
+                bar_space = bar_width + bar_width / 2
+                for nf, values in enumerate(y_trans):
+                    plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=bar_color)
             else:
                 y = np.array(mean_values)
                 lower_y = y - np.array(std_values)
                 upper_y = y + np.array(std_values)
-                plt.plot(x, y, 'x-', label=model, markersize=MARKER_SIZE)
-                plt.fill_between(x, lower_y, upper_y, alpha=0.1)
+                plt.plot(x_axis, y, 'x-', label=model, markersize=MARKER_SIZE)
+                plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1)
+                plt.ylim(0, y_lim)
                 # for j, k in zip(x, y):
                 #     plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
-        # Adjust labels for the plot.
-        if args.metric == 'f1_macro':
-            metric_label = 'Macro F1 score'
-        elif args.metric == 'rmse':
-            metric_label = 'RMSE'
-        else:
-            metric_label = args.metric
-
         # Configure current plot.
+        plt.xticks(x_axis, x)
         plt.xlabel('Train ratio (%)', labelpad=15)
-        plt.xticks(x)
         plt.ylabel(metric_label, labelpad=15)
-        plt.ylim(0, y_lim)
         plt.legend(loc=loc)
         plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25)
         plt.subplots_adjust(bottom=0.15)
