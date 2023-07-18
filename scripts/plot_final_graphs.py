@@ -28,14 +28,17 @@ import os
 from datetime import datetime
 from matplotlib import pyplot as plt
 
+
+MARKER_SIZE = 9
+SMALL_SIZE = 18
+MEDIUM_SIZE = 22
+BIGGER_SIZE = 24
+
+
 def set_plt() -> None:
     """
     Configure matplotlib figures.
     """
-
-    SMALL_SIZE = 15
-    MEDIUM_SIZE = 18
-    BIGGER_SIZE = 20
 
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
     plt.rc('axes', titlesize=MEDIUM_SIZE)    # fontsize of the axes title
@@ -130,7 +133,7 @@ def main(args):
             print(f"{'Curr TL:'.ljust(13)}{transfer}")
 
         # Create fig.
-        fig = plt.figure(figsize=(10, 6))
+        fig = plt.figure(figsize=(8, 6))
 
         # Iterate over the models.
         for model in models:
@@ -187,7 +190,7 @@ def main(args):
             y = np.array(mean_values)
             lower_y = y - np.array(std_values)
             upper_y = y + np.array(std_values)
-            plt.plot(x, y, 'x-', label=model)
+            plt.plot(x, y, 'x-', label=model, markersize=MARKER_SIZE)
             plt.fill_between(x, lower_y, upper_y, alpha=0.1)
             # for j, k in zip(x, y):
             #     plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
@@ -215,7 +218,7 @@ def main(args):
                 f'exp_{task}_m={metric}{transfer[:-1]}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
             )
             fig.savefig(save_path, bbox_inches='tight')
-            print(f'\nFigure saved at {save_path}')
+            print(f'Figure saved at {save_path}')
         else:
             plt.title(transfer)
             plt.show()
