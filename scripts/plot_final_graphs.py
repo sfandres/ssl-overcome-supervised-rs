@@ -224,8 +224,8 @@ def main(args):
                 plt.plot(x_axis, y, 'x-', label=model, markersize=MARKER_SIZE)
                 plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1)
                 plt.ylim(0, y_lim)
-                # for j, k in zip(x, y):
-                #     plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
+                # for j, k in zip(x_axis, y):
+                #     plt.text(j-0.25, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
         # Configure current plot.
         plt.xticks(x_axis, x)
