@@ -69,7 +69,8 @@ def get_args() -> argparse.Namespace:
                         help='path to the folder where the figure will be saved.')
 
     parser.add_argument('--metric', '-m', required=True,
-                        choices=['top1', 'f1_micro', 'top5', 'f1_macro', 'f1_weighted', 'rmse', 'mae'],
+                        choices=['top1', 'f1_micro', 'top5', 'f1_macro', 'f1_weighted',
+                                 'rmse', 'mae', 'f1_per_class', 'rmse_per_class'],
                         help='parameter to be displayed in the y-axis.')
 
     parser.add_argument('--save_fig', '-sf', type=str, choices=['png', 'pdf'],
@@ -173,10 +174,12 @@ def main(args):
                 mean_files.append(os.path.join(curr_path, curr_mean_file))
                 std_files.append(os.path.join(curr_path, curr_std_file))
 
-                # Append mean and std values.
+                # Get last values.
                 res_mean_last_epoch = pd.read_csv(os.path.join(curr_path, curr_mean_file)).iloc[-1, :][metric]
-                mean_values.append(res_mean_last_epoch)
                 res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :][metric]
+
+                # Append values.
+                mean_values.append(res_mean_last_epoch)
                 std_values.append(res_std_last_epoch)
 
             # Show information.
