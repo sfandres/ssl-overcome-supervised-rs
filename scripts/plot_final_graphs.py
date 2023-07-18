@@ -178,6 +178,11 @@ def main(args):
                 res_mean_last_epoch = pd.read_csv(os.path.join(curr_path, curr_mean_file)).iloc[-1, :][metric]
                 res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :][metric]
 
+                # Convert the list of strings to a list of integers.
+                if 'per_class' in metric:
+                    res_mean_last_epoch = [float(x) for x in res_mean_last_epoch.strip('[]').split(',')]
+                    res_std_last_epoch = [float(x) for x in res_std_last_epoch.strip('[]').split(',')]
+
                 # Append values.
                 mean_values.append(res_mean_last_epoch)
                 std_values.append(res_std_last_epoch)
@@ -188,6 +193,8 @@ def main(args):
                 for mfile, sfile, mvalue, svalue in zip(mean_files, std_files, mean_values, std_values):
                     print(mfile, '-->', mvalue)
                     print(sfile, '-->', svalue)
+                print(mean_values)
+                print(std_values)
 
             # Plot the current model's values.
             y = np.array(mean_values)
