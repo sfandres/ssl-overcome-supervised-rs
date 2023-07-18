@@ -153,15 +153,15 @@ def main(args):
             if model == 'Barlow Twins':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
-                bar_color = 'blue'
+                model_color = 'blue'
             elif model == 'ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
-                bar_color = 'orange'
+                model_color = 'orange'
             elif model == 'Random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
-                bar_color = 'green'
+                model_color = 'green'
             mean_files, std_files = [], []
             mean_values, std_values = [], []
             print(f"\n{'Curr model:'.ljust(13)}{model}") if args.verbose else None
@@ -216,13 +216,13 @@ def main(args):
                 bar_width = 0.05
                 bar_space = bar_width + bar_width / 2
                 for nf, values in enumerate(y_trans):
-                    plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=bar_color)
+                    plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=model_color)
             else:
                 y = np.array(mean_values)
                 lower_y = y - np.array(std_values)
                 upper_y = y + np.array(std_values)
-                plt.plot(x_axis, y, 'x-', label=model, markersize=MARKER_SIZE)
-                plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1)
+                plt.plot(x_axis, y, 'x-', label=model, markersize=MARKER_SIZE, color=model_color)
+                plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1, color=model_color)
                 plt.ylim(0, y_lim)
                 # for j, k in zip(x_axis, y):
                 #     plt.text(j-0.25, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
