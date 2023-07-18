@@ -48,6 +48,10 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--output', '-o', default='./',
                         help='path to the folder where the figure will be saved.')
 
+    parser.add_argument('--metric', '-m', required=True,
+                        choices=['top1', 'f1_micro', 'top5', 'f1_macro', 'f1_weighted', 'rmse', 'mae'],
+                        help='parameter to be displayed in the y-axis.')
+
     parser.add_argument('--save_fig', '-sf', type=str, choices=['png', 'pdf'],
                         help='format of the output image (default: png).')
 
@@ -67,18 +71,16 @@ def main(args):
 
     # Get task from first item and set target metric.
     task = args.input.split('/')[-2]
+    metric = args.metric
     if task == 'multiclass':
-        metric = 'f1_macro'
         loc = 'lower right'
         y_lim = 0.8
         text_space = 0.05
     elif task == 'multilabel':
-        metric = 'rmse'
         loc = 'upper right'
         y_lim = 0.2
         text_space = 0.01
     else:
-        metric = None
         loc = None
     print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
 
@@ -96,7 +98,7 @@ def main(args):
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
 
     # Set the models.
-    models = ['SSL', 'Supervised-ImageNet', 'Supervised-random']
+    models = ['Barlow Twins', 'ImageNet', 'Random']
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
@@ -114,13 +116,13 @@ def main(args):
         for model in models:
 
             # Create the last filters according to the target model.
-            if model == 'SSL':
+            if model == 'Barlow Twins':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
-            elif model == 'Supervised-ImageNet':
+            elif model == 'ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
-            elif model == 'Supervised-random':
+            elif model == 'Random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
             mean_files, std_files = [], []
@@ -167,11 +169,10 @@ def main(args):
             upper_y = y + np.array(std_values)
             plt.plot(x, y, 'x-', label=model)
             plt.fill_between(x, lower_y, upper_y, alpha=0.1)
-            for j, k in zip(x, y):
-                plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
+            # for j, k in zip(x, y):
+            #     plt.text(j-1, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
         # Configure current plot.
-        plt.title(transfer)
         plt.xlabel('Train ratio (%)', labelpad=10)
         plt.xticks(x)
         plt.ylabel(metric, labelpad=10)
@@ -185,11 +186,12 @@ def main(args):
         if args.save_fig:
             save_path = os.path.join(
                 args.output,
-                f'fig{transfer}{metric}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}'
+                f'{task}{transfer}{metric}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
             )
             fig.savefig(save_path, bbox_inches='tight')
             print(f'\nFigure saved at {save_path}')
         else:
+            plt.title(transfer)
             plt.show()
 
     return 0
