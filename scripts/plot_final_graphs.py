@@ -117,6 +117,7 @@ def main(args):
 
     # Get a list of all directories.
     x = [1, 5, 10, 25, 50, 100]
+    bar_dict = {}
     dirs = os.listdir(args.input)
     filtered_dirs = sorted([d for d in dirs if 'p' in d])
     if args.verbose:
@@ -133,6 +134,7 @@ def main(args):
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
+    # ==============================================
     for transfer in transfer_learning_algs:
 
         # Show information.
@@ -147,7 +149,8 @@ def main(args):
             fig = plt.figure(figsize=(8, 6))
 
         # Iterate over the models.
-        for nm, model in enumerate(models):
+        # ==============================================
+        for model in models:
 
             # Create the last filters according to the target model.
             if model == 'Barlow Twins':
@@ -167,6 +170,7 @@ def main(args):
             print(f"\n{'Curr model:'.ljust(13)}{model}") if args.verbose else None
 
             # Iterate over the dirs.
+            # ==============================================
             for nf, ratio in enumerate(filtered_dirs):
 
                 # Build current path.
@@ -179,9 +183,9 @@ def main(args):
 
                 # Filter current files.
                 curr_mean_file = [f for f in filtered_files
-                             if ('pp_mean_' in f and filter1 in f and filter2 in f)][0]
+                                  if ('pp_mean_' in f and filter1 in f and filter2 in f)][0]
                 curr_std_file = [f for f in filtered_files
-                            if ('pp_std_' in f and filter1 in f and filter2 in f)][0]
+                                 if ('pp_std_' in f and filter1 in f and filter2 in f)][0]
 
                 # Append filenames.
                 mean_files.append(os.path.join(curr_path, curr_mean_file))
@@ -200,6 +204,9 @@ def main(args):
                 mean_values.append(res_mean_last_epoch)
                 std_values.append(res_std_last_epoch)
 
+            # Save the bar values.
+            bar_dict[model] = mean_values
+
             # Show information.
             if args.verbose:
                 print('Target files:')
@@ -212,7 +219,7 @@ def main(args):
             # Plot the current model's values.
             x_axis = np.arange(len(x))
             if 'per_class' in args.metric:
-                y_trans = np.transpose(mean_values)
+                y_trans = np.transpose(bar_dict[model])
                 bar_width = 0.05
                 bar_space = bar_width + bar_width / 2
                 for nf, values in enumerate(y_trans):
@@ -226,6 +233,8 @@ def main(args):
                 plt.ylim(0, y_lim)
                 # for j, k in zip(x_axis, y):
                 #     plt.text(j-0.25, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
+
+        print(bar_dict)
 
         # Configure current plot.
         plt.xticks(x_axis, x)
