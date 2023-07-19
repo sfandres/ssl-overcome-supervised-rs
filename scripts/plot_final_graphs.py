@@ -155,7 +155,7 @@ def main(args):
         text_space = 0.05
     elif task == 'multilabel':
         loc = 'upper right'
-        y_lim = 0.2
+        y_lim = 0.3
         text_space = 0.01
     else:
         loc = None
@@ -288,6 +288,7 @@ def main(args):
                 upper_y = y + np.array(std_values)
                 plt.plot(x_axis, y, 'x-', label=model, markersize=MARKER_SIZE, color=dict_colors[model])
                 plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1, color=dict_colors[model])
+                plt.legend(loc=loc)
                 # for j, k in zip(x_axis, y):
                 #     plt.text(j-0.25, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
@@ -295,18 +296,21 @@ def main(args):
             print(bar_dict)
 
         if 'per_class' in args.metric:
+            # None
             data = compute_max_bar(bar_dict, args.metric, args.verbose)
             for model in models:
                 y_trans = np.transpose(data[model])
                 for nf, values in enumerate(y_trans):
                     plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
+                labels = list(dict_colors.keys())
+                handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
+                plt.legend(handles, labels)
 
         # Configure current plot.
         plt.ylim(0, y_lim)
         plt.xticks(x_axis, x)
         plt.xlabel('Train ratio (%)', labelpad=15)
         plt.ylabel(metric_label, labelpad=15)
-        plt.legend(loc=loc)
         plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25)
         plt.subplots_adjust(bottom=0.15)
         plt.tight_layout()
