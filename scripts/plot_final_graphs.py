@@ -1,7 +1,8 @@
 """Creates the final figures from the csv files that contain
    the mean and std values of the merged dataframes.
 
-Usage: plot_final_graphs.py [-h] --input INPUT [--output OUTPUT] [--save_fig {png,pdf}] [--verbose]
+Usage: plot_final_graphs.py [-h] --input INPUT [--output OUTPUT] --metric {top1,f1_micro,top5,f1_macro,f1_weighted,rmse,mae,f1_per_class,rmse_per_class}
+                            [--save_fig {png,pdf}] [--verbose]
 
 Script that creates the figures for the paper.
 
@@ -11,12 +12,14 @@ options:
                         path to the parent folder where the different train ratio folders are stored.
   --output OUTPUT, -o OUTPUT
                         path to the folder where the figure will be saved.
+  --metric {top1,f1_micro,top5,f1_macro,f1_weighted,rmse,mae,f1_per_class,rmse_per_class}, -m {top1,f1_micro,top5,f1_macro,f1_weighted,rmse,mae,f1_per_class,rmse_per_class}
+                        parameter to be displayed in the y-axis.
   --save_fig {png,pdf}, -sf {png,pdf}
                         format of the output image (default: png).
   --verbose, -v         provides additional details for debugging purposes.
 
 Author:
-    A.J. Sanchez-Fernandez - 10/07/2023
+    A.J. Sanchez-Fernandez - 19/07/2023
 """
 
 
@@ -35,6 +38,7 @@ MEDIUM_SIZE = 22
 BIGGER_SIZE = 24
 
 
+# =========================================
 def set_plt() -> None:
     """
     Configure matplotlib figures.
@@ -49,6 +53,58 @@ def set_plt() -> None:
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 
+# =========================================
+def compute_max_bar(data: dict, metric: str, verbose: bool) -> dict:
+    """
+    Compute the max value per bar for the plot.
+
+    Args:
+        data (dict): dictionary with the array of arrays per model.
+        metric (str): target metric.
+        verbose (bool): show more information.
+
+    Returns:
+        The dictionary with max/min values and 0s.
+    """
+
+    # Get the number of columns (assuming all models have the same number of columns).
+    num_arrays = len(data[list(data.keys())[0]])
+    num_columns_per_array = len(data[list(data.keys())[0]][0])
+
+    # Initialize a list to store the maximum values per column.
+    ref_values_array = []
+
+    # Iterate through the arrays, positions and then models.
+    for i in range(num_arrays):
+
+        # Configure the metric.
+        if metric == 'f1_per_class':
+            ref_values = [0] * num_columns_per_array
+            fn = max
+        elif metric == 'rmse_per_class':
+            ref_values = [1] * num_columns_per_array
+            fn = min
+
+        for j in range(num_columns_per_array):
+
+            # Build the max values array.
+            for model in data.values():
+                ref_values[j] = fn(ref_values[j], model[i][j])
+        
+            # Write 0s if not max.
+            for model in data.values():
+                if model[i][j] != ref_values[j]:
+                    model[i][j] = 0
+
+        ref_values_array.append(ref_values)
+
+    if verbose:
+        print(ref_values_array)
+
+    return data
+
+
+# =========================================
 def get_args() -> argparse.Namespace:
     """
     Parse and retrieve command-line arguments.
@@ -57,10 +113,7 @@ def get_args() -> argparse.Namespace:
         An 'argparse.Namespace' object containing the parsed arguments.
     """
 
-    # Get arguments.
-    parser = argparse.ArgumentParser(
-        description='Script that creates the figures for the paper.'
-    )
+    parser = argparse.ArgumentParser(description='Script that creates the figures for the paper.')
 
     parser.add_argument('--input', '-i', required=True,    # nargs='+',
                         help='path to the parent folder where the different train ratio folders are stored.')
@@ -82,6 +135,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args(sys.argv[1:])
 
 
+# =========================================
 def main(args):
 
     # Configure matplotlib.
@@ -97,7 +151,7 @@ def main(args):
     task = args.input.split('/')[-2]
     if task == 'multiclass':
         loc = 'lower right'
-        y_lim = 0.8
+        y_lim = 1.0
         text_space = 0.05
     elif task == 'multilabel':
         loc = 'upper right'
@@ -107,7 +161,14 @@ def main(args):
         loc = None
     print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
 
-    # Adjust labels for the plot.
+    # Adjust labels for the plot and other parameters.
+    bar_width = 0.05
+    bar_space = bar_width + bar_width / 2
+    dict_colors = {
+        'Barlow Twins': 'blue',
+        'ImageNet': 'orange',
+        'Random': 'green'
+    }
     if args.metric == 'f1_macro':
         metric_label = 'Macro F1 score'
     elif args.metric == 'rmse':
@@ -115,8 +176,11 @@ def main(args):
     else:
         metric_label = args.metric
 
-    # Get a list of all directories.
+    # Horizontal axis.
     x = [1, 5, 10, 25, 50, 100]
+    x_axis = np.arange(len(x))
+
+    # Get a list of all directories.
     bar_dict = {}
     dirs = os.listdir(args.input)
     filtered_dirs = sorted([d for d in dirs if 'p' in d])
@@ -126,15 +190,14 @@ def main(args):
         print(f"{'Target metric:'.ljust(16)}{args.metric}")
 
     # Set the transfer learning algorithms.
-    transfer_learning_algs = ['_tl=LP_', '_tl=FT_', '_tl=LP+FT_']
+    transfer_learning_algs = ['_tl=LP_', '_tl=FT_']     # , '_tl=LP+FT_'
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
 
     # Set the models.
-    models = ['Random', 'ImageNet', 'Barlow Twins']
+    models = ['Random', 'Barlow Twins', 'ImageNet']
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
-    # ==============================================
     for transfer in transfer_learning_algs:
 
         # Show information.
@@ -149,28 +212,23 @@ def main(args):
             fig = plt.figure(figsize=(8, 6))
 
         # Iterate over the models.
-        # ==============================================
         for model in models:
 
             # Create the last filters according to the target model.
             if model == 'Barlow Twins':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
-                model_color = 'blue'
             elif model == 'ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
-                model_color = 'orange'
             elif model == 'Random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
-                model_color = 'green'
             mean_files, std_files = [], []
             mean_values, std_values = [], []
             print(f"\n{'Curr model:'.ljust(13)}{model}") if args.verbose else None
 
             # Iterate over the dirs.
-            # ==============================================
             for nf, ratio in enumerate(filtered_dirs):
 
                 # Build current path.
@@ -216,27 +274,35 @@ def main(args):
                 print(mean_values)
                 print(std_values)
 
-            # Plot the current model's values.
-            x_axis = np.arange(len(x))
+            # Bar plots with all values.
             if 'per_class' in args.metric:
-                y_trans = np.transpose(bar_dict[model])
-                bar_width = 0.05
-                bar_space = bar_width + bar_width / 2
-                for nf, values in enumerate(y_trans):
-                    plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=model_color)
+                None
+                # y_trans = np.transpose(bar_dict[model])
+                # for nf, values in enumerate(y_trans):
+                #     plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
+
+            # Line and marker plot. 
             else:
                 y = np.array(mean_values)
                 lower_y = y - np.array(std_values)
                 upper_y = y + np.array(std_values)
-                plt.plot(x_axis, y, 'x-', label=model, markersize=MARKER_SIZE, color=model_color)
-                plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1, color=model_color)
-                plt.ylim(0, y_lim)
+                plt.plot(x_axis, y, 'x-', label=model, markersize=MARKER_SIZE, color=dict_colors[model])
+                plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1, color=dict_colors[model])
                 # for j, k in zip(x_axis, y):
                 #     plt.text(j-0.25, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
-        print(bar_dict)
+        if args.verbose:
+            print(bar_dict)
+
+        if 'per_class' in args.metric:
+            data = compute_max_bar(bar_dict, args.metric, args.verbose)
+            for model in models:
+                y_trans = np.transpose(data[model])
+                for nf, values in enumerate(y_trans):
+                    plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
 
         # Configure current plot.
+        plt.ylim(0, y_lim)
         plt.xticks(x_axis, x)
         plt.xlabel('Train ratio (%)', labelpad=15)
         plt.ylabel(metric_label, labelpad=15)
