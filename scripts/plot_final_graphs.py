@@ -171,8 +171,12 @@ def main(args):
     }
     if args.metric == 'f1_macro':
         metric_label = 'Macro F1 score'
+    elif args.metric == 'f1_per_class':
+        metric_label = 'F1 score per class'
     elif args.metric == 'rmse':
         metric_label = 'RMSE'
+    elif args.metric == 'rmse_per_class':
+        metric_label = 'RMSE per class'
     else:
         metric_label = args.metric
 
@@ -280,6 +284,9 @@ def main(args):
                 # y_trans = np.transpose(bar_dict[model])
                 # for nf, values in enumerate(y_trans):
                 #     plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
+                # labels = list(dict_colors.keys())
+                # handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
+                # plt.legend(handles, labels)
 
             # Line and marker plot. 
             else:
