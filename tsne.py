@@ -6,11 +6,17 @@ import seaborn as sns
 import sys
 import torch
 import torchvision
-
+from utils import (barlowtwins, mocov2, simclr, simsiam)
+import pandas as pd
 from datetime import datetime
 from sklearn.manifold import TSNE
 from torchvision import transforms
 from utils.other import build_paths
+from utils.dataset import (
+    AndaluciaDataset,
+    load_mean_std_values
+)
+from utils.check_embeddings import create_list_embeddings
 from utils.dataset import load_dataset_based_on_ratio
 from utils.reproducibility import set_seed, seed_worker
 
@@ -60,6 +66,21 @@ def get_args() -> argparse.Namespace:
                         help='format of the output image (default: png).')
 
     return parser.parse_args(sys.argv[1:])
+
+
+def transform_abundances(
+    abundances: torch.Tensor
+) -> torch.Tensor:
+    """
+    Transforms the abundances from tensor to max value.
+
+    Args:
+        abundances (torch.Tensor): list of abundances per batch.
+    """
+
+    max_val, max_idx = torch.max(abundances, dim=0)
+
+    return max_idx.item()
 
 
 def main(args):
@@ -114,6 +135,10 @@ def main(args):
     # Size of the images.
     input_size = 224
 
+    # args.dataset_level = 'Level_N2'
+    # args.train_rate = 1.0
+    # args.task_name = 'multiclass'
+
     # ======================
     # DATASET.
     # ======================
@@ -129,6 +154,13 @@ def main(args):
         args.verbose
     )
 
+    # mean, std = load_mean_std_values(
+    #     os.path.join(
+    #         paths['datasets'],
+    #         os.path.join(args.dataset_name, args.dataset_level)
+    #     )
+    # )
+
     #--------------------------
     # Custom transforms.
     #--------------------------
@@ -140,7 +172,7 @@ def main(args):
         transforms.ToTensor(),
         transforms.Normalize(mean=mean[x],
                             std=std[x])
-    ]) for x in splits[1:]}
+    ]) for x in splits}
 
     if args.verbose:
         for t in transform:
@@ -153,7 +185,19 @@ def main(args):
     dataset = {x: torchvision.datasets.ImageFolder(
         os.path.join(paths[args.dataset_name], x),
         transform[x]
-    ) for x in splits[1:]}
+    ) for x in splits}
+
+    # Load the Andalucia dataset with normalization.
+    # dataset = {x: AndaluciaDataset(
+    #     root_dir=os.path.join(paths['datasets'], args.dataset_name),
+    #     level='Level_N2',
+    #     split=x,
+    #     train_ratio=args.train_rate,
+    #     transform=transform[x],
+    #     target_transform=transform_abundances if args.task_name == 'multiclass' else None,
+    #     seed=args.seed,
+    #     verbose=args.verbose
+    # ) for x in splits}
 
     if args.verbose:
         for d in dataset:
@@ -173,7 +217,7 @@ def main(args):
         drop_last=True,
         worker_init_fn=seed_worker,
         generator=g
-    ) for x in splits[1:]}
+    ) for x in splits}
 
     if args.verbose:
         for d in dataloader:
@@ -195,10 +239,63 @@ def main(args):
     # ======================
     # MODELS.
     # ======================
+
+    args.model_name = 'BarlowTwins'
+    args.backbone_name = 'resnet18'
+    weights = args.model_name
+
+    # Load snapshot from pretraining.
+    snapshot_name = f'snapshot_{args.model_name}_{args.backbone_name}_bd=False_iw=random.pt'
+    snapshot = torch.load(os.path.join(paths['input'], snapshot_name))
+    print(f'Model loaded from {snapshot_name}')
+
+    # Removing head from resnet: Encoder.
+    resnet = torchvision.models.resnet18(weights=None)              
+    backbone = torch.nn.Sequential(*list(resnet.children())[:-1])
+    input_dim = resnet.fc.in_features
+
+    # Build the filename.
+    filename_lr = f'ray_tune_{args.backbone_name}_{args.model_name}.csv'
+    df_lr = pd.read_csv(os.path.join(paths['best_configs'], filename_lr))
+    hidden_dim = df_lr.loc[0, 'hidden_dim']
+    out_dim = df_lr.loc[0, 'out_dim']
+
+    print(f"{'Model name:'.ljust(18)} {args.model_name}")
+    print(f"{'Backbone name:'.ljust(18)} {args.backbone_name}")
+    print(f"{'Hidden layer dim.:'.ljust(18)} {hidden_dim}")
+    print(f"{'Output layer dim.:'.ljust(18)} {out_dim}")
+
+    if args.model_name == 'SimSiam':
+        model = simsiam.SimSiam(backbone=backbone, input_dim=input_dim, proj_hidden_dim=out_dim,
+                                pred_hidden_dim=hidden_dim, output_dim=out_dim)
+    elif args.model_name == 'SimCLR':
+        model = simclr.SimCLR(backbone=backbone, input_dim=input_dim,
+                              hidden_dim=hidden_dim, output_dim=out_dim,
+                              num_layers=2, memory_bank_size=0)
+    elif args.model_name == 'SimCLRv2':
+        model = simclr.SimCLR(backbone=backbone, input_dim=input_dim,
+                              hidden_dim=hidden_dim, output_dim=out_dim,
+                              num_layers=3, memory_bank_size=65536)
+    elif args.model_name == 'BarlowTwins':
+        model = barlowtwins.BarlowTwins(backbone=backbone, input_dim=input_dim,
+                                        hidden_dim=hidden_dim, output_dim=out_dim)
+    elif args.model_name == 'MoCov2':
+        model = mocov2.MoCov2(backbone=backbone, input_dim=input_dim,
+                              hidden_dim=hidden_dim, output_dim=out_dim)
+
+    model.load_state_dict(snapshot["MODEL"])
+
+    model = torch.nn.Sequential(
+        model.backbone,
+        torch.nn.Flatten(),
+        )
+
     # Create ResNet18 backbone with random weights
-    weights = torchvision.models.ResNet18_Weights.DEFAULT                                                  # weights=torchvision.models.ResNet18_Weights.DEFAULT
-    model = torchvision.models.resnet18(weights=weights)               
-    model.fc = torch.nn.Identity()                                  # Remove the fully connected layer
+    # weights = torchvision.models.ResNet18_Weights.DEFAULT           # weights=torchvision.models.ResNet18_Weights.DEFAULT
+    # model = torchvision.models.resnet18(weights=weights)              
+    # model.fc = torch.nn.Identity()                                  # Remove the fully connected layer
+
+    # Send the model to GPU.
     model = model.to('cuda')
 
     # ======================
@@ -219,6 +316,8 @@ def main(args):
 
     embeddings = np.concatenate(embeddings)
     labels = np.array(labels)
+    # np.savetxt(os.path.join(paths['images'], "embeddings.csv"), embeddings, delimiter=",")
+    # np.savetxt(os.path.join(paths['images'], "labels.csv"), labels, delimiter=",")
     print('Completed!')
 
     # Perform t-SNE on the embeddings.
@@ -231,25 +330,28 @@ def main(args):
     num_classes = len(np.unique(labels))
     fig = plt.figure(figsize=(10, 10))
     sns.set(font_scale=1.6)
-    sns.scatterplot(
+    gfg = sns.scatterplot(
         x=embeddings_tsne[:, 0],
         y=embeddings_tsne[:, 1],
         hue=labels,
         palette=sns.color_palette('hls', num_classes),
         legend='full',
         alpha=0.7
-    ).set_title(f't-SNE_{weights}')
+    )                                                                       # .set_title(f't-SNE_{weights}')
+    gfg.set_ylim(-110, 110)
+    gfg.set_xlim(-110, 124)
     plt.legend(loc='right', fontsize='12', title_fontsize='12')
 
     # Save figure or show.
     if args.save_fig:
         save_path = os.path.join(
             paths['images'],
-            f't-SNE_iw={weights}_s={args.seed}-{datetime.now():%Y_%m_%d-%H_%M_%S}.{args.save_fig}'
+            f't-SNE_iw={weights}_s={args.seed}.{args.save_fig}'             # -{datetime.now():%Y_%m_%d-%H_%M_%S}
         )
         fig.savefig(save_path, bbox_inches='tight')
         print(f'\nFigure saved at {save_path}')
     else:
+        plt.title(f't-SNE_{weights}')
         plt.show()
 
     return 0
