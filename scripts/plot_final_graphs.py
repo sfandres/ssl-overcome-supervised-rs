@@ -362,11 +362,11 @@ def main(args):
             elif args.bar == 'diff':
                 data = compute_diff_bar(bar_dict, args.verbose)
                 y_trans = np.transpose(data)
-                print(y_trans)
-                print()
                 for nf, values in enumerate(y_trans):
-                    print(values)
-                    plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width)
+                    bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
+                    plt.bar(bar_pos, values, width=bar_width)
+                    for j, k in zip(bar_pos, nf+np.zeros(9)):
+                        plt.text(j, -0.0425, str(round(k)), ha='center', va='top')
 
         # Configure current plot.
         plt.ylim(0, y_lim)
