@@ -90,7 +90,7 @@ def compute_max_bar(data: dict, metric: str, verbose: bool) -> dict:
             # Build the max values array.
             for model in data.values():
                 ref_values[j] = fn(ref_values[j], model[i][j])
-        
+
             # Write 0s if not max.
             for model in data.values():
                 if model[i][j] != ref_values[j]:
@@ -99,7 +99,10 @@ def compute_max_bar(data: dict, metric: str, verbose: bool) -> dict:
         ref_values_array.append(ref_values)
 
     if verbose:
+        print('\nReference values (max values) from compute_max_bar():')
         print(ref_values_array)
+        print('\nFinal data to plot:')
+        print(data)
 
     return data
 
@@ -275,8 +278,8 @@ def main(args):
                 for mfile, sfile, mvalue, svalue in zip(mean_files, std_files, mean_values, std_values):
                     print(mfile, '-->', mvalue)
                     print(sfile, '-->', svalue)
-                print(mean_values)
-                print(std_values)
+                print('\nMean values:', mean_values)
+                print('Std values:', std_values)
 
             # Bar plots with all values.
             if 'per_class' in args.metric:
@@ -300,6 +303,7 @@ def main(args):
                 #     plt.text(j-0.25, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
         if args.verbose:
+            print('\nDictionary including means:')
             print(bar_dict)
 
         if 'per_class' in args.metric:
