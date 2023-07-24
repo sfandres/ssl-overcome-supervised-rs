@@ -108,6 +108,46 @@ def compute_max_bar(data: dict, metric: str, verbose: bool) -> dict:
 
 
 # =========================================
+def compute_diff_bar(data: dict, verbose: bool) -> dict:
+    """
+    Compute the difference per bar for the plot.
+
+    Args:
+        data (dict): dictionary with the array of arrays per model.
+        metric (str): target metric.
+        verbose (bool): show more information.
+
+    Returns:
+        The dictionary with difference values.
+    """
+
+    # Get the number of columns (assuming all models have the same number of columns).
+    num_arrays = len(data[list(data.keys())[0]])
+    num_columns_per_array = len(data[list(data.keys())[0]][0])
+
+    # Initialize a list to store the maximum values per column.
+    array_of_values = []
+
+    # Iterate through the arrays, positions and then models.
+    for i in range(num_arrays):
+
+        ref_values_array = []
+
+        for j in range(num_columns_per_array):
+
+            res = data['Barlow Twins'][i][j] - data['ImageNet'][i][j]
+            ref_values_array.append(round(res, 3))
+
+        array_of_values.append(ref_values_array)
+
+    if verbose:
+        print('\nFinal data to plot:')
+        print(array_of_values)
+
+    return array_of_values
+
+
+# =========================================
 def get_args() -> argparse.Namespace:
     """
     Parse and retrieve command-line arguments.
@@ -128,6 +168,9 @@ def get_args() -> argparse.Namespace:
                         choices=['top1', 'f1_micro', 'top5', 'f1_macro', 'f1_weighted',
                                  'rmse', 'mae', 'f1_per_class', 'rmse_per_class'],
                         help='parameter to be displayed in the y-axis.')
+
+    parser.add_argument('--bar', '-b', default='both', choices=['both', 'best', 'diff'],
+                        help='type of bar plot.')
 
     parser.add_argument('--save_fig', '-sf', type=str, choices=['png', 'pdf'],
                         help='format of the output image (default: png).')
@@ -170,7 +213,7 @@ def main(args):
     dict_colors = {
         'Barlow Twins': 'blue',
         'ImageNet': 'orange',
-        'Random': 'green'
+        # 'Random': 'green'
     }
     if args.metric == 'f1_macro':
         metric_label = 'Macro F1 score'
@@ -283,13 +326,13 @@ def main(args):
 
             # Bar plots with all values.
             if 'per_class' in args.metric:
-                None
-                # y_trans = np.transpose(bar_dict[model])
-                # for nf, values in enumerate(y_trans):
-                #     plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
-                # labels = list(dict_colors.keys())
-                # handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
-                # plt.legend(handles, labels)
+                if args.bar == 'both':
+                    y_trans = np.transpose(bar_dict[model])
+                    for nf, values in enumerate(y_trans):
+                        plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
+                    labels = list(dict_colors.keys())
+                    handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
+                    plt.legend(handles, labels)
 
             # Line and marker plot. 
             else:
@@ -307,18 +350,30 @@ def main(args):
             print(bar_dict)
 
         if 'per_class' in args.metric:
-            # None
-            data = compute_max_bar(bar_dict, args.metric, args.verbose)
-            for model in models:
-                y_trans = np.transpose(data[model])
+            if args.bar == 'best':
+                data = compute_max_bar(bar_dict, args.metric, args.verbose)
+                for model in models:
+                    y_trans = np.transpose(data[model])
+                    for nf, values in enumerate(y_trans):
+                        plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
+                labels = list(dict_colors.keys())
+                handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
+                plt.legend(handles, labels)
+            elif args.bar == 'diff':
+                data = compute_diff_bar(bar_dict, args.verbose)
+                y_trans = np.transpose(data)
+                print(y_trans)
+                print()
                 for nf, values in enumerate(y_trans):
-                    plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
-            labels = list(dict_colors.keys())
-            handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
-            plt.legend(handles, labels)
+                    print(values)
+                    plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width)
 
         # Configure current plot.
         plt.ylim(0, y_lim)
+        if 'f1_per_class' in args.metric and args.bar == 'diff':
+            plt.ylim(-0.3, 0.3)
+        elif 'rmse_per_class' in args.metric and args.bar == 'diff':
+            plt.ylim(-0.05, 0.05)
         plt.xticks(x_axis, x)
         plt.xlabel('Train ratio (%)', labelpad=15)
         plt.ylabel(metric_label, labelpad=15)
@@ -330,7 +385,7 @@ def main(args):
         if args.save_fig:
             save_path = os.path.join(
                 args.output,
-                f'exp_{task}_m={args.metric}{transfer[:-1]}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
+                f'exp_{task}_m={args.metric}{transfer[:-1]}_{args.bar}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
             )
             fig.savefig(save_path, bbox_inches='tight')
             print(f'Figure saved at {save_path}')
