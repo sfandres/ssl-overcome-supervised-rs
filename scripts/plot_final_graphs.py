@@ -114,7 +114,6 @@ def compute_diff_bar(data: dict, verbose: bool) -> dict:
 
     Args:
         data (dict): dictionary with the array of arrays per model.
-        metric (str): target metric.
         verbose (bool): show more information.
 
     Returns:
@@ -329,7 +328,10 @@ def main(args):
                 if args.bar == 'both':
                     y_trans = np.transpose(bar_dict[model])
                     for nf, values in enumerate(y_trans):
-                        plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
+                        bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
+                        plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model])
+                        for j, k in zip(bar_pos, nf+np.zeros(9)):
+                            plt.text(j, -0.01, str(round(k)), ha='center', va='top')
                     labels = list(dict_colors.keys())
                     handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
                     plt.legend(handles, labels)
@@ -343,7 +345,7 @@ def main(args):
                 plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1, color=dict_colors[model])
                 plt.legend(loc=loc)
                 # for j, k in zip(x_axis, y):
-                #     plt.text(j-0.25, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
+                    # plt.text(j-0.25, k+text_space, f'{round(k, 2):.2f}', ha='center', va='top')     # str(round(k, 2)).lstrip('0')
 
         if args.verbose:
             print('\nDictionary including means:')
@@ -355,7 +357,10 @@ def main(args):
                 for model in models:
                     y_trans = np.transpose(data[model])
                     for nf, values in enumerate(y_trans):
-                        plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
+                        bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
+                        plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model])
+                        for j, k in zip(bar_pos, nf+np.zeros(9)):
+                            plt.text(j, -0.01, str(round(k)), ha='center', va='top')
                 labels = list(dict_colors.keys())
                 handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
                 plt.legend(handles, labels)
@@ -368,12 +373,20 @@ def main(args):
                     for j, k in zip(bar_pos, nf+np.zeros(9)):
                         plt.text(j, -0.0425, str(round(k)), ha='center', va='top')
 
-        # Configure current plot.
+        # Configure current plot limits.
         plt.ylim(0, y_lim)
-        if 'f1_per_class' in args.metric and args.bar == 'diff':
-            plt.ylim(-0.3, 0.3)
-        elif 'rmse_per_class' in args.metric and args.bar == 'diff':
-            plt.ylim(-0.05, 0.05)
+        if 'f1_per_class' in args.metric:
+            if args.bar == 'diff':
+                plt.ylim(-0.3, 0.3)
+            else:
+                plt.ylim(-0.075, y_lim)
+        elif 'rmse_per_class' in args.metric:
+            if args.bar == 'diff':
+                plt.ylim(-0.05, 0.05)
+            else:
+                plt.ylim(-0.035, y_lim)
+
+        # Configure current plot.
         plt.xticks(x_axis, x)
         plt.xlabel('Train ratio (%)', labelpad=15)
         plt.ylabel(metric_label, labelpad=15)
