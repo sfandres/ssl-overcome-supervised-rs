@@ -201,7 +201,7 @@ def main(args):
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
 
     # Set the models.
-    models = ['Random', 'Barlow Twins', 'ImageNet']
+    models = ['Barlow Twins', 'ImageNet']   #'Random', 
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
@@ -313,9 +313,9 @@ def main(args):
                 y_trans = np.transpose(data[model])
                 for nf, values in enumerate(y_trans):
                     plt.bar(x_axis + nf*bar_space - bar_space*len(y_trans)/2, values, width=bar_width, color=dict_colors[model])
-                labels = list(dict_colors.keys())
-                handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
-                plt.legend(handles, labels)
+            labels = list(dict_colors.keys())
+            handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
+            plt.legend(handles, labels)
 
         # Configure current plot.
         plt.ylim(0, y_lim)
