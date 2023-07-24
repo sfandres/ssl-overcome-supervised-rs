@@ -393,7 +393,7 @@ def main(args):
                     y_trans = np.transpose(bar_dict[model])
                     for nf, values in enumerate(y_trans):
                         bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
-                        plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model])
+                        plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model], zorder=3)
                         for j, k in zip(bar_pos, nf+np.zeros(9)):
                             plt.text(j, text_space, str(round(k)), ha='center', va='top')
                     labels = list(dict_colors.keys())
@@ -422,7 +422,7 @@ def main(args):
                     y_trans = np.transpose(data[model])
                     for nf, values in enumerate(y_trans):
                         bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
-                        plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model])
+                        plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model], zorder=3)
                         for j, k in zip(bar_pos, nf+np.zeros(9)):
                             plt.text(j, text_space, str(round(k)), ha='center', va='top')
                 labels = list(dict_colors.keys())
@@ -433,7 +433,7 @@ def main(args):
                 y_trans = np.transpose(data)
                 for nf, values in enumerate(y_trans):
                     bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
-                    plt.bar(bar_pos, values, width=bar_width)
+                    plt.bar(bar_pos, values, width=bar_width, zorder=3)
                     for j, k in zip(bar_pos, nf+np.zeros(9)):
                         plt.text(j, text_space, str(round(k)), ha='center', va='top')
 
@@ -442,7 +442,7 @@ def main(args):
         plt.xticks(x_axis, x)
         plt.xlabel('Train ratio (%)', labelpad=15)
         plt.ylabel(metric_label, labelpad=15)
-        plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25)
+        plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25, zorder=0)
         plt.subplots_adjust(bottom=0.15)
         plt.tight_layout()
 
@@ -450,7 +450,7 @@ def main(args):
         if args.save_fig:
             save_path = os.path.join(
                 args.output,
-                f'exp_{task}_m={args.metric}{transfer[:-1]}_{args.bar}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
+                f'exp_{task}_m={args.metric}{transfer[:-1]}_{args.bar}_{args.ref}.{args.save_fig}'      # -{datetime.now():%Y_%m_%d-%H_%M_%S}
             )
             fig.savefig(save_path, bbox_inches='tight')
             print(f'Figure saved at {save_path}')
