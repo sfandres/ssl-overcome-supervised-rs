@@ -108,12 +108,13 @@ def compute_max_bar(data: dict, metric: str, verbose: bool) -> dict:
 
 
 # =========================================
-def compute_diff_bar(data: dict, verbose: bool) -> dict:
+def compute_diff_bar(data: dict, ref: str, verbose: bool) -> dict:
     """
     Compute the difference per bar for the plot.
 
     Args:
         data (dict): dictionary with the array of arrays per model.
+        ref (str): reference model to compute the difference with.
         verbose (bool): show more information.
 
     Returns:
@@ -134,7 +135,7 @@ def compute_diff_bar(data: dict, verbose: bool) -> dict:
 
         for j in range(num_columns_per_array):
 
-            res = data['Barlow Twins'][i][j] - data['ImageNet'][i][j]
+            res = data['Barlow Twins'][i][j] - data[ref][i][j]
             ref_values_array.append(round(res, 3))
 
         array_of_values.append(ref_values_array)
@@ -168,8 +169,11 @@ def get_args() -> argparse.Namespace:
                                  'rmse', 'mae', 'f1_per_class', 'rmse_per_class'],
                         help='parameter to be displayed in the y-axis.')
 
-    parser.add_argument('--bar', '-b', default='both', choices=['both', 'best', 'diff'],
+    parser.add_argument('--bar', '-b', choices=['both', 'best', 'diff'],
                         help='type of bar plot.')
+
+    parser.add_argument('--ref', '-r', choices=['Random', 'ImageNet'],
+                        help='model to compare with Barlow Twins.')
 
     parser.add_argument('--save_fig', '-sf', type=str, choices=['png', 'pdf'],
                         help='format of the output image (default: png).')
@@ -192,28 +196,35 @@ def main(args):
         print(f"{'Input folder:'.ljust(16)}{args.input}")
         print(f"{'Output folder:'.ljust(16)}{args.output}")
 
-    # Get task from first item and set target metric.
-    task = args.input.split('/')[-2]
-    if task == 'multiclass':
-        loc = 'lower right'
-        y_lim = 1.0
-        text_space = 0.05
-    elif task == 'multilabel':
-        loc = 'upper right'
-        y_lim = 0.3
-        text_space = 0.01
+    # Adjust reference.
+    if args.ref == 'Random':
+        dict_colors = {
+            'Barlow Twins': 'blue',
+            'Random': 'green'
+        }
+        models = ['Random', 'Barlow Twins']
+    elif args.ref == 'ImageNet':
+        dict_colors = {
+            'Barlow Twins': 'blue',
+            'ImageNet': 'orange',
+        }
+        models = ['ImageNet', 'Barlow Twins']
     else:
-        loc = None
+        dict_colors = {
+            'Barlow Twins': 'blue',
+            'ImageNet': 'orange',
+            'Random': 'green'
+        }
+        models = ['Random', 'ImageNet', 'Barlow Twins']
+    print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
+
+    # Get task from first item and set target metric and reference.
+    task = args.input.split('/')[-2]
     print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
 
     # Adjust labels for the plot and other parameters.
     bar_width = 0.05
     bar_space = bar_width + bar_width / 2
-    dict_colors = {
-        'Barlow Twins': 'blue',
-        'ImageNet': 'orange',
-        # 'Random': 'green'
-    }
     if args.metric == 'f1_macro':
         metric_label = 'Macro F1 score'
     elif args.metric == 'f1_per_class':
@@ -224,6 +235,63 @@ def main(args):
         metric_label = 'RMSE per class'
     else:
         metric_label = args.metric
+
+    # Adjust limits.
+    y_min = 0
+    if task == 'multiclass':
+        loc = 'lower right'
+        y_max = 1.0
+    elif task == 'multilabel':
+        loc = 'upper right'
+        y_max = 0.3
+
+    if 'f1_per_class' in args.metric:
+        if 'best' in args.bar:
+            if args.ref == 'Random':
+                y_min = -0.09
+                y_max = 1.0
+                text_space = -0.03
+            elif args.ref == 'ImageNet':
+                y_min = -0.09
+                y_max = 1.0
+                text_space = -0.025
+        elif 'diff' in args.bar:
+            if args.ref == 'Random':
+                y_min = -0.1
+                y_max = 0.4
+                text_space = -0.07
+            elif args.ref == 'ImageNet':
+                y_min = -0.35
+                y_max = 0.35
+                text_space = -0.31
+        else:
+            y_min = -0.09
+            y_max = 1.1
+            text_space = -0.03
+
+    if 'rmse_per_class' in args.metric:
+        if 'best' in args.bar:
+            if args.ref == 'Random':
+                y_min = -0.04
+                y_max = 0.4
+                text_space = -0.015
+            elif args.ref == 'ImageNet':
+                y_min = -0.04
+                y_max = 0.4
+                text_space = -0.015
+        elif 'diff' in args.bar:
+            if args.ref == 'Random':
+                y_min = -0.1
+                y_max = 0.1
+                text_space = -0.0875
+            elif args.ref == 'ImageNet':
+                y_min = -0.04
+                y_max = 0.04
+                text_space = -0.035
+        else:
+            y_min = -0.04
+            y_max = 0.4
+            text_space = -0.015
 
     # Horizontal axis.
     x = [1, 5, 10, 25, 50, 100]
@@ -241,10 +309,6 @@ def main(args):
     # Set the transfer learning algorithms.
     transfer_learning_algs = ['_tl=FT_']     # '_tl=LP_', , '_tl=LP+FT_'
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
-
-    # Set the models.
-    models = ['Barlow Twins', 'ImageNet']   #'Random', 
-    print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
     for transfer in transfer_learning_algs:
@@ -331,7 +395,7 @@ def main(args):
                         bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
                         plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model])
                         for j, k in zip(bar_pos, nf+np.zeros(9)):
-                            plt.text(j, -0.01, str(round(k)), ha='center', va='top')
+                            plt.text(j, text_space, str(round(k)), ha='center', va='top')
                     labels = list(dict_colors.keys())
                     handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
                     plt.legend(handles, labels)
@@ -360,33 +424,21 @@ def main(args):
                         bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
                         plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model])
                         for j, k in zip(bar_pos, nf+np.zeros(9)):
-                            plt.text(j, -0.01, str(round(k)), ha='center', va='top')
+                            plt.text(j, text_space, str(round(k)), ha='center', va='top')
                 labels = list(dict_colors.keys())
                 handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
                 plt.legend(handles, labels)
             elif args.bar == 'diff':
-                data = compute_diff_bar(bar_dict, args.verbose)
+                data = compute_diff_bar(bar_dict, args.ref, args.verbose)
                 y_trans = np.transpose(data)
                 for nf, values in enumerate(y_trans):
                     bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
                     plt.bar(bar_pos, values, width=bar_width)
                     for j, k in zip(bar_pos, nf+np.zeros(9)):
-                        plt.text(j, -0.0425, str(round(k)), ha='center', va='top')
+                        plt.text(j, text_space, str(round(k)), ha='center', va='top')
 
         # Configure current plot limits.
-        plt.ylim(0, y_lim)
-        if 'f1_per_class' in args.metric:
-            if args.bar == 'diff':
-                plt.ylim(-0.3, 0.3)
-            else:
-                plt.ylim(-0.075, y_lim)
-        elif 'rmse_per_class' in args.metric:
-            if args.bar == 'diff':
-                plt.ylim(-0.05, 0.05)
-            else:
-                plt.ylim(-0.035, y_lim)
-
-        # Configure current plot.
+        plt.ylim(y_min, y_max)
         plt.xticks(x_axis, x)
         plt.xlabel('Train ratio (%)', labelpad=15)
         plt.ylabel(metric_label, labelpad=15)
