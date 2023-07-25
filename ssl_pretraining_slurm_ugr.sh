@@ -5,7 +5,7 @@
 #--------------------------------------------
 #---> COMMON OPTIONS
 #--------------------------------------------
-#SBATCH --time=00:10:00                             # Job duration (72h is the limit).
+#SBATCH --time=48:00:00                             # Job duration (72h is the limit).
 #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --ntasks=1                                  # Number of tasks.
 #SBATCH --mem=0                                     # Real memory required per node.
@@ -70,26 +70,26 @@ fi
 # Configure the target experiment.
 if [[ $experiment == "RayTune" ]]; then
     dataset_ratio="(0.400,0.1500,0.4500)"
-    epochs=0
+    epochs=12
     more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=1 --gpus_per_trial=1"
     export RAY_PICKLE_VERBOSE_DEBUG=1
     echo "RayTune experiment has been successfully set up!"
 
 elif [[ $experiment == "DDP" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=0
+    epochs=800
     more_options="--distributed"
     echo "DDP experiment has been successfully set up!"
 
 elif [[ $experiment == "Imbalanced" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=0
+    epochs=800
     more_options=""
     echo "Imbalanced experiment has been successfully set up!"
 
 elif [[ $experiment == "Balanced" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=0
+    epochs=800
     more_options="--balanced_dataset"
     echo "Balanced experiment has been successfully set up!"
 fi
