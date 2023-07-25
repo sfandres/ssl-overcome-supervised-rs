@@ -4,10 +4,10 @@
 backbones=("resnet18")                                      # "resnet18" "resnet50"
 train_rates=("0.01" "0.05" "0.1" "0.25" "0.5" "1.0")        # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0"
 downstream=("multiclass" "multilabel")                      # "multiclass" "multilabel"
-models=("BarlowTwins")                                      # "Supervised" "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam"
-ini_weights=("random")                                      # "random" "imagenet"
+models=("Supervised" "BarlowTwins")                         # "Supervised" "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam"
+ini_weights=("random" "imagenet")                           # "random" "imagenet"
 balanced_dataset=(" ")                                      # " " "-bd" (" " for Ray Tune)
-transfer_learning=("LP" "FT" "LP+FT")                       # "LP" "FT" "LP+FT" (only the first two for Ray Tune)
+transfer_learning=("LP" "FT")                               # "LP" "FT" "LP+FT" (only the first two for Ray Tune)
 seeds=("42" "5" "97")                                       # Random: "42" (only this for Ray Tune) "5" "97"
 epochs=100                                                  # 12 for Ray Tune; otherwise 100
 learning_rate=0.01                                          # Not used for Ray Tune or --load_best_hyperparameters
