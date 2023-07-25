@@ -14,13 +14,13 @@
 #--------------------------------------------
 #---> TURGALIUM
 #--------------------------------------------
-#   #SBATCH --partition=volta                           # Request specific partition.
-#   #SBATCH --exclude=aap[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
+#SBATCH --partition=volta                           # Request specific partition.
+#SBATCH --exclude=aap[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
 
 #--------------------------------------------
 #---> NGPU.URG
 #--------------------------------------------
-#SBATCH --partition=dios                            # Request specific partition (dios, dgx).
+#   #SBATCH --partition=dios                            # Request specific partition (dios, dgx).
 
 #--------------------------------------------
 #---> UNUSED OPTIONS
@@ -55,15 +55,15 @@ echo Head node:    $head_node
 echo Head node IP: $head_node_ip
 
 # Load virtual environment (turgalium).
-# source ~/anaconda3/etc/profile.d/conda.sh
-# conda activate lulc2-conda
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate lulc2-conda
 
 # Load virtual environment (ngpu.ugr).
-export PATH="/opt/anaconda/anaconda3/bin:$PATH"
-export PATH="/opt/anaconda/bin:$PATH"
-eval "$(conda shell.bash hook)"
-conda activate /mnt/homeGPU/asanchez/lulc2-conda
-export TFHUB_CACHE_DIR=.
+# export PATH="/opt/anaconda/anaconda3/bin:$PATH"
+# export PATH="/opt/anaconda/bin:$PATH"
+# eval "$(conda shell.bash hook)"
+# conda activate /mnt/homeGPU/asanchez/lulc2-conda
+# export TFHUB_CACHE_DIR=.
 
 # Define the general settings.
 command="./finetuning_run_localhost.sh"
