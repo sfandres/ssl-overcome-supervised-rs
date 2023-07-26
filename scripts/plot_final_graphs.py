@@ -307,7 +307,7 @@ def main(args):
         print(f"{'Target metric:'.ljust(16)}{args.metric}")
 
     # Set the transfer learning algorithms.
-    transfer_learning_algs = ['_tl=FT_']     # '_tl=LP_', , '_tl=LP+FT_'
+    transfer_learning_algs = ['_tl=LP_', '_tl=FT_']     #  , '_tl=LP+FT_'
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
 
     # Iterate over the algorithms.
