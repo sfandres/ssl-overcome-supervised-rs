@@ -200,9 +200,10 @@ def main(args):
     if args.ref == 'Random':
         dict_colors = {
             'Barlow Twins': 'blue',
+            # 'ImageNet': 'orange',
             'Random': 'green'
         }
-        models = ['Random', 'Barlow Twins']
+        models = ['Random', 'Barlow Twins']   #'ImageNet'
     elif args.ref == 'ImageNet':
         dict_colors = {
             'Barlow Twins': 'blue',
@@ -414,6 +415,26 @@ def main(args):
         if args.verbose:
             print('\nDictionary including means:')
             print(bar_dict)
+
+
+        # PAPER ------------------------------------------------
+        print('\nDifferences PAPER:')
+        for model in models:
+            print(f"{model} --> {bar_dict[model]}")
+        target_model = 'Barlow Twins'          #'ImageNet'
+        paper_diff = np.array(bar_dict[target_model]) - np.array(bar_dict[args.ref])
+        ref_val = np.round(np.mean(np.array(bar_dict[args.ref])), 3)
+        target_val = np.round(np.mean(np.array(bar_dict[target_model])), 3)
+        decrease = ((ref_val-target_val)*100)/ref_val
+        increase = ((target_val-ref_val)*100)/ref_val
+        print('baseline', ref_val)
+        print('barlow', target_val)
+        print(f'Decrease --> {np.round(decrease, 2)}')
+        # print(f'Increase --> {np.round(increase, 2)}')
+        # print(f"Diff --> {paper_diff}")
+        # print(f"Mean --> {round(np.mean(paper_diff), 3)}")
+        # ------------------------------------------------------
+
 
         if 'per_class' in args.metric:
             if args.bar == 'best':
