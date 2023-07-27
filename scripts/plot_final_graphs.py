@@ -451,6 +451,9 @@ def main(args):
                 plt.legend(handles, labels)
             elif args.bar == 'diff':
                 data = compute_diff_bar(bar_dict, args.ref, args.verbose)
+                d = np.array(data)
+                print(np.max(d))
+                print(np.mean(d))
                 y_trans = np.transpose(data)
                 for nf, values in enumerate(y_trans):
                     bar_pos = x_axis + nf*bar_space - bar_space*len(y_trans)/2
