@@ -135,7 +135,7 @@ def compute_diff_bar(data: dict, ref: str, verbose: bool) -> dict:
 
         for j in range(num_columns_per_array):
 
-            res = data['Barlow Twins'][i][j] - data[ref][i][j]
+            res = data['BarlowTwins'][i][j] - data[ref][i][j]
             ref_values_array.append(round(res, 3))
 
         array_of_values.append(ref_values_array)
@@ -291,24 +291,24 @@ def main(args):
     # Adjust reference.
     if args.ref == 'Random':
         dict_colors = {
-            'Barlow Twins': 'blue',
+            'BarlowTwins': 'blue',
             # 'ImageNet': 'orange',
             'Random': 'green'
         }
-        models = ['Random', 'Barlow Twins']   #'ImageNet'
+        models = ['Random', 'BarlowTwins']   #'ImageNet'
     elif args.ref == 'ImageNet':
         dict_colors = {
-            'Barlow Twins': 'blue',
+            'BarlowTwins': 'blue',
             'ImageNet': 'orange',
         }
-        models = ['ImageNet', 'Barlow Twins']
+        models = ['ImageNet', 'BarlowTwins']
     else:
         dict_colors = {
-            'Barlow Twins': 'blue',
+            'BarlowTwins': 'blue',
             'ImageNet': 'orange',
             'Random': 'green'
         }
-        models = ['Random', 'ImageNet', 'Barlow Twins']
+        models = ['Random', 'ImageNet', 'BarlowTwins']
     print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None 
 
     # Iterate over the algorithms.
@@ -335,7 +335,7 @@ def main(args):
         for model in models:
 
             # Create the last filters according to the target model.
-            if model == 'Barlow Twins':
+            if model == 'BarlowTwins':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
             elif model == 'ImageNet':
@@ -427,7 +427,7 @@ def main(args):
         # print('\nDifferences PAPER:')
         # for model in models:
         #     print(f"{model} --> {bar_dict[model]}")
-        # target_model = 'Barlow Twins'          #'ImageNet'
+        # target_model = 'BarlowTwins'          #'ImageNet'
         # paper_diff = np.array(bar_dict[target_model]) - np.array(bar_dict[args.ref])
         # ref_val = np.round(np.mean(np.array(bar_dict[args.ref])), 3)
         # target_val = np.round(np.mean(np.array(bar_dict[target_model])), 3)
