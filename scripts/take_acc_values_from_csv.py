@@ -64,9 +64,11 @@ def main(args):
     with open(filename, 'a', newline='') as csvfile:
         csvwriter = csv.writer(csvfile)
         if task == 'multiclass':
-            csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
+            csvwriter.writerow(['Model', 'TR (\%)'] + ['F1_per_class' for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
+            csvwriter.writerow(['Model', 'TR (\%)'] + [x for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
         elif task == 'multilabel':
-            csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['RMSE'])
+            csvwriter.writerow(['Model', 'TR (\%)'] + ['RMSE_per_class' for x in range(10)] + ['RMSE'])
+            csvwriter.writerow(['Model', 'TR (\%)'] + [x for x in range(10)] + ['RMSE'])
 
     # Iterate over the algorithms.
     for transfer in transfer_learning_algs:
@@ -83,22 +85,20 @@ def main(args):
             if model == 'Barlow Twins':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
+                model_name = 'FS-BarlowTwins'
             elif model == 'ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
+                model_name = 'FS-ImageNet'
             elif model == 'Random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
+                model_name = 'FS-Random'
 
             # Show information.
             if args.verbose:
                 print(f"\n---------------------------------------------------") 
                 print(f"{'Curr model:'.ljust(13)}{model}")
-
-            # Writing the data to CSV
-            with open(filename, 'a', newline='') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                csvwriter.writerow([f'{model}'])
 
             # Iterate over the dirs.
             for nf, ratio in enumerate(filtered_dirs):
@@ -167,9 +167,9 @@ def main(args):
 
                 # Final row.
                 if task == 'multiclass':
-                    row = [ratio[:-1]] + per_class_res + [f1_micro_res] + [f1_macro_res] + [f1_weighted_res]
+                    row = [model_name, ratio[:-1]] + per_class_res + [f1_micro_res] + [f1_macro_res] + [f1_weighted_res]
                 elif task == 'multilabel':
-                    row = [ratio[:-1]] + per_class_res + [rmse_res]
+                    row = [model_name, ratio[:-1]] + per_class_res + [rmse_res]
                 print(f"{'Final row:'.ljust(13)}\n{row}") if args.verbose else None
 
                 # Writing the data to CSV
