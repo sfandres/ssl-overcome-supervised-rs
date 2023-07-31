@@ -196,29 +196,6 @@ def main(args):
         print(f"{'Input folder:'.ljust(16)}{args.input}")
         print(f"{'Output folder:'.ljust(16)}{args.output}")
 
-    # Adjust reference.
-    if args.ref == 'Random':
-        dict_colors = {
-            'Barlow Twins': 'blue',
-            # 'ImageNet': 'orange',
-            'Random': 'green'
-        }
-        models = ['Random', 'Barlow Twins']   #'ImageNet'
-    elif args.ref == 'ImageNet':
-        dict_colors = {
-            'Barlow Twins': 'blue',
-            'ImageNet': 'orange',
-        }
-        models = ['ImageNet', 'Barlow Twins']
-    else:
-        dict_colors = {
-            'Barlow Twins': 'blue',
-            'ImageNet': 'orange',
-            'Random': 'green'
-        }
-        models = ['Random', 'ImageNet', 'Barlow Twins']
-    print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
-
     # Get task from first item and set target metric and reference.
     task = args.input.split('/')[-2]
     print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
@@ -310,6 +287,29 @@ def main(args):
     # Set the transfer learning algorithms.
     transfer_learning_algs = ['_tl=LP_', '_tl=FT_']     #  , '_tl=LP+FT_'
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
+
+    # Adjust reference.
+    if args.ref == 'Random':
+        dict_colors = {
+            'Barlow Twins': 'blue',
+            # 'ImageNet': 'orange',
+            'Random': 'green'
+        }
+        models = ['Random', 'Barlow Twins']   #'ImageNet'
+    elif args.ref == 'ImageNet':
+        dict_colors = {
+            'Barlow Twins': 'blue',
+            'ImageNet': 'orange',
+        }
+        models = ['ImageNet', 'Barlow Twins']
+    else:
+        dict_colors = {
+            'Barlow Twins': 'blue',
+            'ImageNet': 'orange',
+            'Random': 'green'
+        }
+        models = ['Random', 'ImageNet', 'Barlow Twins']
+    print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
 
     # Iterate over the algorithms.
     for transfer in transfer_learning_algs:
@@ -418,21 +418,21 @@ def main(args):
 
 
         # PAPER ------------------------------------------------
-        print('\nDifferences PAPER:')
-        for model in models:
-            print(f"{model} --> {bar_dict[model]}")
-        target_model = 'Barlow Twins'          #'ImageNet'
-        paper_diff = np.array(bar_dict[target_model]) - np.array(bar_dict[args.ref])
-        ref_val = np.round(np.mean(np.array(bar_dict[args.ref])), 3)
-        target_val = np.round(np.mean(np.array(bar_dict[target_model])), 3)
-        decrease = ((ref_val-target_val)*100)/ref_val
-        increase = ((target_val-ref_val)*100)/ref_val
-        print('baseline', ref_val)
-        print('barlow', target_val)
-        print(f'Decrease --> {np.round(decrease, 2)}')
-        # print(f'Increase --> {np.round(increase, 2)}')
-        # print(f"Diff --> {paper_diff}")
-        # print(f"Mean --> {round(np.mean(paper_diff), 3)}")
+        # print('\nDifferences PAPER:')
+        # for model in models:
+        #     print(f"{model} --> {bar_dict[model]}")
+        # target_model = 'Barlow Twins'          #'ImageNet'
+        # paper_diff = np.array(bar_dict[target_model]) - np.array(bar_dict[args.ref])
+        # ref_val = np.round(np.mean(np.array(bar_dict[args.ref])), 3)
+        # target_val = np.round(np.mean(np.array(bar_dict[target_model])), 3)
+        # decrease = ((ref_val-target_val)*100)/ref_val
+        # increase = ((target_val-ref_val)*100)/ref_val
+        # print('baseline', ref_val)
+        # print('barlow', target_val)
+        # print(f'Decrease --> {np.round(decrease, 2)}')
+        # # print(f'Increase --> {np.round(increase, 2)}')
+        # # print(f"Diff --> {paper_diff}")
+        # # print(f"Mean --> {round(np.mean(paper_diff), 3)}")
         # ------------------------------------------------------
 
 
