@@ -309,10 +309,13 @@ def main(args):
             'Random': 'green'
         }
         models = ['Random', 'ImageNet', 'Barlow Twins']
-    print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None
+    print(f"{'Models:'.ljust(16)}{models}") if args.verbose else None 
 
     # Iterate over the algorithms.
     for transfer in transfer_learning_algs:
+
+        labels = [f'FS-{item}-{transfer[4:-1]}' for item in models]
+        print(f"{'Labels:'.ljust(16)}{labels}") if args.verbose else None 
 
         # Show information.
         if args.verbose:
