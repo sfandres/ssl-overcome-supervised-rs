@@ -60,6 +60,14 @@ def main(args):
     transfer_learning_algs = ['_tl=FT_']     # '_tl=LP_' '_tl=LP+FT_'
     print(f"{'TL algorithms:'.ljust(16)}{transfer_learning_algs}") if args.verbose else None
 
+    # Writing the data to CSV
+    with open(filename, 'a', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        if task == 'multiclass':
+            csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
+        elif task == 'multilabel':
+            csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['RMSE'])
+
     # Iterate over the algorithms.
     for transfer in transfer_learning_algs:
 
@@ -91,10 +99,6 @@ def main(args):
             with open(filename, 'a', newline='') as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow([f'{model}'])
-                if task == 'multiclass':
-                    csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
-                elif task == 'multilabel':
-                    csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['RMSE'])
 
             # Iterate over the dirs.
             for nf, ratio in enumerate(filtered_dirs):
