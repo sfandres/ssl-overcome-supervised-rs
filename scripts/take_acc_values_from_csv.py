@@ -64,10 +64,10 @@ def main(args):
     with open(filename, 'a', newline='') as csvfile:
         csvwriter = csv.writer(csvfile)
         if task == 'multiclass':
-            csvwriter.writerow(['Model', 'TR (\%)'] + ['F1_per_class' for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
+            csvwriter.writerow(['Model', 'TR (\%)'] + ['F1 per class' for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
             csvwriter.writerow(['Model', 'TR (\%)'] + [x for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
         elif task == 'multilabel':
-            csvwriter.writerow(['Model', 'TR (\%)'] + ['RMSE_per_class' for x in range(10)] + ['RMSE'])
+            csvwriter.writerow(['Model', 'TR (\%)'] + ['RMSE per class' for x in range(10)] + ['RMSE'])
             csvwriter.writerow(['Model', 'TR (\%)'] + [x for x in range(10)] + ['RMSE'])
 
     # Iterate over the algorithms.
@@ -85,15 +85,15 @@ def main(args):
             if model == 'Barlow Twins':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
-                model_name = 'FS-BarlowTwins'
+                model_name = 'FS-BarlowTwins-FT'
             elif model == 'ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
-                model_name = 'FS-ImageNet'
+                model_name = 'FS-ImageNet-FT'
             elif model == 'Random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
-                model_name = 'FS-Random'
+                model_name = 'FS-Random-FT'
 
             # Show information.
             if args.verbose:
