@@ -314,13 +314,16 @@ def main(args):
     # Iterate over the algorithms.
     for transfer in transfer_learning_algs:
 
-        labels = [f'FS-{item}-{transfer[4:-1]}' for item in models]
-        print(f"{'Labels:'.ljust(16)}{labels}") if args.verbose else None 
-
         # Show information.
         if args.verbose:
             print(f"\n---------------------------------------------------") 
             print(f"{'Curr TL:'.ljust(13)}{transfer}")
+
+        # New labels and merge the two lists into a single dictionary.
+        labels = [f'FS-{item}-{transfer[4:-1]}' for item in models]
+        labels_dict = {m: l for m, l in zip(models, labels)}
+        print(f"{'Labels:'.ljust(13)}{labels}")
+        print(f"{'Labels dict:'.ljust(13)}{labels_dict}")
 
         # Create fig.
         if 'per_class' in args.metric:
