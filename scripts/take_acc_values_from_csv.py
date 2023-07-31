@@ -25,11 +25,6 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--output', '-o', default='./',
                         help='path to the folder where the figure will be saved.')
 
-    # parser.add_argument('--metric', '-m', required=True,
-    #                     choices=['top1', 'f1_micro', 'top5', 'f1_macro', 'f1_weighted',
-    #                              'rmse', 'mae', 'f1_per_class', 'rmse_per_class'],
-    #                     help='parameter to be displayed in the y-axis.')
-
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='provides additional details for debugging purposes.')
 
@@ -96,7 +91,10 @@ def main(args):
             with open(filename, 'a', newline='') as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow([f'{model}'])
-                csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
+                if task == 'multiclass':
+                    csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['Micro F1', 'Macro F1', 'Weighted F1'])
+                elif task == 'multilabel':
+                    csvwriter.writerow(['Train ratio'] + [x for x in range(10)] + ['RMSE'])
 
             # Iterate over the dirs.
             for nf, ratio in enumerate(filtered_dirs):
@@ -123,8 +121,12 @@ def main(args):
                 res_std_last_epoch = pd.read_csv(os.path.join(curr_path, curr_std_file)).iloc[-1, :]
 
                 # Get per-class accuracy value.
-                per_class_mean = res_mean_last_epoch['f1_per_class']
-                per_class_std = res_std_last_epoch['f1_per_class']
+                if task == 'multiclass':
+                    metric_per_class = 'f1_per_class'
+                elif task == 'multilabel':
+                    metric_per_class = 'rmse_per_class'
+                per_class_mean = res_mean_last_epoch[metric_per_class]
+                per_class_std = res_std_last_epoch[metric_per_class]
                 per_class_mean = [float(x) for x in per_class_mean.strip('[]').split(',')]
                 per_class_std = [float(x) for x in per_class_std.strip('[]').split(',')]
                 per_class_res = [f'{x:.3f}$\pm${y:.3f}' for x, y in zip(per_class_mean, per_class_std)]
@@ -134,25 +136,36 @@ def main(args):
                     print(f"{'Result:'.ljust(13)}{per_class_res}")
 
                 # Get overall accuracy values.
-                # Micro-F1.
-                f1_micro_mean = res_mean_last_epoch['f1_micro']
-                f1_micro_std = res_std_last_epoch['f1_micro']
-                f1_micro_res = f'{f1_micro_mean:.3f}+-{f1_micro_std:.3f}'
-                # Macro-F1.
-                f1_macro_mean = res_mean_last_epoch['f1_macro']
-                f1_macro_std = res_std_last_epoch['f1_macro']
-                f1_macro_res = f'{f1_macro_mean:.3f}+-{f1_macro_std:.3f}'
-                # Weighted-F1.
-                f1_weighted_mean = res_mean_last_epoch['f1_weighted']
-                f1_weighted_std = res_std_last_epoch['f1_weighted']
-                f1_weighted_res = f'{f1_weighted_mean:.3f}+-{f1_weighted_std:.3f}'
-                if args.verbose:
-                    print(f"{'Micro F1:'.ljust(13)}{f1_micro_res}")
-                    print(f"{'Macro F1:'.ljust(13)}{f1_macro_res}")
-                    print(f"{'Weighted F1:'.ljust(13)}{f1_weighted_res}")
+                if task == 'multiclass':
+                    # Micro-F1.
+                    f1_micro_mean = res_mean_last_epoch['f1_micro']
+                    f1_micro_std = res_std_last_epoch['f1_micro']
+                    f1_micro_res = f'{f1_micro_mean:.3f}+-{f1_micro_std:.3f}'
+                    # Macro-F1.
+                    f1_macro_mean = res_mean_last_epoch['f1_macro']
+                    f1_macro_std = res_std_last_epoch['f1_macro']
+                    f1_macro_res = f'{f1_macro_mean:.3f}+-{f1_macro_std:.3f}'
+                    # Weighted-F1.
+                    f1_weighted_mean = res_mean_last_epoch['f1_weighted']
+                    f1_weighted_std = res_std_last_epoch['f1_weighted']
+                    f1_weighted_res = f'{f1_weighted_mean:.3f}+-{f1_weighted_std:.3f}'
+                    if args.verbose:
+                        print(f"{'Micro F1:'.ljust(13)}{f1_micro_res}")
+                        print(f"{'Macro F1:'.ljust(13)}{f1_macro_res}")
+                        print(f"{'Weighted F1:'.ljust(13)}{f1_weighted_res}")
+
+                elif task == 'multilabel':
+                    # RMSE.
+                    rmse_mean = res_mean_last_epoch['rmse']
+                    rmse_std = res_std_last_epoch['rmse']
+                    rmse_res = f'{rmse_mean:.3f}+-{rmse_std:.3f}'
+                    print(f"{'RMSE:'.ljust(13)}{rmse_res}") if args.verbose else None
 
                 # Final row.
-                row = [ratio[:-1]] + per_class_res + [f1_micro_res] + [f1_macro_res] + [f1_weighted_res]
+                if task == 'multiclass':
+                    row = [ratio[:-1]] + per_class_res + [f1_micro_res] + [f1_macro_res] + [f1_weighted_res]
+                elif task == 'multilabel':
+                    row = [ratio[:-1]] + per_class_res + [rmse_res]
                 print(f"{'Final row:'.ljust(13)}\n{row}") if args.verbose else None
 
                 # Writing the data to CSV
