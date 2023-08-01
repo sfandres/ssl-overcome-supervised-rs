@@ -45,11 +45,11 @@ def set_plt() -> None:
     """
 
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    plt.rc('axes', titlesize=MEDIUM_SIZE)    # fontsize of the axes title
+    plt.rc('axes', titlesize=MEDIUM_SIZE)    # fontsize of the axes title       +4
     plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
     plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize                  +2
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 
@@ -227,11 +227,11 @@ def main(args):
         if 'best' in args.bar:
             if args.ref == 'Random':
                 y_min = -0.09
-                y_max = 1.0
+                y_max = 1.1
                 text_space = -0.03
             elif args.ref == 'ImageNet':
                 y_min = -0.09
-                y_max = 1.0
+                y_max = 1.1
                 text_space = -0.025
         elif 'diff' in args.bar:
             if args.ref == 'Random':
@@ -403,8 +403,9 @@ def main(args):
                         plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model], zorder=3)
                         for j, k in zip(bar_pos, nf+np.zeros(9)):
                             plt.text(j, text_space, str(round(k)), ha='center', va='top')
-                    labels = list(labels_dict.keys())    # dict_colors.keys()
-                    handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
+                    labels = list(labels_dict.values())    # dict_colors.keys()
+                    print(labels)
+                    handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels_dict.keys()]
                     plt.legend(handles, labels)
 
             # Line and marker plot. 
@@ -453,8 +454,8 @@ def main(args):
                         plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model], zorder=3)
                         for j, k in zip(bar_pos, nf+np.zeros(9)):
                             plt.text(j, text_space, str(round(k)), ha='center', va='top')
-                labels = list(labels_dict.keys())    # dict_colors.keys()
-                handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
+                labels = list(labels_dict.values())    # dict_colors.keys()
+                handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels_dict.keys()]
                 plt.legend(handles, labels)
             elif args.bar == 'diff':
                 data = compute_diff_bar(bar_dict, args.ref, args.verbose)
