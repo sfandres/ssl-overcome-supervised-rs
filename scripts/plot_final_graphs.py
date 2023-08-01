@@ -218,10 +218,10 @@ def main(args):
     y_min = 0
     if task == 'multiclass':
         loc = 'lower right'
-        y_max = 1.0
+        y_max = 0.8             # 1.0
     elif task == 'multilabel':
         loc = 'upper right'
-        y_max = 0.3
+        y_max = 0.25            # 0.3
 
     if 'f1_per_class' in args.metric:
         if 'best' in args.bar:
@@ -329,7 +329,7 @@ def main(args):
         if 'per_class' in args.metric:
             fig = plt.figure(figsize=(18, 6))
         else:
-            fig = plt.figure(figsize=(8, 6))
+            fig = plt.figure(figsize=(8, 5))
 
         # Iterate over the models.
         for model in models:
@@ -403,7 +403,7 @@ def main(args):
                         plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model], zorder=3)
                         for j, k in zip(bar_pos, nf+np.zeros(9)):
                             plt.text(j, text_space, str(round(k)), ha='center', va='top')
-                    labels = list(dict_colors.keys())
+                    labels = list(labels_dict.keys())    # dict_colors.keys()
                     handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
                     plt.legend(handles, labels)
 
@@ -412,7 +412,7 @@ def main(args):
                 y = np.array(mean_values)
                 lower_y = y - np.array(std_values)
                 upper_y = y + np.array(std_values)
-                plt.plot(x_axis, y, 'x-', label=model, markersize=MARKER_SIZE, color=dict_colors[model])
+                plt.plot(x_axis, y, 'x-', label=labels_dict[model], markersize=MARKER_SIZE, color=dict_colors[model])
                 plt.fill_between(x_axis, lower_y, upper_y, alpha=0.1, color=dict_colors[model])
                 plt.legend(loc=loc)
                 # for j, k in zip(x_axis, y):
@@ -424,21 +424,22 @@ def main(args):
 
 
         # PAPER ------------------------------------------------
-        # print('\nDifferences PAPER:')
-        # for model in models:
-        #     print(f"{model} --> {bar_dict[model]}")
-        # target_model = 'BarlowTwins'          #'ImageNet'
-        # paper_diff = np.array(bar_dict[target_model]) - np.array(bar_dict[args.ref])
-        # ref_val = np.round(np.mean(np.array(bar_dict[args.ref])), 3)
-        # target_val = np.round(np.mean(np.array(bar_dict[target_model])), 3)
-        # decrease = ((ref_val-target_val)*100)/ref_val
-        # increase = ((target_val-ref_val)*100)/ref_val
-        # print('baseline', ref_val)
-        # print('barlow', target_val)
-        # print(f'Decrease --> {np.round(decrease, 2)}')
-        # # print(f'Increase --> {np.round(increase, 2)}')
-        # # print(f"Diff --> {paper_diff}")
-        # # print(f"Mean --> {round(np.mean(paper_diff), 3)}")
+        print('\nDifferences PAPER:')
+        for model in models:
+            print(f"{model} --> {bar_dict[model]}")
+        if args.ref != None:
+            target_model = 'BarlowTwins'          #'ImageNet'
+            paper_diff = np.array(bar_dict[target_model]) - np.array(bar_dict[args.ref])
+            ref_val = np.round(np.mean(np.array(bar_dict[args.ref])), 3)
+            target_val = np.round(np.mean(np.array(bar_dict[target_model])), 3)
+            decrease = ((ref_val-target_val)*100)/ref_val
+            increase = ((target_val-ref_val)*100)/ref_val
+            print('baseline', ref_val)
+            print('barlow', target_val)
+            print(f'Decrease --> {np.round(decrease, 2)}')
+            print(f'Increase --> {np.round(increase, 2)}')
+            print(f"Diff --> {paper_diff}")
+            print(f"Mean --> {round(np.mean(paper_diff), 3)}")
         # ------------------------------------------------------
 
 
@@ -452,7 +453,7 @@ def main(args):
                         plt.bar(bar_pos, values, width=bar_width, color=dict_colors[model], zorder=3)
                         for j, k in zip(bar_pos, nf+np.zeros(9)):
                             plt.text(j, text_space, str(round(k)), ha='center', va='top')
-                labels = list(dict_colors.keys())
+                labels = list(labels_dict.keys())    # dict_colors.keys()
                 handles = [plt.Rectangle((0,0),1,1, color=dict_colors[label]) for label in labels]
                 plt.legend(handles, labels)
             elif args.bar == 'diff':
