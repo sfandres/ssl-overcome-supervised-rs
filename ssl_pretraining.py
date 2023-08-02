@@ -336,7 +336,7 @@ def train(
     elif args.model_name == 'SimCLRv2':
         model = SimCLR(backbone=backbone, input_dim=input_dim,
                        hidden_dim=config['hidden_dim'], output_dim=config['out_dim'],
-                       num_layers=3, memory_bank_size=4096)        # 65536
+                       num_layers=3, memory_bank_size=65536)        # 4096
     elif args.model_name == 'BarlowTwins':
         model = BarlowTwins(backbone=backbone, input_dim=input_dim,
                             hidden_dim=config['hidden_dim'], output_dim=config['out_dim'])
