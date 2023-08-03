@@ -85,15 +85,18 @@ def main(args):
             if model == 'Barlow Twins':
                 filter1 = 'BarlowTwins'
                 filter2 = '_iw=random'
-                model_name = 'SSL-BarlowTwins-FT'
+                model_name = 'SSL-BT-FT'
+                # model_name = 'SSL-BarlowTwins-FT'
             elif model == 'ImageNet':
                 filter1 = 'Supervised'
                 filter2 = '_iw=imagenet'
-                model_name = 'FS-ImageNet-FT'
+                model_name = 'FS-IN-FT'
+                # model_name = 'FS-ImageNet-FT'
             elif model == 'Random':
                 filter1 = 'Supervised'
                 filter2 = '_iw=random'
-                model_name = 'FS-Random-FT'
+                model_name = 'FS-R-FT'
+                # model_name = 'FS-Random-FT'
 
             # Show information.
             if args.verbose:
