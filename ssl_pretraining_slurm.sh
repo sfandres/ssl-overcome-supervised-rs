@@ -15,7 +15,8 @@
 #---> TURGALIUM
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
-#SBATCH --exclude=aap[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
+#SBATCH --exclude=aap[01-04],acp02                  # Explicitly exclude certain nodes from the resources granted to the job.
+#   #SBATCH --nodelist=acp04
 
 #--------------------------------------------
 #---> NGPU.URG
@@ -147,7 +148,7 @@ conda activate lulc2-conda
 dataset_name="Sentinel2GlobalLULC_SSL"
 save_every=5
 eval_every=100
-batch_size=128
+batch_size=512                      # 128
 ini_weights="random"
 seed=42
 
