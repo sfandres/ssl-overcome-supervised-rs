@@ -17,6 +17,7 @@ This repository has been created for the <b>sanchez2023classification</b> paper.
   * [Installation](#installation)
   * [Usage](#usage)
 * [Pretraining SSL models](#pretraining-ssl-models)
+* [Downstream tasks: BSU and SC](#downstream-tasks-bsu-and-sc)
 * [Code examples](#code-examples)
 * [License](#license)
 
@@ -48,10 +49,19 @@ Now you can run any Python script.
 ## Pretraining SSL models
 Continue!
 
+## Downstream tasks: BSU and SC
+Continue!
+
 ## Code examples
-The examples are organized in folders:
-* [CD22_23-P09_quijote](CD22_23-P09_quijote) contains several examples that introduce PySpark using 'El Quijote' as a case study.
-* [CD22_23-P10_covid19](CD22_23-P10_covid19) presents the solution for the Covid-19 exercise, which focuses on database management using PySpark.
+Download the ImageNet dataset in the background on a remote server:
+```
+nohup wget <url> --no-check-certificate & exit
+```
+
+To check if the process is indeed running after exiting from shell and logging again:
+```
+top -u <username>
+```
 
 ## License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
