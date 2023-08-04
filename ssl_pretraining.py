@@ -939,6 +939,7 @@ def main(args):
             print(f'\n{d}:')
             # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
             print(f'  - #Samples/class (from dataset):\n{samples}')
+            np.savetxt(f"csv_samples_{d}.csv", samples, fmt='%.0f', delimiter=" ")        #'%10.1f'
             print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
             print(f'  - #Samples (from dataloader): {len(dataloader[d])*bsz}')
 
