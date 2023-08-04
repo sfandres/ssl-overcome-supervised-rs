@@ -47,7 +47,11 @@ conda activate lulc2-conda
 Now you can run any Python script.
 
 ## Pretraining SSL models
-Continue!
+Four SSL models are considered: Barlow Twins, MoCov2, SimCLRv2, and SimSiam. The ResNet18 is selected as the backbone of each network. The pretraining on the Sentinel2GlobalLULC pure-pixels dataset is launched via a SLURM job script by running:
+```
+./ssl_pretraining_slurm_launch_loop.sh <option>
+```
+For the `<option>` argument, four types of experiments can be selected: `RayTune`, `DDP`, `Imbalanced`, or `Balanced`.
 
 ## Downstream tasks: BSU and SC
 Continue!
