@@ -458,13 +458,15 @@ def main(args):
     # Check the balance and size of the dataset.
     #--------------------------
     # Check samples per class, total samples and batches of each dataset.
-    for d in andalucia_dataset:
-        samples = np.unique(andalucia_dataset[d].targets, return_counts=True)[1]
-        print(f'\n{d}:')
-        print(f'  - #Samples (from dataset):  {len(andalucia_dataset[d].targets)}')
-        print(f'  - #Samples/class (from dataset):\n{samples}')
-        print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
-        print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
+    if args.verbose:
+        for d in andalucia_dataset:
+            samples = np.unique(andalucia_dataset[d].targets, return_counts=True)[1]
+            print(f'\n{d}:')
+            print(f'  - #Samples (from dataset):  {len(andalucia_dataset[d].targets)}')
+            print(f'  - #Samples/class (from dataset):\n{samples}')
+            np.savetxt(f"csv_samples_AndalUnmixingRGB_{d}.csv", samples, fmt='%.0f', delimiter=" ")        #'%10.1f'
+            print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
+            print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
 
     #--------------------------
     # Check the distribution of samples in the dataloader (lightly dataset).
