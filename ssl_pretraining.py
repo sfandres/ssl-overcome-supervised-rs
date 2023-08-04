@@ -934,14 +934,17 @@ def main(args):
     #--------------------------
     # Check samples per class, total samples and batches of each dataset.
     if args.verbose:
+        accu = 0
         for d in dataset:
             samples = np.unique(dataset[d].targets, return_counts=True)[1]
             print(f'\n{d}:')
             # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
             print(f'  - #Samples/class (from dataset):\n{samples}')
             np.savetxt(f"csv_samples_Sentinel2LULCGlobal_{d}.csv", samples, fmt='%.0f', delimiter=" ")        #'%10.1f'
+            accu += samples
             print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
             print(f'  - #Samples (from dataloader): {len(dataloader[d])*bsz}')
+        np.savetxt(f"csv_samples_Sentinel2LULCGlobal_accumulated.csv", accu, fmt='%.0f', delimiter=" ")        #'%10.1f'
 
     #--------------------------
     # Check the distribution of samples in the dataloader (lightly dataset).
