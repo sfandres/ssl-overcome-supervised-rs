@@ -465,11 +465,11 @@ def main(args):
             print(f'\n{d}:')
             print(f'  - #Samples (from dataset):  {len(andalucia_dataset[d].targets)}')
             print(f'  - #Samples/class (from dataset):\n{samples}')
-            np.savetxt(f"csv_samples_AndalUnmixingRGB_{d}.csv", samples, fmt='%.0f', delimiter=" ")        #'%10.1f'
+            # np.savetxt(f"csv_samples_AndalUnmixingRGB_{d}.csv", samples, fmt='%.0f', delimiter=" ")        #'%10.1f'
             accu += samples
             print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
             print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
-        np.savetxt(f"csv_samples_AndalUnmixingRGB_accumulated.csv", accu, fmt='%.0f', delimiter=" ")        #'%10.1f'
+        # np.savetxt(f"csv_samples_AndalUnmixingRGB_accumulated.csv", accu, fmt='%.0f', delimiter=" ")        #'%10.1f'
         df = pd.DataFrame(class_names)
         df['values'] = accu
         df.to_csv(f"csv_samples_AndalUnmixingRGB_accumulated_w_labels.csv", header=False)

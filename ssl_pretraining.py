@@ -940,11 +940,20 @@ def main(args):
             print(f'\n{d}:')
             # print(f'  - #Samples (from dataset):  {len(dataset[d].targets)}')
             print(f'  - #Samples/class (from dataset):\n{samples}')
-            np.savetxt(f"csv_samples_Sentinel2LULCGlobal_{d}.csv", samples, fmt='%.0f', delimiter=" ")        #'%10.1f'
+            # np.savetxt(f"csv_samples_Sentinel2LULCGlobal_{d}.csv", samples, fmt='%.0f', delimiter=" ")        #'%10.1f'
             accu += samples
             print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
             print(f'  - #Samples (from dataloader): {len(dataloader[d])*bsz}')
-        np.savetxt(f"csv_samples_Sentinel2LULCGlobal_accumulated.csv", accu, fmt='%.0f', delimiter=" ")        #'%10.1f'
+        # np.savetxt(f"csv_samples_Sentinel2LULCGlobal_accumulated.csv", accu, fmt='%.0f', delimiter=" ")        #'%10.1f'
+        labels_partial = np.unique(dataset[d].targets, return_counts=True)[0]
+        # print(labels_partial)
+        inv_map = {v: k for k, v in dataset['train'].class_to_idx.items()}
+        # print(inv_map)
+        transform_map = [inv_map[label] for label in labels_partial]
+        # print(transform_map)
+        df = pd.DataFrame(transform_map)
+        df['values'] = accu
+        df.to_csv(f"csv_samples_Sentinel2LULCGlobal_accumulated_w_labels.csv", header=False)
 
     #--------------------------
     # Check the distribution of samples in the dataloader (lightly dataset).
