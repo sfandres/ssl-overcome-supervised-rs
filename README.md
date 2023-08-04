@@ -53,6 +53,8 @@ Four SSL models are considered: Barlow Twins, MoCov2, SimCLRv2, and SimSiam. The
 ```
 For the `<option>` argument, four types of experiments can be selected: `RayTune`, `DDP`, `Imbalanced`, or `Balanced`.
 
+If `RayTune` is selected, the script generates a csv file including the best configurations sorted according to the lowest training loss with the following format: `ray_tune_<backbone>_<model>.csv`. This file must be included in the path `./input/best_configs/` for the other types of experiments to start with the pseudo-optimal hyperparameters found.
+
 ## Downstream tasks: BSU and SC
 Continue!
 
