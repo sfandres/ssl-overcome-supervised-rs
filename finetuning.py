@@ -470,6 +470,9 @@ def main(args):
             print(f'  - #Batches (from dataloader): {len(dataloader[d])}')
             print(f'  - #Samples (from dataloader): {len(dataloader[d])*args.batch_size}')
         np.savetxt(f"csv_samples_AndalUnmixingRGB_accumulated.csv", accu, fmt='%.0f', delimiter=" ")        #'%10.1f'
+        df = pd.DataFrame(class_names)
+        df['values'] = accu
+        df.to_csv(f"csv_samples_AndalUnmixingRGB_accumulated_w_labels.csv", header=False)
 
     #--------------------------
     # Check the distribution of samples in the dataloader (lightly dataset).
