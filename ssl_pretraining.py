@@ -323,7 +323,7 @@ def train(
     print(f"{'Backbone name:'.ljust(18)} {args.backbone_name}")
     print(f"{'Hidden layer dim.:'.ljust(18)} {config['hidden_dim']}")
     print(f"{'Output layer dim.:'.ljust(18)} {config['out_dim']}")
-    print(f"{'Momentum:'.ljust(18)} {config['momentum']}")
+    # print(f"{'Momentum:'.ljust(18)} {config['momentum']}")
     print(f"{'Weight decay:'.ljust(18)} {config['weight_decay']}")
 
     if args.model_name == 'SimSiam':
@@ -1071,7 +1071,7 @@ def main(args):
                 'hidden_dim': df.loc[0, 'config/hidden_dim'],
                 'out_dim': df.loc[0, 'config/out_dim'],
                 'lr': tune.loguniform(1e-4, 1e-1),
-                'momentum': df.loc[0, 'config/momentum'],
+                # 'momentum': df.loc[0, 'config/momentum'],
                 'weight_decay': df.loc[0, 'config/weight_decay'],
                 'warmup_epochs': 1,
             }
@@ -1168,7 +1168,7 @@ def main(args):
             'hidden_dim': df_lr.loc[0, 'hidden_dim'],    # [0, 'config/hidden_dim'],
             'out_dim': df_lr.loc[0, 'out_dim'],
             'lr': df_lr.loc[0, 'lr'],
-            'momentum': df_lr.loc[0, 'momentum'],
+            # 'momentum': df_lr.loc[0, 'momentum'],
             'weight_decay': df_lr.loc[0, 'weight_decay'],
             'warmup_epochs': warmup_epochs,
         }
