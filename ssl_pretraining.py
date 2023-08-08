@@ -622,7 +622,7 @@ def train(
                 config['paths'],
                 args,
                 general_name,
-                input_size=224,
+                input_size=config['input_size'],
                 verbose=False,
                 dropout=False
             )
