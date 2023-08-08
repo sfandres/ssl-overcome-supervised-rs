@@ -15,8 +15,8 @@
 #---> TURGALIUM
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
-#SBATCH --exclude=aap[01-04],acp02                  # Explicitly exclude certain nodes from the resources granted to the job.
-#   #SBATCH --nodelist=acp04
+#   #SBATCH --exclude=aap[01-04],acp02              # Explicitly exclude certain nodes from the resources granted to the job.
+#SBATCH --nodelist=aap03                            # acp04
 
 #--------------------------------------------
 #---> NGPU.URG
