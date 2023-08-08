@@ -10,6 +10,7 @@
 #SBATCH --ntasks=1                                  # Number of tasks.
 #SBATCH --mem=0                                     # Real memory required per node.
 #SBATCH --gres=gpu:4                                # The specified resources will be allocated to the job on each node.
+#   #SBATCH --gpus-per-node=4                           # Specify the number of GPUs required for the job on each node.
 
 #--------------------------------------------
 #---> TURGALIUM
@@ -28,7 +29,6 @@
 #---> UNUSED OPTIONS
 #--------------------------------------------
 #   #SBATCH --nodes=1                                   # Number of nodes.
-#   #SBATCH --gpus-per-node=2                           # Specify the number of GPUs required for the job on each node.
 #   #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 
 
