@@ -353,11 +353,16 @@ def train(
     print(f"{'Initial lr:'.ljust(18)} {lr_init}")
 
     # Use SGD with momentum and weight decay.
-    optimizer = torch.optim.SGD(
+    # optimizer = torch.optim.SGD(
+    #     model.parameters(),
+    #     lr=lr_init,
+    #     momentum=config["momentum"],            # 0.9
+    #     weight_decay=config["weight_decay"]     # 5e-4
+    # )
+    optimizer = torch.optim.Adam(
         model.parameters(),
         lr=lr_init,
-        momentum=config["momentum"],            # 0.9
-        weight_decay=config["weight_decay"]     # 5e-4
+        weight_decay=config["weight_decay"]
     )
 
     # Define the warmup duration.
@@ -1082,11 +1087,11 @@ def main(args):
                 'paths': paths,
                 'hidden_dim': tune.grid_search([128, 256, 512]),
                 'out_dim': tune.grid_search([128, 256, 512]),
-                'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1]),
+                'lr': tune.grid_search([1e-4, 1e-3, 1e-2, 1e-1, 0.1*math.sqrt(bsz)]),       # SimCLRv2 learning rate from paper.
                 # 'momentum': 0.9,
-                'momentum': tune.grid_search([0.99, 0.9]),          # 0.97, 0.95
+                # 'momentum': tune.grid_search([0.99, 0.9]),                                # 0.97, 0.95
                 # 'weight_decay': 0,
-                'weight_decay': tune.grid_search([0, 1e-4, 1e-5]),  # 1e-3
+                'weight_decay': tune.grid_search([0, 1e-4, 1e-5]),                          # 1e-3
                 'warmup_epochs': 1,
             }
 
