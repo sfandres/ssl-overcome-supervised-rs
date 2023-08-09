@@ -5,19 +5,18 @@
 #--------------------------------------------
 #---> COMMON OPTIONS
 #--------------------------------------------
-#SBATCH --time=24:00:00                             # Job duration (72h is the limit).
-#SBATCH --cpus-per-task=8                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
+#SBATCH --time=48:00:00                             # Job duration (72h is the limit).
+#SBATCH --cpus-per-task=16                          # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #SBATCH --ntasks=1                                  # Number of tasks.
 #SBATCH --mem=0                                     # Real memory required per node.
-#SBATCH --gres=gpu:4                                # The specified resources will be allocated to the job on each node.
-#   #SBATCH --gpus-per-node=4                           # Specify the number of GPUs required for the job on each node.
+#SBATCH --gres=gpu:1                                # The specified resources will be allocated to the job on each node.
 
 #--------------------------------------------
 #---> TURGALIUM
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
-#SBATCH --exclude=acp[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
-#   #SBATCH --exclude=aap[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
+#SBATCH --exclude=aap[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
+#   #SBATCH --exclude=acp[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
 #   #SBATCH --nodelist=aap03                            # acp04
 
 #--------------------------------------------
@@ -30,6 +29,7 @@
 #--------------------------------------------
 #   #SBATCH --nodes=1                                   # Number of nodes.
 #   #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
+#   #SBATCH --gpus-per-node=4                           # Specify the number of GPUs required for the job on each node.
 
 
 # Current exp configuration --> Imbalanced/Balanced
