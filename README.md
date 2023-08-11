@@ -56,7 +56,15 @@ For the `<option>` argument, four types of experiments can be selected: `RayTune
 If `RayTune` is selected, the script generates a csv file including the best configurations sorted according to the lowest training loss with the following format: `ray_tune_<backbone>_<model>.csv`. This file must be included in the path `./input/best_configs/` for the other types of experiments to start with the pseudo-optimal hyperparameters found.
 
 ## Downstream tasks: BSU and SC
-Continue!
+```
+sbatch finetuning_slurm.sh
+```
+
+This script runs the `finetuning_run_localhost.sh`. It should be configured with only one or two `train_rates` to launch several Slurm jobs.
+
+Upon completion of the jobs, several files will be generated (one per seed) inside the output folder. The mean and std values per trial can be generated using the script `compute_mean_std_from_csv.py` (see the `-h` for help). Then, the csv generated can be plotted using the script `plot_final_graphs.py`.
+
+To generate the tables with all values, the script `take_acc_values_from_csv_v2.py` is used.
 
 ## Code examples
 Download the ImageNet dataset in the background on a remote server:
