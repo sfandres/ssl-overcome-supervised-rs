@@ -23,7 +23,7 @@ def get_args() -> argparse.Namespace:
                         help='path to the parent folder where the different train ratio folders are stored.')
 
     parser.add_argument('--output', '-o', default='./',
-                        help='path to the folder where the figure will be saved.')
+                        help='path to the folder where the csv will be saved.')
 
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='provides additional details for debugging purposes.')
