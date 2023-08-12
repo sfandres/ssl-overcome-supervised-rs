@@ -206,11 +206,17 @@ def main(args):
     if args.metric == 'f1_macro':
         metric_label = 'Macro F1 score'
     elif args.metric == 'f1_per_class':
-        metric_label = 'F1 score per class'
+        if args.bar == 'diff':
+            metric_label = '\u0394 F1 score per class'
+        else:
+            metric_label = 'F1 score per class'
     elif args.metric == 'rmse':
         metric_label = 'RMSE'
     elif args.metric == 'rmse_per_class':
-        metric_label = 'RMSE per class'
+        if args.bar == 'diff':
+            metric_label = '\u0394 RMSE per class'
+        else:
+            metric_label = 'RMSE per class'
     else:
         metric_label = args.metric
 
