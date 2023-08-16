@@ -8,8 +8,8 @@
 -->
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
-# lulc
-This repository has been created for the <i>From Classification to Blind Spectral Unmixing: Evaluating the Transferability of Self-Supervised Learning Models on RGB Satellite Images</i> paper.
+# ssl-bsu
+Official repo for <i>From Classification to Blind Spectral Unmixing: Evaluating the Transferability of Self-Supervised Learning Models on RGB Satellite Images</i> paper.
 
 ## Table of contents
 * [Getting started](#getting-started)
@@ -65,17 +65,6 @@ This script runs the `finetuning_run_localhost.sh`. It should be configured with
 Upon completion of the jobs, several files will be generated (one per seed) inside the output folder. The mean and std values per trial can be generated using the script `compute_mean_std_from_csv.py` (see the `-h` for help). Then, the csv generated can be plotted using the script `plot_final_graphs.py`.
 
 To generate the tables with all values, the script `take_acc_values_from_csv_v2.py` is used.
-
-## Code examples
-Download the ImageNet dataset in the background on a remote server:
-```
-nohup wget <url> --no-check-certificate & exit
-```
-
-To check if the process is indeed running after exiting from shell and logging again:
-```
-top -u <username>
-```
 
 ## License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
