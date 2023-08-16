@@ -18,7 +18,6 @@ Official repo for <i>From Classification to Blind Spectral Unmixing: Evaluating 
   * [Usage](#usage)
 * [Pretraining SSL models](#pretraining-ssl-models)
 * [Downstream tasks: BSU and SC](#downstream-tasks-bsu-and-sc)
-* [Code examples](#code-examples)
 * [License](#license)
 
 ## Getting started
