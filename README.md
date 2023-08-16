@@ -47,7 +47,7 @@ conda activate ssl-conda
 Now you can run any Python script.
 
 ## Pretraining SSL models
-Four SSL models are considered: Barlow Twins, MoCov2, SimCLRv2, and SimSiam. The ResNet18 is selected as the backbone of each network. The pretraining on the Sentinel2GlobalLULC pure-pixels dataset is launched via a SLURM job script by running:
+Four SSL models are considered: Barlow Twins, MoCov2, SimCLR, and SimSiam. The ResNet18 is selected as the backbone of each network. The pretraining on the Sentinel2GlobalLULC pure-pixels dataset is launched via a SLURM job script by running:
 ```
 ./ssl_pretraining_slurm_launch_loop.sh <option>
 ```
