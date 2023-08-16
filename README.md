@@ -9,7 +9,7 @@
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
 # From Classification to Blind Spectral Unmixing: Evaluating the Transferability of SSL Models on RGB Satellite Images
-Official repository of the self-supervised learning research paper submitted to <i>IEEE Transactions on Geoscience and Remote Sensing</i>.<br>
+Official repo of the self-supervised learning research paper submitted to <i>IEEE Transactions on Geoscience and Remote Sensing</i>.<br>
 Current status: <i>Undergoing Review</i>.
 
 ## Table of contents
