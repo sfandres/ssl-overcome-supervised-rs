@@ -8,6 +8,7 @@ __pycache__
 input/*
 !input/best_configs
 output
+results_paper_stratified/back-up_final_pretraining
 
 # Specific file extensions
 *.out
