@@ -9,7 +9,7 @@
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
 # lulc
-This repository has been created for the <b>sanchez2023classification</b> paper.
+This repository has been created for the <i>From Classification to Blind Spectral Unmixing: Evaluating the Transferability of Self-Supervised Learning Models on RGB Satellite Images</i> paper.
 
 ## Table of contents
 * [Getting started](#getting-started)
