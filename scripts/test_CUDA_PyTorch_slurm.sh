@@ -25,7 +25,7 @@ echo " " | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 ## Load virtual environment or module (not necessary).
 ## module load cuda/11.0.1
 source ~/anaconda3/etc/profile.d/conda.sh
-conda activate lulc2-conda
+conda activate ssl-conda
 
 ## Execute the Python script and pass the arguments.
 srun python3 test_CUDA_PyTorch.py

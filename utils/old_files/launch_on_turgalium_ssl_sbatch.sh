@@ -85,7 +85,7 @@ echo " " | /usr/bin/mail -s "Sbatch ${email_info} began" sfandres@unex.es
 
 ## Load virtual environment.
 source ~/anaconda3/etc/profile.d/conda.sh
-conda activate lulc2-conda
+conda activate ssl-conda
 
 ## Execute the Python script and pass the arguments.
 srun python3 03_1-PyTorch-Sentinel-2_SSL_pretraining.py \

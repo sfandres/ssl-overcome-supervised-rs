@@ -135,13 +135,13 @@ echo Head node IP: $head_node_ip
 
 # Load virtual environment (turgalium).
 source ~/anaconda3/etc/profile.d/conda.sh
-conda activate lulc2-conda
+conda activate ssl-conda
 
 # Load virtual environment (ngpu.ugr).
 # export PATH="/opt/anaconda/anaconda3/bin:$PATH"
 # export PATH="/opt/anaconda/bin:$PATH"
 # eval "$(conda shell.bash hook)"
-# conda activate /mnt/homeGPU/asanchez/lulc2-conda
+# conda activate /mnt/homeGPU/asanchez/ssl-conda
 # export TFHUB_CACHE_DIR=.
 
 # Define the general settings.

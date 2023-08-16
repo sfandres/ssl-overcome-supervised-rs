@@ -111,7 +111,7 @@ echo Head node IP: $head_node_ip
 export PATH="/opt/anaconda/anaconda3/bin:$PATH"
 export PATH="/opt/anaconda/bin:$PATH"
 eval "$(conda shell.bash hook)"
-conda activate /mnt/homeGPU/asanchez/lulc2-conda
+conda activate /mnt/homeGPU/asanchez/ssl-conda
 export TFHUB_CACHE_DIR=.
 
 # Define the general settings.
