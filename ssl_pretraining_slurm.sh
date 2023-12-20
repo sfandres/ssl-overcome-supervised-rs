@@ -6,16 +6,18 @@
 #---> COMMON OPTIONS
 #--------------------------------------------
 #SBATCH --time=48:00:00                             # Job duration (72h is the limit).
-#SBATCH --cpus-per-task=16                          # Number of cpu-cores per task (>1 if multi-threaded tasks).
-#SBATCH --ntasks=1                                  # Number of tasks.
+#SBATCH --nodes=1                                   # Number of nodes.
+#SBATCH --ntasks-per-node=1                         # Number of tasks per node.
 #SBATCH --mem=0                                     # Real memory required per node.
 #SBATCH --gres=gpu:1                                # The specified resources will be allocated to the job on each node.
+#   #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 
 #--------------------------------------------
 #---> TURGALIUM
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
-#SBATCH --exclude=aap[01-04],acp02                  # Explicitly exclude certain nodes from the resources granted to the job.
+#   #SBATCH --exclude=aap[01-04],acp02                  # Explicitly exclude certain nodes from the resources granted to the job.
+#   #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #   #SBATCH --exclude=acp[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
 #   #SBATCH --nodelist=aap03                            # acp04
 
@@ -103,19 +105,19 @@ if [[ $experiment == "RayTune" ]]; then
 
 elif [[ $experiment == "DDP" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=800
+    epochs=500
     more_options="--distributed"
     echo "DDP experiment has been successfully set up!"
 
 elif [[ $experiment == "Imbalanced" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=800
+    epochs=500
     more_options=""
     echo "Imbalanced experiment has been successfully set up!"
 
 elif [[ $experiment == "Balanced" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=800
+    epochs=500
     more_options="--balanced_dataset"
     echo "Balanced experiment has been successfully set up!"
 fi
@@ -146,16 +148,16 @@ conda activate ssl-conda
 
 # Define the general settings.
 # input_data="/p/project/prcoe12"
+input_data="~/GitHub/datasets/"
 dataset_name="Sentinel2GlobalLULC_SSL"
 save_every=5
-eval_every=100
+eval_every=50
 batch_size=512                      # 128
 ini_weights="random"
 seed=42
 
 # Run experiment (--standalone).
-# $SLURM_GPUS_PER_TASK $SLURM_NTASKS
-# --input_data $input_data \
+# $SLURM_GPUS_PER_TASK $SLURM_NTASKS $SLURM_CPUS_PER_TASK
 # --partially_frozen \
 command="torchrun --standalone \
 --nnodes=$SLURM_JOB_NUM_NODES \
@@ -167,11 +169,12 @@ ssl_pretraining.py $model \
 --backbone_name=$backbone_name \
 --dataset_name=$dataset_name \
 --dataset_ratio=$dataset_ratio \
+--input_data=$input_data \
 --epochs=$epochs \
 --save_every=$save_every \
 --eval_every=$eval_every \
 --batch_size=$batch_size \
---num_workers=$SLURM_CPUS_PER_TASK \
+--num_workers=4 \
 --ini_weights=$ini_weights \
 --seed=$seed \
 ${more_options}
