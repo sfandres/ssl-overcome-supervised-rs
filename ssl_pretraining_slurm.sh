@@ -151,7 +151,7 @@ conda activate ssl-conda
 # input_data="~/GitHub/datasets/"
 dataset_name="Sentinel2GlobalLULC_SSL"
 save_every=5
-eval_every=50
+eval_every=100
 batch_size=512                      # 128
 ini_weights="random"
 seed=42
