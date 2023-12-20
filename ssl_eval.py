@@ -29,7 +29,7 @@ def linear_eval_backbone(
 
     # Add dropout layer if the dropout argument is passed.
     if dropout:
-        model.add_module('dropout', torch.nn.Dropout(p=dropout, inplace=True))
+        model.add_module('dropout', torch.nn.Dropout(p=0.2, inplace=True))
         print(f'Dropout layer added: {model.dropout}')
     else:
         print('No dropout layer')
