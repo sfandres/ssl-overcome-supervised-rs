@@ -148,7 +148,7 @@ conda activate ssl-conda
 
 # Define the general settings.
 # input_data="/p/project/prcoe12"
-input_data="~/GitHub/datasets/"
+# input_data="~/GitHub/datasets/"
 dataset_name="Sentinel2GlobalLULC_SSL"
 save_every=5
 eval_every=50
@@ -158,6 +158,7 @@ seed=42
 
 # Run experiment (--standalone).
 # $SLURM_GPUS_PER_TASK $SLURM_NTASKS $SLURM_CPUS_PER_TASK
+# --input_data=$input_data \
 # --partially_frozen \
 command="torchrun --standalone \
 --nnodes=$SLURM_JOB_NUM_NODES \
@@ -169,7 +170,6 @@ ssl_pretraining.py $model \
 --backbone_name=$backbone_name \
 --dataset_name=$dataset_name \
 --dataset_ratio=$dataset_ratio \
---input_data=$input_data \
 --epochs=$epochs \
 --save_every=$save_every \
 --eval_every=$eval_every \
