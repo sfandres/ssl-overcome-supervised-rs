@@ -765,18 +765,33 @@ def main(args):
     # Normalization transform (train).
     # from https://github.com/facebookresearch/simsiam/blob/main/main_simsiam.py
     # MoCo v2's aug: similar to SimCLR https://arxiv.org/abs/2002.05709
-    transform['train'] = transforms.Compose([
-        transforms.Resize((input_size, input_size)),
-        transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
-        transforms.RandomApply([
-            transforms.ColorJitter(.4, .4, .4, .1)  # not strengthened
-        ], p=0.8),
-        transforms.RandomGrayscale(p=0.2),
-        transforms.RandomApply([GaussianBlur([.1, 2.])], p=0.5),
+    # transform['train'] = transforms.Compose([
+    #     transforms.Resize((input_size, input_size)),
+    #     transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
+    #     transforms.RandomApply([
+    #         transforms.ColorJitter(.4, .4, .4, .1)  # not strengthened
+    #     ], p=0.8),
+    #     transforms.RandomGrayscale(p=0.2),
+    #     transforms.RandomApply([GaussianBlur([.1, 2.])], p=0.5),
+    #     transforms.RandomHorizontalFlip(),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean['train'],
+    #                         std['train'])
+    # ])
+
+    # RS datasets: No color shifting (NEW).
+    transform['train'] = transforms.Compose([                                      
+        transforms.RandomResizedCrop((input_size, input_size), scale=(0.2, 1.)),
         transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.RandomApply([transforms.ColorJitter(
+            brightness=0.4,
+            contrast=0.4,
+            saturation=0.4
+        )], p=0.8),
+        transforms.RandomApply([GaussianBlur([.1, 2.])], p=0.5),
         transforms.ToTensor(),
-        transforms.Normalize(mean['train'],
-                            std['train'])
+        transforms.Normalize(mean['train'], std['train'])
     ])
 
     if args.verbose:
