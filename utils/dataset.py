@@ -61,11 +61,14 @@ class AndaluciaDataset(Dataset):
         # Reduction in train set.
         if split == 'train':
             df = pd.read_csv(self.csv_file_path)
-            self.csv_dataset_info = df.groupby('Class_max').apply(
-                lambda x: x.sample(frac=train_ratio, random_state=seed))                # New stratified sampling.
-            # self.csv_dataset_info.to_csv('prueba.csv')
-            # self.csv_dataset_info = df.sample(n=int(train_ratio*len(df.index)),
-            #                                   random_state=seed)                      # Old random sampling.
+            if isinstance(train_ratio, float):
+                self.csv_dataset_info = df.groupby('Class_max').apply(
+                    lambda x: x.sample(frac=train_ratio, random_state=seed)
+                )
+            elif isinstance(train_ratio, int):
+                self.csv_dataset_info = df.groupby('Class_max').apply(
+                    lambda x: x.sample(n=train_ratio, random_state=seed)
+                )
         else:
             self.csv_dataset_info = pd.read_csv(self.csv_file_path)
 
