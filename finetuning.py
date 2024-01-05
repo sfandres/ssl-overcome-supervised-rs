@@ -459,7 +459,7 @@ def main(args):
         sampler=sampler,
         num_workers=args.num_workers,
         pin_memory=True,
-        drop_last=True,
+        drop_last=False,                    # Change this because the number of samples is lower than the batch size.
         worker_init_fn=seed_worker if not args.ray_tune else None,
         generator=g if not args.ray_tune else None
     )
