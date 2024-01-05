@@ -412,22 +412,23 @@ def main(args):
         print(f'Diff. classes --> {class_count}')
         print(f'Samples/class --> {sample_count_per_class}')
 
-        # Weight per sample not per class.
-        weight = 1. / sample_count_per_class
-        index_map = {value: index for index, value in enumerate(class_count)}  # Map, e.g., 0--> 0, 21 --> 1, etc.
-        samples_weight = np.array([weight[index_map[t]] for t in train_sample_labels])
+        # I HAD TO COMMENTED THIS BECAUSE I'VE FIXED THE NUMBER OF SAMPLES PER CLASS WITHIN THE DATASET LOADING FUNCTION.
+        # # Weight per sample not per class.
+        # weight = 1. / sample_count_per_class
+        # index_map = {value: index for index, value in enumerate(class_count)}  # Map, e.g., 0--> 0, 21 --> 1, etc.
+        # samples_weight = np.array([weight[index_map[t]] for t in train_sample_labels])
 
-        # Casting.
-        samples_weight = torch.from_numpy(samples_weight)
-        samples_weight = samples_weight.double()
+        # # Casting.
+        # samples_weight = torch.from_numpy(samples_weight)
+        # samples_weight = samples_weight.double()
 
-        # Sampler, imbalanced data.
-        sampler = torch.utils.data.WeightedRandomSampler(
-            samples_weight,
-            len(samples_weight)
-        )
-        shuffle = False
-        print('Using balanced dataloader as default option!')
+        # # Sampler, imbalanced data.
+        # sampler = torch.utils.data.WeightedRandomSampler(
+        #     samples_weight,
+        #     len(samples_weight)
+        # )
+        # shuffle = False
+        # print('Using balanced dataloader as default option!')
 
     #--------------------------
     # If distributed (option).
