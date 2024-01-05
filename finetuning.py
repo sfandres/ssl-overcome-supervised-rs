@@ -60,6 +60,24 @@ MODEL_CHOICES = ['Random', 'Supervised'] + AVAIL_SSL_MODELS
 FIG_FORMAT='.png'
 
 
+def cast_to_int_or_float(argument: str):
+    """
+    Casts a string to int or float if possible.
+
+    Args:
+        argument: string to be casted.
+
+    Returns:
+        The string casted to int or float if possible.
+    """
+    if argument.isdigit():                                                          # Try to convert to integer.
+        return int(argument)
+    elif argument.replace('.', '').replace('-', '').replace('e', '').isdigit():     # Try to convert to float.
+        return float(argument)
+    else:                                                                           # Raise error.
+        raise argparse.ArgumentTypeError(f"Invalid argument value '{argument}'")
+
+
 def get_args() -> argparse.Namespace:
     """
     Parse and retrieve command-line arguments.
@@ -97,8 +115,12 @@ def get_args() -> argparse.Namespace:
                         choices=['Level_N1', 'Level_N2'],
                         help="dataset level (default=Level_N2).")
 
-    parser.add_argument('--train_rate', '-tr', type=float, default=1.,
-                        help='dataset ratio for train subset (default=1.).')
+    parser.add_argument('--train_rate', '-tr', type=cast_to_int_or_float,
+                        help=('amount of training data defined either as a percentage (e.g., 0.8) '
+                              'or as an integer representing the number of samples per class (e.g., 100).'))
+
+    # parser.add_argument('--train_rate', '-tr', type=float, default=1.,
+    #                     help='dataset ratio for train subset (default=1.).')
 
     parser.add_argument('--epochs', '-e', type=int, default=25,
                         help='number of epochs for training (default: 25).')
