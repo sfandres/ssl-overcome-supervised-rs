@@ -18,8 +18,8 @@ batch_size=32
 num_workers=4
 # more_options=""
 # more_options="--verbose"
-# more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=3 --gpus_per_trial=1"
-more_options="--load_best_hyperparameters"
+more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=3 --gpus_per_trial=1"
+# more_options="--load_best_hyperparameters"
 
 # Troubleshooting.
 # export LOGLEVEL=INFO
