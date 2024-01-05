@@ -56,7 +56,7 @@ echo Head node IP: $head_node_ip
 
 # Load virtual environment (turgalium).
 source ~/anaconda3/etc/profile.d/conda.sh
-conda activate ssl-conda
+conda activate ssl-bsu-conda
 
 # Load virtual environment (ngpu.ugr).
 # export PATH="/opt/anaconda/anaconda3/bin:$PATH"
