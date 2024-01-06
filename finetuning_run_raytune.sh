@@ -43,7 +43,7 @@ for b in "${backbones[@]}"; do
                         else
                             for bd in "${balanced_dataset[@]}"; do
                                 command_arg="torchrun finetuning.py $m $d -bn $b -tr $tr -e $epochs -lr $learning_rate -se $save_every -bs $batch_size -nw $num_workers -iw random -tl $tl -s $s $bd $more_options"
-                                raytune_args="--exp-name ${tr}_${d}_${tl}_${s}_${m}_${iw} --partition volta --num-nodes 1 -num-gpus 4 --load-env \"ssl-bsu-conda\" --command \"$command_arg\"" # --node aap04 
+                                raytune_args="--exp-name ${tr}_${d}_${tl}_${s}_${m}_${iw} --partition volta --num-nodes 1 --num-gpus 4 --load-env \"ssl-bsu-conda\" --command \"$command_arg\"" # --node aap04 
                                 final_command="python slurm-launch.py $raytune_args"
                                 echo $final_command
                                 eval $final_command
