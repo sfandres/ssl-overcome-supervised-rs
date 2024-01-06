@@ -16,7 +16,7 @@ batch_size=32
 num_workers=4                                               # 2 for Ray Tune; otherwise 4
 # more_options=""
 # more_options="--verbose"
-more_options="--ray_tune=gridsearch --grace_period=75 --num_samples_trials=3 --gpus_per_trial=1"
+more_options="--ray_tune=gridsearch --grace_period=75 --num_samples_trials=1 --gpus_per_trial=1"
 # more_options="--load_best_hyperparameters"
 
 # Troubleshooting.
