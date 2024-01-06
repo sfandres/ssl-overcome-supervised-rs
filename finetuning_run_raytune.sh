@@ -35,7 +35,7 @@ for b in "${backbones[@]}"; do
                         if [ "$m" = "Supervised" ]; then
                             for iw in "${ini_weights[@]}"; do
                                 ini_command="torchrun finetuning.py $m $d -bn $b -tr $tr -e $epochs -lr $learning_rate -se $save_every -bs $batch_size -nw $num_workers -iw $iw -tl $tl -s $s $more_options"
-                                command="python slurm-launch.py --exp-name rt_finetuning --partition volta --num-nodes 1 --num-gpus 4 --load-env "ssl-bsu-conda" --command "${ini_command}""
+                                command="python slurm-launch.py --exp-name rt_ft --partition volta -w aap04 --num-nodes 1 --num-gpus 4 --load-env "ssl-bsu-conda" --command "${ini_command}""
                                 echo $command; $command # >> out_finetuning_$d_$m.out
                             done
                         else
