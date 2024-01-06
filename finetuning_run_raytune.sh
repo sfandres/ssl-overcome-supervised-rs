@@ -9,14 +9,14 @@ ini_weights=("random")                                      # "random" "imagenet
 balanced_dataset=(" ")                                      # " " "-bd" (" " for Ray Tune)
 transfer_learning=("LP")                                    # "LP" "FT" "LP+FT" (only the first two for Ray Tune)
 seeds=("42")                                                # Random: "42" (only this for Ray Tune) "5" "97"
-epochs=15                                                   # 15 for Ray Tune; otherwise 100
+epochs=100                                                  # 15 for Ray Tune; otherwise 100
 learning_rate=0.01                                          # Not used for Ray Tune or --load_best_hyperparameters
 save_every=5
 batch_size=32
 num_workers=4
 # more_options=""
 # more_options="--verbose"
-more_options="--ray_tune=gridsearch --grace_period=5 --num_samples_trials=3 --gpus_per_trial=1"
+more_options="--ray_tune=gridsearch --grace_period=50 --num_samples_trials=3 --gpus_per_trial=1"
 # more_options="--load_best_hyperparameters"
 
 # Troubleshooting.
@@ -34,9 +34,11 @@ for b in "${backbones[@]}"; do
                         # Not considering balanced_dataset.
                         if [ "$m" = "Supervised" ]; then
                             for iw in "${ini_weights[@]}"; do
-                                ini_command="torchrun finetuning.py $m $d -bn $b -tr $tr -e $epochs -lr $learning_rate -se $save_every -bs $batch_size -nw $num_workers -iw $iw -tl $tl -s $s $more_options"
-                                command="python slurm-launch.py --exp-name=rt_ft --partition=volta --node=aap04 --num-nodes=1 --num-gpus=4 --load-env=\"ssl-bsu-conda\" --command=\"${ini_command}\""
-                                echo $command; $command # >> out_finetuning_$d_$m.out
+                                command_arg="\"torchrun finetuning.py $m $d -bn $b -tr $tr -e $epochs -lr $learning_rate -se $save_every -bs $batch_size -nw $num_workers -iw $iw -tl $tl -s $s $more_options\""
+                                raytune_args="--exp-name rt_ft --partition volta --num-nodes 1 --node aap04 --num-gpus 4 --load-env ssl-bsu-conda --command $command_arg"
+                                final_command="python slurm-launch.py $raytune_args"
+                                echo $final_command
+                                eval $final_command
                             done
                         # else
                         #     for bd in "${balanced_dataset[@]}"; do
