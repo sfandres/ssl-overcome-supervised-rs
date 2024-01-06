@@ -13,7 +13,7 @@ ${GIVEN_NODE}
 #SBATCH --ntasks-per-node=1
 # #SBATCH --gpus-per-task=${NUM_GPUS_PER_NODE}    # <------ ANDRES
 #SBATCH --gpus-per-node=${NUM_GPUS_PER_NODE}      # <------ ANDRES
-#SBATCH --time=24:00:00                           # <------ ANDRES                        # 32 FOR RAY TUNE!!
+#SBATCH --time=12:00:00                           # <------ ANDRES                        # 32 FOR RAY TUNE!!
 #SBATCH --exclude=aap01                           # <------ ANDRES
 
 # Load modules or your own conda environment here
