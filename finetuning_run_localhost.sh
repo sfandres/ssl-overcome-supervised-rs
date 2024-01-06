@@ -2,8 +2,7 @@
 
 # Define the variables.
 backbones=("resnet18")                                      # "resnet18" "resnet50"
-# train_rates=("0.01" "0.05" "0.1" "0.25" "0.5" "1.0")        # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0"
-train_rates=("10" "25")                                     # "50" "75" "100"
+train_rates=("5" "10" "25" "50" "75" "100")                 # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0"
 downstream=("multiclass" "multilabel")                      # "multiclass" "multilabel"
 models=("Supervised" "BarlowTwins")                         # "Supervised" "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam"
 ini_weights=("random" "imagenet")                           # "random" "imagenet"
@@ -14,12 +13,11 @@ epochs=100                                                  # 12 for Ray Tune; o
 learning_rate=0.01                                          # Not used for Ray Tune or --load_best_hyperparameters
 save_every=5
 batch_size=32
-# num_workers=2
-num_workers=4
+num_workers=4                                               # 2 for Ray Tune; otherwise 4
 # more_options=""
 # more_options="--verbose"
-more_options="--ray_tune=gridsearch --grace_period=4 --num_samples_trials=3 --gpus_per_trial=1"
-# more_options="--load_best_hyperparameters"
+# more_options="--ray_tune=gridsearch --grace_period=75 --num_samples_trials=3 --gpus_per_trial=1"
+more_options="--load_best_hyperparameters"
 
 # Troubleshooting.
 # export LOGLEVEL=INFO
