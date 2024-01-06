@@ -2,7 +2,7 @@
 
 # Define the variables.
 backbones=("resnet18")                                      # "resnet18" "resnet50"
-train_rates=("5" "10")                                      # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0" "25" "50" "75" "100"
+train_rates=("05" "10")                                     # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0" "25" "50" "75" "100"
 downstream=("multiclass")                                   # "multiclass" "multilabel"
 models=("Supervised")                                       # "Supervised" "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam"
 ini_weights=("random")                                      # "random" "imagenet"
@@ -35,7 +35,7 @@ for b in "${backbones[@]}"; do
                         if [ "$m" = "Supervised" ]; then
                             for iw in "${ini_weights[@]}"; do
                                 command_arg="torchrun finetuning.py $m $d -bn $b -tr $tr -e $epochs -lr $learning_rate -se $save_every -bs $batch_size -nw $num_workers -iw $iw -tl $tl -s $s $more_options"
-                                raytune_args="--exp-name rt_ft --partition volta --num-nodes 1 --num-gpus 4 --load-env \"ssl-bsu-conda\" --command \"$command_arg\"" # --node aap04 
+                                raytune_args="--exp-name ${tr}_${d}_${tl}_${s}_${m}_${iw} --partition volta --num-nodes 1 --num-gpus 4 --load-env \"ssl-bsu-conda\" --command \"$command_arg\"" # --node aap04 
                                 final_command="python slurm-launch.py $raytune_args"
                                 echo $final_command
                                 eval $final_command
