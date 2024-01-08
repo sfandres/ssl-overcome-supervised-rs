@@ -16,7 +16,7 @@
 #---> TURGALIUM
 #--------------------------------------------
 #SBATCH --partition=volta                           # Request specific partition.
-#   #SBATCH --exclude=aap[01-04],acp02                  # Explicitly exclude certain nodes from the resources granted to the job.
+#SBATCH --exclude=aap[01-04],acp02                  # Explicitly exclude certain nodes from the resources granted to the job.
 #   #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
 #   #SBATCH --exclude=acp[01-04]                        # Explicitly exclude certain nodes from the resources granted to the job.
 #   #SBATCH --nodelist=aap03                            # acp04
