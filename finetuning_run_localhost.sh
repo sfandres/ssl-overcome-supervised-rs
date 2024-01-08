@@ -2,8 +2,8 @@
 
 # Define the variables.
 backbones=("resnet18")                                      # "resnet18" "resnet50"
-train_rates=("05" "10" "25" "50" "75" "100")                # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0"
-downstream=("multiclass" "multilabel")                      # "multiclass" "multilabel"
+train_rates=("05" "10")                # "0.01" "0.05" "0.1" "0.25" "0.5" "1.0"
+downstream=("multilabel")                      # "multiclass" "multilabel"
 models=("Supervised" "BarlowTwins")                         # "Supervised" "BarlowTwins" "MoCov2" "SimCLR" "SimCLRv2" "SimSiam"
 ini_weights=("random" "imagenet")                           # "random" "imagenet"
 balanced_dataset=(" ")                                      # " " "-bd" (" " for Ray Tune)
