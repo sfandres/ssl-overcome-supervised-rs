@@ -105,19 +105,19 @@ if [[ $experiment == "RayTune" ]]; then
 
 elif [[ $experiment == "DDP" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=500
+    epochs=1000
     more_options="--distributed"
     echo "DDP experiment has been successfully set up!"
 
 elif [[ $experiment == "Imbalanced" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=500
+    epochs=1000
     more_options=""
     echo "Imbalanced experiment has been successfully set up!"
 
 elif [[ $experiment == "Balanced" ]]; then
     dataset_ratio="(0.900,0.0250,0.0750)"
-    epochs=500
+    epochs=1000
     more_options="--balanced_dataset"
     echo "Balanced experiment has been successfully set up!"
 fi
