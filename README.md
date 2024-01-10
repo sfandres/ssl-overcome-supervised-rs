@@ -66,6 +66,18 @@ Upon completion of the jobs, several files will be generated (one per seed) insi
 ```
 python3 compute_mean_std_from_csv.py -i <parent_folder_of_the_csv_files> -o <desired_output_folder>
 ```
+where `parent_folder_of_the_csv_files` should only contain either multiclass or multilabel csv files. The organization of the folder could be as follows:
+```
+csv_results/
+├── multiclass/
+│   ├── multiclass_tr=5.000_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=05_lr=0.001_m=0.9_wd=0.0_do=None.csv
+│   ├── multiclass_tr=5.000_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=42_lr=0.001_m=0.9_wd=0.0_do=None.csv
+│   ├── ...
+├── multilabel/
+│   ├── multilabel_tr=5.000_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=05_lr=0.001_m=0.9_wd=0.0_do=None.csv
+│   ├── multilabel_tr=5.000_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=42_lr=0.001_m=0.9_wd=0.0_do=None.csv
+│   ├── ...
+```
 
 Then, the csv generated can be plotted using the script `plot_final_graphs.py`.
 
