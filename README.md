@@ -51,7 +51,7 @@ Four SSL models are considered: Barlow Twins, MoCov2, SimCLR, and SimSiam. The R
 ```
 ./ssl_pretraining_slurm_launch_loop.sh <option>
 ```
-For the `<option>` argument, four types of experiments can be selected: `RayTune`, `DDP`, `Imbalanced`, or `Balanced`.
+For the `<option>` argument, four types of experiments can be selected: `RayTune`, `DDP`, `Imbalanced` (default), or `Balanced`.
 
 If `RayTune` is selected, the script generates a csv file including the best configurations sorted according to the lowest training loss with the following format: `ray_tune_<backbone>_<model>.csv`. This file must be included in the path `./input/best_configs/` for the other types of experiments to start with the pseudo-optimal hyperparameters found.
 
@@ -60,7 +60,7 @@ If `RayTune` is selected, the script generates a csv file including the best con
 sbatch finetuning_slurm.sh
 ```
 
-This script runs the `finetuning_run_localhost.sh`. It should be configured with only one or two `train_rates` to launch several Slurm jobs.
+This script runs the `finetuning_run_localhost.sh`. It should be configured with only one or two `train_rates` to launch several Slurm jobs. The python script accepts percentages (default) as inputs and a desired number of samples per class.
 
 Upon completion of the jobs, several files will be generated (one per seed) inside the output folder. The mean and std values per trial can be generated using the script `compute_mean_std_from_csv.py` (see the `-h` for help) as follows:
 ```
