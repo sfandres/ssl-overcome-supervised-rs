@@ -66,7 +66,7 @@ Upon completion of the jobs, several files will be generated (one per seed) insi
 ```
 python3 compute_mean_std_from_csv.py -i <parent_folder_of_the_csv_files> -o <desired_output_folder>
 ```
-where `parent_folder_of_the_csv_files` should only contain either multiclass or multilabel csv files. The organization of the folder could be as follows:
+where `parent_folder_of_the_csv_files` should follow the structure below:
 ```
 csv_results/
 ├── multiclass/
@@ -79,7 +79,18 @@ csv_results/
 │   ├── ...
 ```
 
-Then, the csv generated can be plotted using the script `plot_final_graphs.py`.
+Then, the csv generated can be plotted using the script `plot_final_graphs.py`. This script requires the input parent folder (output of the previous script) to be organized as follows:
+```
+both_mean_std_csv_files/
+├── multiclass/
+│   ├── 01p/
+│      ├── pp_mean_multiclass_tr=0.010_resnet18_Supervised_bd=False_tl=LP_iw=random.csv
+│      ├── ...
+├── multilabel/
+│   ├── 01p/
+│      ├── pp_mean_multilabel_tr=0.010_resnet18_Supervised_bd=False_tl=LP_iw=random.csv
+│      ├── ...
+```
 
 To generate the tables with all values, the script `take_acc_values_from_csv_v2.py` is used.
 
