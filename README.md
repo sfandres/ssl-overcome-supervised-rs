@@ -60,13 +60,13 @@ If `RayTune` is selected, the script generates a csv file including the best con
 sbatch finetuning_slurm.sh
 ```
 
-This script runs the `finetuning_run_localhost.sh`. It should be configured with only one or two `train_rates` to launch several Slurm jobs. The python script accepts percentages (default) as inputs and a desired number of samples per class.
+This script runs the `finetuning_run_localhost.sh`. It should be configured with only one or two `train_rates` to launch several Slurm jobs. The Python script accepts percentages (default) as inputs and a desired number of samples per class.
 
 Upon completion of the jobs, several files will be generated (one per seed) inside the output folder. The mean and std values per trial can be generated using the script `compute_mean_std_from_csv.py` (see the `-h` for help) as follows:
 ```
 python3 compute_mean_std_from_csv.py -i <parent_folder_of_the_csv_files> -o <desired_output_folder>
 ```
-where `parent_folder_of_the_csv_files` should target `multiclass/` and then `multilabel/` folders following the structure below:
+where `parent_folder_of_the_csv_files` should target the `multiclass/` and then `multilabel/` folders following the structure below:
 ```
 csv_results/
 ├── multiclass/
@@ -79,7 +79,7 @@ csv_results/
 │   ├── ...
 ```
 
-Then, the csv generated can be plotted using the script `plot_final_graphs.py`. This script requires the input parent folder (output of the previous script) to be organized as follows:
+Then, the csv generated can be plotted using the script `plot_final_graphs.py`. This script requires inputting the parent folder (`multiclass/` or `multilabel/`) and adjusting the hard-coded `x` variable to the current number of percentages available. The parent folder should follow the following structure:
 ```
 both_mean_std_csv_files/
 ├── multiclass/
