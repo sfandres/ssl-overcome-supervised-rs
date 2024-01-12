@@ -66,7 +66,7 @@ Upon completion of the jobs, several files will be generated (one per seed) insi
 ```
 python3 compute_mean_std_from_csv.py -i <parent_folder_of_the_csv_files> -o <desired_output_folder>
 ```
-where `parent_folder_of_the_csv_files` should follow the structure below:
+where `parent_folder_of_the_csv_files` should target `multiclass/` and then `multilabel/` folders following the structure below:
 ```
 csv_results/
 ├── multiclass/
