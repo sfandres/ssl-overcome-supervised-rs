@@ -95,7 +95,7 @@ both_mean_std_csv_files/
 Two examples of the above command follows:
 ```
 python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_macro --save_fig pdf --ref Random
-python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_per_class --save_fig pdf --bar best
+python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_per_class --save_fig pdf --ref ImageNet --bar best
 ```
 
 To generate the tables with all values, the script `take_acc_values_from_csv_v2.py` is used.
