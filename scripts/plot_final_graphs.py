@@ -278,7 +278,7 @@ def main(args):
             text_space = -0.015
 
     # Horizontal axis.
-    x = [1, 5, 10, 25, 50, 75, 100]
+    x = [1, 5, 10, 25, 50, 100]
     x_axis = np.arange(len(x))
 
     # Get a list of all directories.
