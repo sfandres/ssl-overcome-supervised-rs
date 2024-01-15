@@ -8,9 +8,11 @@
 -->
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
-# From Classification to Blind Spectral Unmixing: Evaluating the Transferability of SSL Models on RGB Satellite Images
-Official repo of the self-supervised learning research paper submitted to <i>IEEE Transactions on Geoscience and Remote Sensing</i>.<br>
-Current status: <i>Undergoing Review</i>.
+# TESSL
+Official repo of the self-supervised learning research paper:<br>
+* <i>Transferability Evaluation of Self-Supervised Learning Models to Land-Use and Land-Cover Fraction Estimation on RGB Satellite Tiles</i>
+
+Current status: <i>Undergoing review</i>.
 
 ## Table of contents
 * [Getting started](#getting-started)
