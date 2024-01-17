@@ -108,7 +108,10 @@ python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fi
 python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_per_class --save_fig pdf --ref ImageNet --bar diff
 ```
 
-To generate the tables with all values, the script `take_acc_values_from_csv_v2.py` is used.
+To generate the tables with all values, the script `take_acc_values_from_csv_v2.py` is used. A use example follows:
+```
+python3 scripts/take_acc_values_from_csv_tables.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multilabel/ -o ~/Downloads/
+```
 
 ## License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
