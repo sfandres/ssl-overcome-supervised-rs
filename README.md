@@ -20,7 +20,7 @@ Current status: <i>Undergoing review</i>.
   * [Installation](#installation)
   * [Usage](#usage)
 * [Pretraining SSL models](#pretraining-ssl-models)
-* [Downstream tasks: BSU and SC](#downstream-tasks-bsu-and-sc)
+* [Downstream tasks](#downstream-tasks-lulc-fraction-estimation-and-scene-classification)
 * [License](#license)
 
 ## Getting started
@@ -57,7 +57,7 @@ For the `<option>` argument, four types of experiments can be selected: `RayTune
 
 If `RayTune` is selected, the script generates a csv file including the best configurations sorted according to the lowest training loss with the following format: `ray_tune_<backbone>_<model>.csv`. This file must be included in the path `./input/best_configs/` for the other types of experiments to start with the pseudo-optimal hyperparameters found.
 
-## Downstream tasks: BSU and SC
+## Downstream tasks: LULC fraction estimation and scene classification
 ```
 sbatch finetuning_slurm.sh
 ```
