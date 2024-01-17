@@ -148,15 +148,15 @@ def main(args):
                     # Micro-F1.
                     f1_micro_mean = res_mean_last_epoch['f1_micro']
                     f1_micro_std = res_std_last_epoch['f1_micro']
-                    f1_micro_res = f'{f1_micro_mean:.3f}+-{f1_micro_std:.3f}'
+                    f1_micro_res = f'{f1_micro_mean:.3f}$\pm${f1_micro_std:.3f}'
                     # Macro-F1.
                     f1_macro_mean = res_mean_last_epoch['f1_macro']
                     f1_macro_std = res_std_last_epoch['f1_macro']
-                    f1_macro_res = f'{f1_macro_mean:.3f}+-{f1_macro_std:.3f}'
+                    f1_macro_res = f'{f1_macro_mean:.3f}$\pm${f1_macro_std:.3f}'
                     # Weighted-F1.
                     f1_weighted_mean = res_mean_last_epoch['f1_weighted']
                     f1_weighted_std = res_std_last_epoch['f1_weighted']
-                    f1_weighted_res = f'{f1_weighted_mean:.3f}+-{f1_weighted_std:.3f}'
+                    f1_weighted_res = f'{f1_weighted_mean:.3f}$\pm${f1_weighted_std:.3f}'
                     if args.verbose:
                         print(f"{'Micro F1:'.ljust(13)}{f1_micro_res}")
                         print(f"{'Macro F1:'.ljust(13)}{f1_macro_res}")
@@ -166,7 +166,7 @@ def main(args):
                     # RMSE.
                     rmse_mean = res_mean_last_epoch['rmse']
                     rmse_std = res_std_last_epoch['rmse']
-                    rmse_res = f'{rmse_mean:.3f}+-{rmse_std:.3f}'
+                    rmse_res = f'{rmse_mean:.3f}$\pm${rmse_std:.3f}'
                     print(f"{'RMSE:'.ljust(13)}{rmse_res}") if args.verbose else None
 
                 # Final row.
