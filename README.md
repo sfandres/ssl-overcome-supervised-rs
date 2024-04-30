@@ -8,9 +8,9 @@
 -->
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
-# TESSL
+# SSL Evaluation on Fraction Estimation
 Official repo of the self-supervised learning research paper:<br>
-* <i>Transferability Evaluation of Self-Supervised Learning Models to Land-Use and Land-Cover Fraction Estimation on RGB Satellite Tiles</i>
+* <i>Evaluation of Self-Supervised Learning Models for Land-Use and Land-Cover Fraction Estimation on RGB Satellite Tiles</i>
 
 Current status: <i>Undergoing review</i>.
 
