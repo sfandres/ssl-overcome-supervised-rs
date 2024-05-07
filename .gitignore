@@ -12,3 +12,5 @@ results_paper_stratified/back-up_final_pretraining
 
 # Specific file extensions
 *.out
+*.png
+*.pdf
