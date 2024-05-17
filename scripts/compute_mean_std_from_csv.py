@@ -1,5 +1,6 @@
-"""Writes to a csv the mean and std values of the merged
-   dataframes generated from the different experimental trials.
+"""
+Writes to a csv the mean and std values of the merged
+dataframes generated from the different experimental trials.
 
 Usage: compute_mean_std_from_csv.py [-h] [--input INPUT] [--output OUTPUT]
 
@@ -29,13 +30,11 @@ def get_args() -> argparse.Namespace:
     Returns:
         An 'argparse.Namespace' object containing the parsed arguments.
     """
-
-    # Get arguments.
     parser = argparse.ArgumentParser(
         description='Script that merges the .csv files.'
     )
 
-    parser.add_argument('--input', '-i', required=True,    # nargs='+',
+    parser.add_argument('--input', '-i', required=True,
                         help='csv file(s) to be merged.')
 
     parser.add_argument('--output', '-o', required=True,
@@ -91,93 +90,93 @@ def main(args):
         for file in group:
             print(f'{i} --> {file}')
 
-    # Create the col for the last metric.
-
     # Iterate over the groups of files.
     for group in arranged_files:
 
         print()
         dataframes = []
-        last_rows = []
 
         # Get task from first item.
         task = group[0].split('_tr=')[0]
-        print(f"{'Task:'.ljust(8)}"
-              f"{task}")
+        print(f"{'Task:'.ljust(8)}{task}")
 
         # Target metric.
         if task == 'multiclass':
-            col_name = 'f1_per_class'
+            per_class_metric = 'f1_per_class'
         elif task == 'multilabel':
-            col_name = 'rmse_per_class'
+            per_class_metric = 'rmse_per_class'
         else:
-            col_name = None
+            per_class_metric = None
 
         # Get prefix from first item.
         prefix = group[0].split('_s=')[0]
-        print(f"{'Prefix:'.ljust(8)}"
-              f"{prefix}")
+        print(f"{'Prefix:'.ljust(8)}{prefix}")
+
+        # ==============================================
 
         # Iterate over the csv files.
         for file in group:
 
-            print(f"{'File:'.ljust(8)}"                                 # Show file.
-                  f"{file}")
+            print(f"{'File:'.ljust(8)}{file}")                          # Show file.
 
             df = pd.read_csv(os.path.join(args.input, file))            # Create the dataframe.
 
-            column_list_str = df.iloc[-1, -1]                           # Convert the last row of the last column to list and then np.array.
-            list_floats = [float(x) for x
-                           in column_list_str.strip('[]').split(',')]
-            array_floats = np.array(list_floats, dtype=float)
+            df[per_class_metric] = df[per_class_metric].apply(          # Convert every row of the last column to np.array with floats.
+                lambda x: np.array(
+                    [float(i) for i in x.strip('[]').split(',')],
+                    dtype=float
+                )
+            )
 
-            df = df.drop(col_name, axis=1)                              # Remove the last column (no longer needed).
+            per_class_metric_df = pd.DataFrame(                         # Expand the target column into multiple columns, one per value.
+                df[per_class_metric].tolist(),
+                index=df.index
+            )
 
-            last_rows.append(array_floats)                              # Save the last metric and dataframe.
-            dataframes.append(df)
+            per_class_metric_df.columns = [                             # Rename the columns.
+                f'{per_class_metric}_{i}'
+                for i in range(per_class_metric_df.shape[1])
+            ]
 
-        # Merge the dataframes based on columns.
-        df_concat = pd.concat(dataframes, axis=0)
+            df.drop(columns=per_class_metric, inplace=True)             # Drop the target column from the original dataframe.
 
-        # Group by index (epoch) and compute mean by row.
-        by_row_index = df_concat.groupby(df_concat.index)
-        df_means = by_row_index.mean().round(3)
-        df_means['epoch'] = df_means.index
+            df_expanded = pd.concat([df, per_class_metric_df],          # Concatenate the original dataframe with the expanded target column.
+                                    axis=1)
+
+            dataframes.append(df_expanded)                              # Append the expanded dataframe to the list of dataframes.
+
+        print(f'\nDATAFRAMES:\n{dataframes}')
+
+        # ==============================================
+
+        df_concat = pd.concat(dataframes, axis=0)                       # Merge the dataframes by rows.
+        print(f'\nCONCAT:\n{df_concat}')
+
+        by_row_index = df_concat.groupby(df_concat.index)               # Group the dataframe by row index (epoch).
+
+        df_means = by_row_index.mean().round(3)                         # Compute the mean and std values per column.
         df_stds = by_row_index.std().round(3)
-        df_stds['epoch'] = df_stds.index
 
-        # Compute the mean and std values per column.
-        avg_final_metric = np.round(np.mean(last_rows, axis=0), 3)
-        formatted_avg_final_metric = ", ".join([str(num) for num in avg_final_metric])
-        formatted_avg_final_metric = '[' + formatted_avg_final_metric + ']'
+        df_means['epoch'] = df_means.index.astype('int')                # Add the epoch column to the new dataframe and convert it to int.
+        df_stds['epoch'] = df_stds.index.astype('int')
 
-        std_final_metric = np.round(np.std(last_rows, axis=0), 3)
-        formatted_std_final_metric = ", ".join([str(num) for num in std_final_metric])
-        formatted_std_final_metric = '[' + formatted_std_final_metric + ']'
+        print(f'\nMEANs:\n{df_means}')
+        print(f'\nSTDs:\n{df_stds}')
 
-        # Add a single value at the last row of the dfs.
-        df_means[col_name] = ''
-        df_means.at[df_means.index[-1], col_name] = formatted_avg_final_metric
-        df_stds[col_name] = ''
-        df_stds.at[df_stds.index[-1], col_name] = formatted_std_final_metric
-
-        # Fix epoch's column.
-        df_means['epoch'] = df_means['epoch'].astype('int')
-        df_stds['epoch'] = df_means['epoch'].astype('int')
-
-        # Create a new DataFrame with mean+-std values wo/ col_name.
-        df_both = pd.DataFrame()
-        df_both['epoch'] = df_means['epoch']
-        for column in df_means.columns:
-            if column != 'epoch':
-                df_both[column] = df_means[column].astype(str) + '+-' + df_stds[column].astype(str)
-        df_both = df_both.drop(col_name, axis=1)
-
-        # Save the mean and standard deviation dataframes to CSV files.
         df_means.to_csv(os.path.join(args.output, f'pp_mean_{prefix}.csv'), index=False)
         df_stds.to_csv(os.path.join(args.output, f'pp_std_{prefix}.csv'), index=False)
-        df_both.to_csv(os.path.join(args.output, f'pp_both_{prefix}.csv'), index=False)
-    
+
+        # Create a new DataFrame with mean+-std values wo/ col_name.
+        # df_both = pd.DataFrame()
+        # df_both['epoch'] = df_means['epoch']
+        # for column in df_means.columns:
+        #     if column != 'epoch':
+        #         df_both[column] = df_means[column].astype(str) + '+-' + df_stds[column].astype(str)
+        # df_both = df_both.drop(col_name, axis=1)
+        # df_both.to_csv(os.path.join(args.output, f'pp_both_{prefix}.csv'), index=False)
+
+        # Save the mean and standard deviation dataframes to CSV files.
+
     return 0
 
 
