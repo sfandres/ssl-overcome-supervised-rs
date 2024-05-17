@@ -154,8 +154,8 @@ def main(args):
 
         by_row_index = df_concat.groupby(df_concat.index)               # Group the dataframe by row index (epoch).
 
-        df_means = by_row_index.mean().round(3)                         # Compute the mean and std values per column.
-        df_stds = by_row_index.std().round(3)
+        df_means = by_row_index.mean() #.round(3)                         # Compute the mean and std values per column.
+        df_stds = by_row_index.std() #.round(3)
 
         df_means['epoch'] = df_means.index.astype('int')                # Add the epoch column to the new dataframe and convert it to int.
         df_stds['epoch'] = df_stds.index.astype('int')
