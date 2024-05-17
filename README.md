@@ -85,11 +85,11 @@ Then, the csv generated can be plotted using the script `plot_final_graphs.py`. 
 ```
 both_mean_std_csv_files/
 ├── multiclass/
-│   ├── 01p/
+│   ├── 001p/
 │      ├── pp_mean_multiclass_tr=0.010_resnet18_Supervised_bd=False_tl=LP_iw=random.csv
 │      ├── ...
 ├── multilabel/
-│   ├── 01p/
+│   ├── 001p/
 │      ├── pp_mean_multilabel_tr=0.010_resnet18_Supervised_bd=False_tl=LP_iw=random.csv
 │      ├── ...
 ```
