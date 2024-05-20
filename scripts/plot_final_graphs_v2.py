@@ -163,12 +163,14 @@ def main(args):
     df_means = pd.DataFrame(dfs_mean)
     df_means = df_means.reset_index(drop=True)
     df_means['label'] = df_means.apply(create_new_column_pandas, axis=1)
+    df_means = df_means.round(3)
     df_means.to_csv(os.path.join(args.output, f'exp_{task}_m={args.metric}_means.csv'), index=False)
     print(df_means)
 
     df_stds = pd.DataFrame(dfs_std)
     df_stds['epoch'] = df_stds['epoch'].astype(int)
     df_stds = df_stds.reset_index(drop=True)
+    df_stds = df_stds.round(3)
     df_stds.to_csv(os.path.join(args.output, f'exp_{task}_m={args.metric}_stds.csv'), index=False)
     print(df_stds)
 
