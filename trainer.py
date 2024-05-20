@@ -4,6 +4,7 @@ import time
 import csv
 import numpy as np
 
+from typing import Dict
 from torch.utils.data import DataLoader
 from torch.nn.parallel import DistributedDataParallel as DDP
 from ray import tune
@@ -22,9 +23,10 @@ NUM_DECIMALS = 3
 
 def accuracy(
     model: torch.nn.Module,
-    dataloader: DataLoader,
+    dataloaders: Dict[str, DataLoader],
+    target_subset: str,
     task_name: str,
-    device: int
+    device: int,
 ) -> dict:
     """Calculates the accuracy of a model on a given dataset.
 
@@ -51,7 +53,7 @@ def accuracy(
     # Calculate probabilities and predictions.
     model.eval()
     with torch.no_grad():
-        for inputs, labels in dataloader:
+        for inputs, labels in dataloaders[target_subset]:
 
             inputs = inputs.to(device)                              # Inputs and labels from the dataset.
             labels = labels.to(device)
@@ -87,12 +89,12 @@ def accuracy(
         f1_per_class = f1_score(y_true_cpu, y_pred_cpu, average=None)
 
         acc_dict = {
-            'top1': top1_accuracy,
-            'top5': top5_accuracy,
-            'f1_micro': f1_micro,
-            'f1_macro': f1_macro,
-            'f1_weighted': f1_weighted,
-            'f1_per_class': list(np.round(f1_per_class, NUM_DECIMALS))
+            f'{target_subset}_top1': top1_accuracy,
+            f'{target_subset}_top5': top5_accuracy,
+            f'{target_subset}_f1_micro': f1_micro,
+            f'{target_subset}_f1_macro': f1_macro,
+            f'{target_subset}_f1_weighted': f1_weighted,
+            f'{target_subset}_f1_per_class': list(np.round(f1_per_class, NUM_DECIMALS))
         }
 
     elif task_name == 'multilabel':                                 # Downstream task --> multilabel.
@@ -108,10 +110,10 @@ def accuracy(
         mae_per_class = mean_absolute_error(y_true_cpu, y_pred_cpu, multioutput='raw_values')
 
         acc_dict = {
-            'rmse': rmse,
-            'mae': mae,
-            'rmse_per_class': list(np.round(rmse_per_class, NUM_DECIMALS))
-            # 'mae_per_class': list(np.round(mae_per_class, NUM_DECIMALS))
+            f'{target_subset}_rmse': rmse,
+            f'{target_subset}_mae': mae,
+            f'{target_subset}_rmse_per_class': list(np.round(rmse_per_class, NUM_DECIMALS))
+            # f'{target_subset}_mae_per_class': list(np.round(mae_per_class, NUM_DECIMALS))
         }
 
     return acc_dict
@@ -445,33 +447,39 @@ class Trainer():
 
             if config['accuracy']:                                                      # Compute accuracy on the target dataloader.
                 acc_results = accuracy(self.model,
-                                       self.dataloader[config['accuracy']],
+                                       self.dataloader,
+                                       'val',
                                        args.task_name,
                                        self.local_rank)
-                for metric in acc_results:
-                    print(f'{f"{metric}:".ljust(5)} {acc_results[metric]}')             # Print the accuracy results.
+                acc_results2 = accuracy(self.model,
+                                        self.dataloader,
+                                        config['accuracy'],
+                                        args.task_name,
+                                        self.local_rank)
+                for metric in acc_results2:
+                    print(f'{f"{metric}:".ljust(5)} {acc_results2[metric]}')             # Print the accuracy results.
 
             if self.ray_tune:                                                           # Ray Tune reporting stage.
                 if args.task_name == 'multiclass':
                     tune.report(
                         loss=epoch_train_loss,
-                        f1_macro=round(acc_results['f1_macro'], NUM_DECIMALS)
+                        f1_macro=round(acc_results2['f1_macro'], NUM_DECIMALS)
                     )
                 elif args.task_name == 'multilabel':
                     tune.report(
                         loss=epoch_train_loss,
-                        rmse=round(acc_results['rmse'], NUM_DECIMALS)
+                        rmse=round(acc_results2['rmse'], NUM_DECIMALS)
                     )
 
             if config['save_csv'] and not self.ray_tune:
 
                 if epoch == 0:
-                    header = ['epoch', 'train_loss', 'val_loss'] + list(acc_results.keys())
+                    header = ['epoch', 'train_loss', 'val_loss'] + list(acc_results.keys()) + list(acc_results2.keys())
                     with open(self.csv_path, 'w', newline='') as file:
                         csv_writer = csv.writer(file)
                         csv_writer.writerow(header)                                 # Write the header row in the CSV file (if first epoch).
 
-                data = [epoch_train_loss, epoch_val_loss] + list(acc_results.values())
+                data = [epoch_train_loss, epoch_val_loss] + list(acc_results.values()) + list(acc_results2.values())
 
                 data_rounded = [format(elem, f'.{NUM_DECIMALS}f')
                                 if not isinstance(elem, list) else elem
