@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 from matplotlib import pyplot as plt
 
+
 MARKER_SIZE = 9
 SMALL_SIZE = 18
 MEDIUM_SIZE = 22
@@ -17,7 +18,6 @@ def set_plt() -> None:
     """
     Configure matplotlib figures.
     """
-
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
     plt.rc('axes', titlesize=MEDIUM_SIZE)    # fontsize of the axes title
     plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
@@ -35,10 +35,9 @@ def get_args() -> argparse.Namespace:
     Returns:
         An 'argparse.Namespace' object containing the parsed arguments.
     """
-
     parser = argparse.ArgumentParser(description='Script that creates the figures for the paper.')
 
-    parser.add_argument('--input', '-i', required=True,    # nargs='+',
+    parser.add_argument('--input', '-i', required=True,
                         help='path to the parent folder where the different train ratio folders are stored.')
 
     parser.add_argument('--output', '-o', default='./',
@@ -66,7 +65,6 @@ def create_new_column_pandas(row: pd.core.series.Series) -> str:
     Returns:
         A string with the new column name.
     """
-
     if row['weights'] == 'imagenet' and row['model'] == 'Supervised':
         return f"FS-ImageNet-{row['transfer']}"
     if row['weights'] == 'random' and row['model'] == 'Supervised':
@@ -103,7 +101,6 @@ def main(args):
 
     # Horizontal axis.
     x = [1, 5, 10, 25, 50, 100]
-    # x_axis = np.arange(len(x))
 
     # Get a list of all directories in root directory.
     dirs = os.listdir(args.input)
@@ -121,10 +118,11 @@ def main(args):
     for folder in filtered_dirs:
 
         folder_path = os.path.join(args.input, folder)
-        csv_files = sorted(os.listdir(folder_path))
+        mean_csv_files = [file for file in sorted(os.listdir(folder_path))
+                          if 'pp_mean_' in file]
 
         # Iterate through the CSV files in the folder.
-        for file_name in csv_files:
+        for file_name in mean_csv_files:
 
             file_path = os.path.join(folder_path, file_name)
 
@@ -136,34 +134,50 @@ def main(args):
 
             # Add columns for train ratio and file name.
             df['file_name'] = file_name
-            df['train_ratio'] = int(float(features[4]) * 100)
+            df['train_ratio'] = str(int(float(features[4]) * 100))
             df['model'] = features[6]
             df['transfer'] = features[10]
             df['weights'] = features[12]
 
-            # Get the last row of the DataFrame.
-            last_row = df.iloc[-1]
+            # Find the row with the maximum value in the metric column.
+            if args.metric == 'rmse' or args.metric == 'mae':
+                found_df = df[df[args.metric] == df[args.metric].min()]
+                found_row = found_df.iloc[0]
+                found_row_epoch = found_df.iloc[0]['epoch']
+            else:
+                found_df = df[df[args.metric] == df[args.metric].max()]
+                found_row = found_df.iloc[0]
+                found_row_epoch = found_df.iloc[0]['epoch']
 
-            # Append the DataFrame to the list.
-            if 'pp_mean_' in file_path:
-                dfs_mean.append(last_row)
-            elif 'pp_std_' in file_path:
-                dfs_std.append(last_row)
+            # Find the corresponding std row.
+            std_file_name = file_name.replace('pp_mean_', 'pp_std_')
+            file_path = os.path.join(folder_path, std_file_name)
+            std_df = pd.read_csv(file_path)
+            std_found_row = std_df[std_df['epoch'] == found_row_epoch].iloc[0]
 
-    # Create a DataFrame from the list of last rows.
-    df = pd.DataFrame(dfs_mean)
-    df = df.reset_index(drop=True)
-    df['label'] = df.apply(create_new_column_pandas, axis=1)
-    print(df)
+            # Append both rows to the lists.
+            dfs_mean.append(found_row)
+            dfs_std.append(std_found_row)
+
+    # Create a DataFrame of means and stds.
+    df_means = pd.DataFrame(dfs_mean)
+    df_means = df_means.reset_index(drop=True)
+    df_means['label'] = df_means.apply(create_new_column_pandas, axis=1)
+    print(df_means)
+
+    df_stds = pd.DataFrame(dfs_std)
+    df_stds['epoch'] = df_stds['epoch'].astype(int)
+    df_stds = df_stds.reset_index(drop=True)
+    print(df_stds)
 
     # Plotting.
-    fig = plt.figure(figsize=(18, 5))
+    fig = plt.figure(figsize=(18, 6))
 
     # Iterate over unique models and transfer methods.
     for model in list_models:
 
         # Filter the DataFrame by model.
-        filtered_df = df[df['label'].str.contains(model)]
+        filtered_df = df_means[df_means['label'].str.contains(model)]
         if args.verbose:
             print(filtered_df)
 
@@ -175,6 +189,13 @@ def main(args):
             if args.verbose:
                 print(subset)
 
+            # Extract indices from df1
+            indices_to_filter = subset.index
+
+            # Filter the stds by indexing with the indices from df1.
+            subset_std = df_stds.loc[indices_to_filter]
+            print(subset_std)
+
             # Create the labels.
             if model == 'BarlowTwins':
                 label = f'SSL-BarlowTwins-{transfer}'
@@ -185,10 +206,10 @@ def main(args):
 
             # Plot the data.
             plt.plot(subset['train_ratio'], subset[args.metric], label=label, color=dict_color_models[model], marker=dict_marker_models[transfer], linestyle=dict_lines_models[transfer])
+            # plt.fill_between(subset['train_ratio'], subset[args.metric]-subset_std[args.metric], subset[args.metric]+subset_std[args.metric], alpha=0.125, color=dict_color_models[model])
 
     # Customize the plot
     plt.xlabel('Train ratio (%)', labelpad=15)
-    plt.xticks(x)
     plt.ylabel(dict_metrics[args.metric], labelpad=15)
     plt.legend(title='Model', loc='center', bbox_to_anchor=(1.3, 0.5), ncol=1)
     plt.grid(axis='both', color='gainsboro', linestyle='-', linewidth=0.25, zorder=0)
@@ -204,7 +225,6 @@ def main(args):
         fig.savefig(save_path, bbox_inches='tight')
         print(f'Figure saved at {save_path}')
     else:
-        plt.title(transfer)
         plt.show()
 
 
