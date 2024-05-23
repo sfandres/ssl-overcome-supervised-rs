@@ -5,7 +5,7 @@
 #--------------------------------------------
 #---> COMMON OPTIONS
 #--------------------------------------------
-#SBATCH --time=36:00:00                             # Job duration (72h is the limit).
+#SBATCH --time=24:00:00                             # Job duration (72h is the limit).
 #SBATCH --ntasks=1                                  # Number of tasks.
 #   #SBATCH --mem=0                                     # Real memory required per node.
 #SBATCH --gres=gpu:1                                # The specified resources will be allocated to the job on each node.
