@@ -5,12 +5,12 @@
 #--------------------------------------------
 #---> COMMON OPTIONS
 #--------------------------------------------
-#SBATCH --time=48:00:00                             # Job duration (72h is the limit).
+#SBATCH --time=36:00:00                             # Job duration (72h is the limit).
 #SBATCH --ntasks=1                                  # Number of tasks.
 #   #SBATCH --mem=0                                     # Real memory required per node.
 #SBATCH --gres=gpu:1                                # The specified resources will be allocated to the job on each node.
 #   #SBATCH --cpus-per-task=4                           # Number of cpu-cores per task (>1 if multi-threaded tasks).
-#SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
+#   #SBATCH --exclusive                                 # The job can not share nodes with other running jobs.
 
 #--------------------------------------------
 #---> TURGALIUM
