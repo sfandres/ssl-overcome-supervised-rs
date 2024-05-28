@@ -62,9 +62,9 @@ If `RayTune` is selected, the script generates a csv file including the best con
 sbatch finetuning_slurm.sh
 ```
 
-This script runs the `finetuning_run_localhost.sh`. It should be configured with only one or two `train_rates` to launch several Slurm jobs. The Python script accepts percentages (default) as inputs and a desired number of samples per class.
+This script runs the `finetuning_run_localhost.sh`. It should be configured with only one or two `train_rates` to launch several Slurm jobs. The Python script accepts the desired number of samples per class as input. Upon completion of the jobs, several files will be generated (one per seed) inside the output folder.
 
-Upon completion of the jobs, several files will be generated (one per seed) inside the output folder. The mean and std values per trial can be generated using the script `compute_mean_std_from_csv.py` (see the `-h` for help) as follows:
+* The mean and std values per trial can be generated using the script `compute_mean_std_from_csv.py` (see the `-h` for help) as follows:
 ```
 python3 compute_mean_std_from_csv.py -i <parent_folder_of_the_csv_files> -o <desired_output_folder>
 ```
@@ -72,14 +72,18 @@ where `parent_folder_of_the_csv_files` should target the `multiclass/` and then 
 ```
 csv_results/
 ├── multiclass/
-│   ├── multiclass_tr=5.000_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=05_lr=0.001_m=0.9_wd=0.0_do=None.csv
-│   ├── multiclass_tr=5.000_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=42_lr=0.001_m=0.9_wd=0.0_do=None.csv
+│   ├── multiclass_tr=0.010_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=05_lr=0.001_m=0.9_wd=0.0_do=None.csv
+│   ├── multiclass_tr=0.010_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=42_lr=0.001_m=0.9_wd=0.0_do=None.csv
 │   ├── ...
 ├── multilabel/
-│   ├── multilabel_tr=5.000_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=05_lr=0.001_m=0.9_wd=0.0_do=None.csv
-│   ├── multilabel_tr=5.000_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=42_lr=0.001_m=0.9_wd=0.0_do=None.csv
+│   ├── multilabel_tr=0.010_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=05_lr=0.01_m=0.9_wd=1e-05_do=None.csv
+│   ├── multilabel_tr=0.010_resnet18_BarlowTwins_bd=False_tl=FT_iw=random_s=42_lr=0.01_m=0.9_wd=1e-05_do=None.csv
 │   ├── ...
 ```
+
+
+-----------
+
 
 Then, the csv generated can be plotted using the script `plot_final_graphs.py`. This script requires inputting the parent folder (`multiclass/` or `multilabel/`) and adjusting the hard-coded `x` variable to the current number of percentages available. The parent folder should follow the following structure:
 ```
