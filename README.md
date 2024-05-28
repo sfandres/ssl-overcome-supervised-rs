@@ -98,11 +98,17 @@ both_mean_std_csv_files/
 │      ├── ...
 ```
 
+* The generated csv file can be plotted using the script [sc_2_plot_final_graphs_v2.py](scripts/sc_2_plot_final_graphs_v2.py). This script requires inputting the parent folder (`multiclass/` or `multilabel/`) and adjusting the hard-coded `x` variable to the current number of percentages available. It generates the line plot showing the train ratios versus the results of the desired final metric:
+```
+python3 scripts/sc_2_plot_final_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/02_avg_csv_files/multiclass/ -o ./output/ -m f1_macro
+python3 scripts/sc_2_plot_final_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/02_avg_csv_files/multilabel/ -o ./output/ -m rmse
+```
+
+
 
 -----------
 
 
-Then, the csv generated can be plotted using the script `plot_final_graphs.py`. This script requires inputting the parent folder (`multiclass/` or `multilabel/`) and adjusting the hard-coded `x` variable to the current number of percentages available. The parent folder should follow the following structure:
 
 
 Some examples of the above command follow:
