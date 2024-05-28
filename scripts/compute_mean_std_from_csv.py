@@ -121,29 +121,31 @@ def main(args):
 
             df = pd.read_csv(os.path.join(args.input, file))            # Create the dataframe.
 
-            df[per_class_metric] = df[per_class_metric].apply(          # Convert every row of the last column to np.array with floats.
-                lambda x: np.array(
-                    [float(i) for i in x.strip('[]').split(',')],
-                    dtype=float
+            for split in ['val_', 'test_']:                             # Iterate over the splits.
+
+                df[split+per_class_metric] = df[split+per_class_metric].apply(          # Convert every row of the last column to np.array with floats.
+                    lambda x: np.array(
+                        [float(i) for i in x.strip('[]').split(',')],
+                        dtype=float
+                    )
                 )
-            )
 
-            per_class_metric_df = pd.DataFrame(                         # Expand the target column into multiple columns, one per value.
-                df[per_class_metric].tolist(),
-                index=df.index
-            )
+                per_class_metric_df = pd.DataFrame(                         # Expand the target column into multiple columns, one per value.
+                    df[split+per_class_metric].tolist(),
+                    index=df.index
+                )
 
-            per_class_metric_df.columns = [                             # Rename the columns.
-                f'{per_class_metric}_{i}'
-                for i in range(per_class_metric_df.shape[1])
-            ]
+                per_class_metric_df.columns = [                             # Rename the columns.
+                    f'{split+per_class_metric}_{i}'
+                    for i in range(per_class_metric_df.shape[1])
+                ]
 
-            df.drop(columns=per_class_metric, inplace=True)             # Drop the target column from the original dataframe.
+                df.drop(columns=split+per_class_metric, inplace=True)       # Drop the target column from the original dataframe.
 
-            df_expanded = pd.concat([df, per_class_metric_df],          # Concatenate the original dataframe with the expanded target column.
-                                    axis=1)
+                df = pd.concat([df, per_class_metric_df],                   # Concatenate the original dataframe with the expanded target column.
+                               axis=1)
 
-            dataframes.append(df_expanded)                              # Append the expanded dataframe to the list of dataframes.
+            dataframes.append(df)                                           # Append the expanded dataframe to the list of dataframes.
 
         print(f'\nDATAFRAMES:\n{dataframes}')
 
