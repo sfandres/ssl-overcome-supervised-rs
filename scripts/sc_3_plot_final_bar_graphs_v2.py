@@ -42,12 +42,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--output', '-o', default='./',
                         help='path to the folder where the figure will be saved.')
 
-    parser.add_argument('--metric', '-m', required=True,
-                        choices=['f1_per_class', 'rmse_per_class'],
-                        help='parameter to be displayed in the y-axis.')
-
-    parser.add_argument('--bar', '-b', choices=['both', 'best', 'diff'],
-                        help='type of bar plot.')
+    # parser.add_argument('--bar', '-b', choices=['both', 'best', 'diff'],
+    #                     help='type of bar plot.')
 
     parser.add_argument('--ref', '-r', choices=['Random', 'ImageNet'], default='ImageNet',
                         help='model to compare with Barlow Twins.')
@@ -82,30 +78,48 @@ def main(args: argparse.Namespace) -> bool:
     # Configure matplotlib.
     set_plt()
 
+    # Get task from first item and set target metric and reference.
+    task = args.input_df_means_path.split('/')[-1].split('_')[1]
+    if task == 'multiclass':
+        metric = 'f1_per_class'
+        ylabel = 'F1 per class'
+    elif task == 'multilabel':
+        metric = 'rmse_per_class'
+        ylabel = 'RMSE per class'
+    print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
+
     # Read the input DataFrames.
     df = pd.read_csv(args.input_df_means_path)
     # df_stds = pd.read_csv(args.input_df_means_path.replace('means', 'stds'))
 
-    # Identify the columns that represent RMSE per class.
-    rmse_columns = [col for col in df.columns if 'rmse_per_class' in col]
+    # Identify the columns that represent the target metric per class (only test columns are considered).
+    per_class_columns = [col for col in df.columns if f'test_{metric}' in col]
+    print(f'\nPER CLASS COLUMNS:\n{per_class_columns}')
 
-    # Filter the DataFrame to only include the RMSE columns and the models with FT in the label.
-    filtered_df = df[['epoch', 'train_ratio', 'label'] + rmse_columns]
+    # Filter the DataFrame to only include the target metric columns and the models with FT in the label.
+    filtered_df = df[['epoch', 'train_ratio', 'label'] + per_class_columns]
     filtered_df = filtered_df[filtered_df['label'].str.contains('FT')]
     filtered_df = filtered_df[filtered_df['label'].str.contains('Barlow') | filtered_df['label'].str.contains(args.ref)]
     if args.verbose:
         print(f'\nFILTERED DF:\n{filtered_df}')
 
     # Melt the DataFrame.
-    melted_df = filtered_df.melt(id_vars=['epoch', 'train_ratio', 'label'], var_name='rmse_class', value_name='rmse')
+    melted_df = filtered_df.melt(id_vars=['epoch', 'train_ratio', 'label'], var_name='class', value_name=metric)
 
     # Extract class number.
-    melted_df['rmse_class'] = melted_df['rmse_class'].str.extract('(\d+)$').astype(int)
+    melted_df['class'] = melted_df['class'].str.extract('(\d+)$').astype(int)
     if args.verbose:
         print(f'\nMELTED DF:\n{melted_df}')
 
-    # Find the best model per train_ratio and rmse_class.
-    best_models = melted_df.loc[melted_df.groupby(['train_ratio', 'rmse_class'])['rmse'].idxmin()]
+    # Sort the DataFrame by train_ratio and class.
+    melted_df = melted_df.sort_values(by=['label', 'train_ratio', 'class'], ascending=False)
+    # melted_df.to_csv('melted_df.csv', index=False)
+
+    # Find the best model per train_ratio and class.
+    if metric == 'rmse_per_class':
+        best_models = melted_df.loc[melted_df.groupby(['train_ratio', 'class'])[metric].idxmin()]
+    else:
+        best_models = melted_df.loc[melted_df.groupby(['train_ratio', 'class'])[metric].idxmax()]
     if args.verbose:
         print(f'\nBEST MODELS:\n{best_models}')
 
@@ -121,7 +135,7 @@ def main(args: argparse.Namespace) -> bool:
     fig, ax = plt.subplots(figsize=(18, 6))
 
     train_ratios = best_models['train_ratio'].unique()
-    num_classes = best_models['rmse_class'].nunique()
+    num_classes = best_models['class'].nunique()
     bar_width = 0.05  # Width of each bar
     bar_spacing = 0.025  # Space between bars within the same train ratio
 
@@ -129,27 +143,35 @@ def main(args: argparse.Namespace) -> bool:
         subset = best_models[best_models['train_ratio'] == train_ratio]
         for j, (index, row) in enumerate(subset.iterrows()):
             bar_position = i + j * (bar_width + bar_spacing) - (num_classes / 2) * (bar_width + bar_spacing)
-            plt.bar(bar_position, row['rmse'], width=bar_width, color=color_mapping[row['label']], zorder=3)
-            plt.text(bar_position, -0.01, f'{row["rmse_class"]}', ha='center', va='top', fontsize=MARKER_SIZE)
+            plt.bar(bar_position, row[metric], width=bar_width, color=color_mapping[row['label']], zorder=3)
+            plt.text(bar_position, -0.01, f"{row['class']}", ha='center', va='top', fontsize=MARKER_SIZE)
 
     # Create a custom legend.
     handles = [plt.Rectangle((0, 0), 1, 1, color=color_mapping[label]) for label in unique_labels]
-    plt.legend(handles, unique_labels, title="Model") #, bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.legend(handles, unique_labels, title='Model') #, bbox_to_anchor=(1.05, 1), loc='upper left')
 
     # Add additional information to the plot.
     plt.xticks(np.arange(len(train_ratios)), train_ratios)
     plt.xlabel('Train ratio (%)')
-    plt.ylim(-0.04, 0.3)
-    plt.ylabel('RMSE per class')
+    y_max = max(best_models[metric]) + max(best_models[metric]) * 0.3
+    plt.ylim(-0.04, y_max)
+    plt.ylabel(ylabel)
     plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25, zorder=0)
     plt.subplots_adjust(bottom=0.15)
     plt.tight_layout()
-    plt.show()
+
+    # Save figure or show.
+    if args.save_fig:
+        save_path = os.path.join(
+            args.output,
+            f'exp_{task}_m={metric}.{args.save_fig}'
+        )
+        fig.savefig(save_path, bbox_inches='tight')
+        print(f'Figure saved at {save_path}')
+    else:
+        plt.show()
 
     return 0
-
-
-
 
 
 if __name__ == '__main__':
