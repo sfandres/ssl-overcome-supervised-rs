@@ -8,6 +8,25 @@ import os
 import sys
 
 
+MARKER_SIZE = 12
+SMALL_SIZE = 18
+MEDIUM_SIZE = 22
+BIGGER_SIZE = 24
+
+
+def set_plt() -> None:
+    """
+    Configure matplotlib figures.
+    """
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=MEDIUM_SIZE)    # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+
 def get_args() -> argparse.Namespace:
     """
     Parse and retrieve command-line arguments.
@@ -30,7 +49,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument('--bar', '-b', choices=['both', 'best', 'diff'],
                         help='type of bar plot.')
 
-    parser.add_argument('--ref', '-r', choices=['Random', 'ImageNet'],
+    parser.add_argument('--ref', '-r', choices=['Random', 'ImageNet'], default='ImageNet',
                         help='model to compare with Barlow Twins.')
 
     parser.add_argument('--save_fig', '-sf', type=str, choices=['png', 'pdf'],
@@ -60,6 +79,10 @@ def main(args: argparse.Namespace) -> bool:
             arg_name_col = f'{arg_name}:'
             print(f'{arg_name_col.ljust(20)} {args_dict[arg_name]}')
 
+    # Configure matplotlib.
+    set_plt()
+
+    # Read the input DataFrames.
     df = pd.read_csv(args.input_df_means_path)
     # df_stds = pd.read_csv(args.input_df_means_path.replace('means', 'stds'))
 
@@ -67,13 +90,14 @@ def main(args: argparse.Namespace) -> bool:
     rmse_columns = [col for col in df.columns if 'rmse_per_class' in col]
 
     # Filter the DataFrame to only include the RMSE columns and the models with FT in the label.
-    filtered_df = df[['train_ratio', 'label'] + rmse_columns]
+    filtered_df = df[['epoch', 'train_ratio', 'label'] + rmse_columns]
     filtered_df = filtered_df[filtered_df['label'].str.contains('FT')]
+    filtered_df = filtered_df[filtered_df['label'].str.contains('Barlow') | filtered_df['label'].str.contains(args.ref)]
     if args.verbose:
         print(f'\nFILTERED DF:\n{filtered_df}')
 
     # Melt the DataFrame.
-    melted_df = filtered_df.melt(id_vars=['train_ratio', 'label'], var_name='rmse_class', value_name='rmse')
+    melted_df = filtered_df.melt(id_vars=['epoch', 'train_ratio', 'label'], var_name='rmse_class', value_name='rmse')
 
     # Extract class number.
     melted_df['rmse_class'] = melted_df['rmse_class'].str.extract('(\d+)$').astype(int)
@@ -106,7 +130,7 @@ def main(args: argparse.Namespace) -> bool:
         for j, (index, row) in enumerate(subset.iterrows()):
             bar_position = i + j * (bar_width + bar_spacing) - (num_classes / 2) * (bar_width + bar_spacing)
             plt.bar(bar_position, row['rmse'], width=bar_width, color=color_mapping[row['label']], zorder=3)
-            plt.text(bar_position, -0.01, f'{row["rmse_class"]}', ha='center', va='top', fontsize=10)
+            plt.text(bar_position, -0.01, f'{row["rmse_class"]}', ha='center', va='top', fontsize=MARKER_SIZE)
 
     # Create a custom legend.
     handles = [plt.Rectangle((0, 0), 1, 1, color=color_mapping[label]) for label in unique_labels]
@@ -115,7 +139,7 @@ def main(args: argparse.Namespace) -> bool:
     # Add additional information to the plot.
     plt.xticks(np.arange(len(train_ratios)), train_ratios)
     plt.xlabel('Train ratio (%)')
-    plt.ylim(-0.04, 0.4)
+    plt.ylim(-0.04, 0.3)
     plt.ylabel('RMSE per class')
     plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25, zorder=0)
     plt.subplots_adjust(bottom=0.15)
