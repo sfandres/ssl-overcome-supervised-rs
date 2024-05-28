@@ -182,10 +182,6 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
-
-    # Get arguments.
-    args = get_args()
-
-    # Main function.
-    sys.exit(main(args))
+if __name__ == '__main__':
+    args = get_args()                                                                                       # Parse and retrieve command-line arguments.
+    sys.exit(main(args))                                                                                    # Execute the main function.
