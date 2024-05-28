@@ -164,14 +164,14 @@ def main(args):
     df_means = df_means.reset_index(drop=True)
     df_means['label'] = df_means.apply(create_new_column_pandas, axis=1)
     # df_means = df_means.round(3)
-    df_means.to_csv(os.path.join(args.output, f'exp_{task}_means.csv'), index=False)
+    df_means.to_csv(os.path.join(args.output, f'exp_{task}_best_results_means.csv'), index=False)
     print(df_means)
 
     df_stds = pd.DataFrame(dfs_std)
     df_stds['epoch'] = df_stds['epoch'].astype(int)
     df_stds = df_stds.reset_index(drop=True)
     # df_stds = df_stds.round(3)
-    df_stds.to_csv(os.path.join(args.output, f'exp_{task}_stds.csv'), index=False)
+    df_stds.to_csv(os.path.join(args.output, f'exp_{task}_best_results_stds.csv'), index=False)
     print(df_stds)
 
     # Plotting.
