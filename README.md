@@ -98,7 +98,7 @@ both_mean_std_csv_files/
 │      ├── ...
 ```
 
-* The generated csv file can be plotted using the script [sc_2_plot_final_graphs_v2.py](scripts/sc_2_plot_final_graphs_v2.py). This script requires inputting the parent folder (`multiclass/` or `multilabel/`) and adjusting the hard-coded `x` variable to the current number of percentages available. It searches for the best results obtained in the validation dataset and then generates a **new *dataframe* with the final results used for the graphs**, as well as the line graph showing the training ratios versus the results of the desired final metric:
+* The generated csv file can be plotted using the script [sc_2_plot_final_graphs_v2.py](scripts/sc_2_plot_final_graphs_v2.py). This script requires inputting the parent folder (`multiclass/` or `multilabel/`) and adjusting the hard-coded `x` variable to the current number of percentages available. It searches for the best results obtained in the validation dataset and then generates a **new *dataframe* with the final results used for the graphs**, as well as the **final line graphs** showing the training ratios versus the results of the desired final metric:
 ```
 python3 scripts/sc_2_plot_final_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/02_avg_csv_files/multiclass/ -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -m f1_macro -sf pdf
 python3 scripts/sc_2_plot_final_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/02_avg_csv_files/multilabel/ -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -m rmse -sf pdf
