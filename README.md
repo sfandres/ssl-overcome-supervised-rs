@@ -62,11 +62,11 @@ If `RayTune` is selected, the script generates a csv file including the best con
 sbatch finetuning_slurm.sh
 ```
 
-This script runs the `finetuning_run_localhost.sh`. It should be configured with only one or two `train_rates` to launch several Slurm jobs. The Python script accepts the desired number of samples per class as input. Upon completion of the jobs, several files will be generated (one per seed) inside the output folder.
+This script runs the [finetuning_run_localhost.sh](finetuning_run_localhost.sh). It should be configured with only one or two `train_rates` to launch several Slurm jobs. The Python script accepts the desired number of samples per class as input. Upon completion of the jobs, several files will be generated (one per seed) inside the output folder.
 
-* The mean and std values per trial can be generated using the script `compute_mean_std_from_csv.py` (see the `-h` for help) as follows:
+* The mean and std values per trial can be generated using the script [sc_compute_mean_std_from_csv.py](scripts/sc_compute_mean_std_from_csv.py) (see the `-h` for help) as follows:
 ```
-python3 compute_mean_std_from_csv.py -i <parent_folder_of_the_csv_files> -o <desired_output_folder>
+python3 sc_compute_mean_std_from_csv.py -i <parent_folder_of_the_csv_files> -o <desired_output_folder>
 ```
 where `parent_folder_of_the_csv_files` should target the `multiclass/` and then `multilabel/` folders following the structure below:
 ```
