@@ -141,11 +141,11 @@ def main(args):
 
             # Find the row with the maximum value in the metric column.
             if args.metric == 'rmse' or args.metric == 'mae':
-                found_df = df[df[args.metric] == df[args.metric].min()]
+                found_df = df[df['val_' + args.metric] == df['val_' + args.metric].min()]
                 found_row = found_df.iloc[0]
                 found_row_epoch = found_df.iloc[0]['epoch']
             else:
-                found_df = df[df[args.metric] == df[args.metric].max()]
+                found_df = df[df['val_' + args.metric] == df['val_' + args.metric].max()]
                 found_row = found_df.iloc[0]
                 found_row_epoch = found_df.iloc[0]['epoch']
 
@@ -209,8 +209,8 @@ def main(args):
                 label = f'FS-Random-{transfer}'
 
             # Plot the data.
-            plt.plot(subset['train_ratio'], subset[args.metric], label=label, color=dict_color_models[model], marker=dict_marker_models[transfer], linestyle=dict_lines_models[transfer])
-            # plt.fill_between(subset['train_ratio'], subset[args.metric]-subset_std[args.metric], subset[args.metric]+subset_std[args.metric], alpha=0.125, color=dict_color_models[model])
+            plt.plot(subset['train_ratio'], subset['test_' + args.metric], label=label, color=dict_color_models[model], marker=dict_marker_models[transfer], linestyle=dict_lines_models[transfer])
+            plt.fill_between(subset['train_ratio'], subset['test_' + args.metric]-subset_std['test_' + args.metric], subset['test_' + args.metric]+subset_std['test_' + args.metric], alpha=0.125, color=dict_color_models[model])
 
     # Customize the plot
     plt.xlabel('Train ratio (%)', labelpad=15)
