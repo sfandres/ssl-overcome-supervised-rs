@@ -166,8 +166,10 @@ def main(args):
     print(df_means)
 
     df_stds = pd.DataFrame(dfs_std)
-    df_stds['epoch'] = df_stds['epoch'].astype(int)
+    # df_stds['epoch'] = df_stds['epoch'].astype(int)
     df_stds = df_stds.reset_index(drop=True)
+    cols_to_copy = ['file_name', 'train_ratio', 'model', 'transfer', 'weights', 'label']
+    df_stds[cols_to_copy] = df_means[cols_to_copy]
     df_stds.to_csv(os.path.join(args.output, f'exp_{task}_best_results_stds.csv'), index=False)
     print(df_stds)
 
