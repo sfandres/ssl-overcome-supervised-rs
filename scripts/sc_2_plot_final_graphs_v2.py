@@ -139,15 +139,14 @@ def main(args):
             df['transfer'] = features[10]
             df['weights'] = features[12]
 
-            # Find the row with the maximum value in the metric column.
+            # Find the row with the max/min value in the metric column.
             if args.metric == 'rmse' or args.metric == 'mae':
                 found_df = df[df['val_' + args.metric] == df['val_' + args.metric].min()]
-                found_row = found_df.iloc[0]
-                found_row_epoch = found_df.iloc[0]['epoch']
             else:
                 found_df = df[df['val_' + args.metric] == df['val_' + args.metric].max()]
-                found_row = found_df.iloc[0]
-                found_row_epoch = found_df.iloc[0]['epoch']
+
+            found_row = found_df.iloc[0]
+            found_row_epoch = found_df.iloc[0]['epoch']
 
             # Find the corresponding std row.
             std_file_name = file_name.replace('pp_mean_', 'pp_std_')
@@ -163,14 +162,12 @@ def main(args):
     df_means = pd.DataFrame(dfs_mean)
     df_means = df_means.reset_index(drop=True)
     df_means['label'] = df_means.apply(create_new_column_pandas, axis=1)
-    # df_means = df_means.round(3)
     df_means.to_csv(os.path.join(args.output, f'exp_{task}_best_results_means.csv'), index=False)
     print(df_means)
 
     df_stds = pd.DataFrame(dfs_std)
     df_stds['epoch'] = df_stds['epoch'].astype(int)
     df_stds = df_stds.reset_index(drop=True)
-    # df_stds = df_stds.round(3)
     df_stds.to_csv(os.path.join(args.output, f'exp_{task}_best_results_stds.csv'), index=False)
     print(df_stds)
 
