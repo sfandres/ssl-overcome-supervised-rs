@@ -116,7 +116,6 @@ def main(args: argparse.Namespace) -> bool:
 
     # Sort the DataFrame by train_ratio and class.
     melted_df = melted_df.sort_values(by=['label', 'train_ratio', 'class'], ascending=False)
-    # melted_df.to_csv('melted_df.csv', index=False)
 
     # Find the best model per train_ratio and class.
     if metric == 'rmse_per_class':
@@ -128,8 +127,11 @@ def main(args: argparse.Namespace) -> bool:
 
     # Create a color mapping for each model.
     unique_labels = sorted(best_models['label'].unique(), reverse=True)
-    colors = ['blue', 'orange', 'green']
-    color_mapping = dict(zip(unique_labels, colors))
+    # colors = ['blue', 'orange', 'green']
+    # color_mapping = dict(zip(unique_labels, colors))
+    color_mapping = {'SSL-BarlowTwins-FT': 'blue',
+                     'FS-ImageNet-FT': 'orange',
+                     'FS-Random-FT': 'green'}
 
     # Map colors to the best models.
     best_models['color'] = best_models['label'].map(color_mapping)
