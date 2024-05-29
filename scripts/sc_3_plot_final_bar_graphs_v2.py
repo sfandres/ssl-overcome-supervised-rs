@@ -165,7 +165,7 @@ def main(args: argparse.Namespace) -> bool:
     if args.save_fig:
         save_path = os.path.join(
             args.output,
-            f'exp_{task}_m={metric}.{args.save_fig}'
+            f'exp_{task}_m={metric}_r={args.ref}.{args.save_fig}'
         )
         fig.savefig(save_path, bbox_inches='tight')
         print(f'Figure saved at {save_path}')
