@@ -83,9 +83,11 @@ def main(args: argparse.Namespace) -> bool:
     if task == 'multiclass':
         metric = 'f1_per_class'
         ylabel = 'F1 per class'
+        ymin = -0.07
     elif task == 'multilabel':
         metric = 'rmse_per_class'
         ylabel = 'RMSE per class'
+        ymin = -0.03
     print(f"{'Task:'.ljust(16)}{task}") if args.verbose else None
 
     # Read the input DataFrames.
@@ -155,7 +157,7 @@ def main(args: argparse.Namespace) -> bool:
     plt.xticks(np.arange(len(train_ratios)), train_ratios)
     plt.xlabel('Train ratio (%)')
     y_max = max(best_models[metric]) + max(best_models[metric]) * 0.3
-    plt.ylim(-0.07, y_max)
+    plt.ylim(ymin, y_max)
     plt.ylabel(ylabel)
     plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25, zorder=0)
     plt.subplots_adjust(bottom=0.15)
