@@ -104,13 +104,20 @@ python3 scripts/sc_2_plot_final_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/
 python3 scripts/sc_2_plot_final_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/02_avg_csv_files/multilabel/ -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -m rmse -sf pdf
 ```
 
-To obtain the bar plots related to the F1 and RMSE results per class, run the following commands:
+* To obtain the bar plots related to the F1 and RMSE results per class, run the following commands:
 ```
 python3 scripts/sc_3_plot_final_bar_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multiclass_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -r Random -sf pdf
 python3 scripts/sc_3_plot_final_bar_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multiclass_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -r ImageNet -sf pdf
 python3 scripts/sc_3_plot_final_bar_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multilabel_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -r Random -sf pdf
 python3 scripts/sc_3_plot_final_bar_graphs_v2.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multilabel_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -r ImageNet -sf pdf
 ```
+
+* To generate the tables for LaTeX, we use:
+```
+python3 scripts/sc_4_take_acc_values_from_csv_tables_v2.py -i /home/sfandres/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multiclass_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -v
+python3 scripts/sc_4_take_acc_values_from_csv_tables_v2.py -i /home/sfandres/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multilabel_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -v
+```
+
 
 
 
