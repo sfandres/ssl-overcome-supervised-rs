@@ -125,7 +125,7 @@ def main(args: argparse.Namespace) -> bool:
         print(f'\nBEST MODELS:\n{best_models}')
 
     # Create a color mapping for each model.
-    unique_labels = best_models['label'].unique()
+    unique_labels = sorted(best_models['label'].unique(), reverse=True)
     colors = ['blue', 'orange', 'green']
     color_mapping = dict(zip(unique_labels, colors))
 
