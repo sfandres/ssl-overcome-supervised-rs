@@ -94,14 +94,15 @@ def main(args: argparse.Namespace) -> bool:
 
     # Identify the columns that represent the target metric per class (only test columns are considered).
     per_class_columns = [col for col in df.columns if f'test_{metric}' in col]
-    print(f'\nPER CLASS COLUMNS:\n{per_class_columns}')
+    if args.verbose:
+        print(f'\nPER CLASS COLUMNS:\n{per_class_columns}')
 
     # Filter the DataFrame to only include the target metric columns and the models with FT in the label.
     filtered_df = df[['epoch', 'train_ratio', 'label'] + per_class_columns]
     filtered_df = filtered_df[filtered_df['label'].str.contains('FT')]
     filtered_df = filtered_df[filtered_df['label'].str.contains('Barlow') | filtered_df['label'].str.contains(args.ref)]
     if args.verbose:
-        print(f'\nFILTERED DF:\n{filtered_df}')
+        print(f'\nFILTERED DF (ref: {args.ref}):\n{filtered_df}')
 
     # Melt the DataFrame.
     melted_df = filtered_df.melt(id_vars=['epoch', 'train_ratio', 'label'], var_name='class', value_name=metric)
@@ -154,7 +155,7 @@ def main(args: argparse.Namespace) -> bool:
     plt.xticks(np.arange(len(train_ratios)), train_ratios)
     plt.xlabel('Train ratio (%)')
     y_max = max(best_models[metric]) + max(best_models[metric]) * 0.3
-    plt.ylim(-0.04, y_max)
+    plt.ylim(-0.07, y_max)
     plt.ylabel(ylabel)
     plt.grid(axis='y', color='gainsboro', linestyle='-', linewidth=0.25, zorder=0)
     plt.subplots_adjust(bottom=0.15)
