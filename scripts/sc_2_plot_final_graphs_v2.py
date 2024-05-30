@@ -173,6 +173,9 @@ def main(args):
     df_stds.to_csv(os.path.join(args.output, f'exp_{task}_best_results_stds.csv'), index=False)
     print(df_stds)
 
+    # New dataframe.
+    df_plot = pd.DataFrame()
+
     # Plotting.
     fig = plt.figure(figsize=(18, 6))
 
@@ -207,6 +210,9 @@ def main(args):
             elif model == 'Random':
                 label = f'FS-Random-{transfer}'
 
+            # Save the results of the graph.
+            df_plot[label] = subset['test_' + args.metric].reset_index(drop=True)
+
             # Plot the data.
             plt.plot(subset['train_ratio'], subset['test_' + args.metric], label=label, color=dict_color_models[model], marker=dict_marker_models[transfer], linestyle=dict_lines_models[transfer])
             plt.fill_between(subset['train_ratio'], subset['test_' + args.metric]-subset_std['test_' + args.metric], subset['test_' + args.metric]+subset_std['test_' + args.metric], alpha=0.125, color=dict_color_models[model])
@@ -229,6 +235,49 @@ def main(args):
         print(f'Figure saved at {save_path}')
     else:
         plt.show()
+
+
+    # Calculate the difference between the models.
+    # =========================================
+
+    print(f'\n{df_plot}')
+
+    # Creating a new DataFrame with the mean values as rows while keeping the column structure
+    column_means = df_plot.mean().round(3)
+    column_means_df = pd.DataFrame(column_means).T
+    print(f'\n{column_means_df}')
+
+    model_ref = 'SSL-BarlowTwins-LP'
+
+    model_base = 'FS-Random-LP'
+    df_plot1 = column_means_df[[model_base, model_ref]].copy()
+    df_plot1['Diff'] = column_means_df[model_ref] - column_means_df[model_base]
+    df_plot1['Percentage'] = (df_plot1['Diff'] / column_means_df[model_base] * 100).round(2)
+    print(f'\n{df_plot1}')
+
+    model_base = 'FS-ImageNet-LP'
+    df_plot1 = column_means_df[[model_base, model_ref]].copy()
+    df_plot1['Diff'] = column_means_df[model_ref] - column_means_df[model_base]
+    df_plot1['Percentage'] = (df_plot1['Diff'] / column_means_df[model_base] * 100).round(2)
+    print(f'\n{df_plot1}')
+
+    model_ref = 'SSL-BarlowTwins-FT'
+
+    model_base = 'FS-Random-FT'
+    df_plot1 = column_means_df[[model_base, model_ref]].copy()
+    df_plot1['Diff'] = column_means_df[model_ref] - column_means_df[model_base]
+    df_plot1['Percentage'] = (df_plot1['Diff'] / column_means_df[model_base] * 100).round(2)
+    print(f'\n{df_plot1}')
+
+    model_base = 'FS-ImageNet-FT'
+    df_plot1 = column_means_df[[model_base, model_ref]].copy()
+    df_plot1['Diff'] = column_means_df[model_ref] - column_means_df[model_base]
+    df_plot1['Percentage'] = (df_plot1['Diff'] / column_means_df[model_base] * 100).round(2)
+    print(f'\n{df_plot1}\n')
+
+    # =========================================
+
+    return 0
 
 
 if __name__ == "__main__":
