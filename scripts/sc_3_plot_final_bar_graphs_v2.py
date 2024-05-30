@@ -117,6 +117,9 @@ def main(args: argparse.Namespace) -> bool:
     # Sort the DataFrame by train_ratio and class.
     melted_df = melted_df.sort_values(by=['label', 'train_ratio', 'class'], ascending=False)
 
+    # Round.
+    melted_df[metric] = melted_df[metric].round(3)
+
     # Find the best model per train_ratio and class.
     if metric == 'rmse_per_class':
         best_models = melted_df.loc[melted_df.groupby(['train_ratio', 'class'])[metric].idxmin()]
