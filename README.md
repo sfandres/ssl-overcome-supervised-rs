@@ -118,6 +118,11 @@ python3 scripts/sc_4_generate_latex_tables.py -i /home/sfandres/Documents/Experi
 python3 scripts/sc_4_generate_latex_tables.py -i /home/sfandres/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multilabel_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -v
 ```
 
+* Finally, to create the class-wise difference graphs, we run the following code:
+```
+python3 scripts/sc_5_plot_discussion_bar_graphs.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multiclass_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -r ImageNet -v -sf pdf
+python3 scripts/sc_5_plot_discussion_bar_graphs.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multilabel_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -r ImageNet -v -sf pdf
+```
 
 
 
