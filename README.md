@@ -43,7 +43,7 @@ conda -V
 ```
 
 ### Installation
-The environment.yml file contains all the necessary packages to use this project inside the environment with the name `ssl-conda` provided. You can create a conda environment from the [env.yml](env.yml) file provided as follows:
+The environment.yml file contains all the necessary packages to use this project inside the environment with the name `ssl-os-rs` provided. You can create a conda environment from the [env.yml](env.yml) file provided as follows:
 ```
 conda env create -f env.yml
 ```
@@ -51,7 +51,7 @@ conda env create -f env.yml
 ### Usage
 Activate the conda environment:
 ```
-conda activate ssl-conda
+conda activate ssl-os-rs
 ```
 
 Now you can run any Python script.
