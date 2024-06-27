@@ -6,7 +6,7 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![LinkedIn][linkedin-shield]][linkedin-url]
+[![ORCID][orcid-shield]][orcid-url] [![GoogleScholar][google-scholar-shield]][google-scholar-url] [![GitHub][github-shield]][github-url] [![LinkedIn][linkedin-shield]][linkedin-url]
 
 # Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing
 This repository contains the official implementation of the paper <i>[Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing][paper-doi]</i>, published in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing.
@@ -164,6 +164,12 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[orcid-shield]: https://img.shields.io/badge/orcid-A6CE39?style=for-the-badge&logo=orcid&logoColor=white
+[orcid-url]: https://orcid.org/0000-0001-6743-3570
+[google-scholar-shield]: https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&logo=google-scholar&logoColor=white
+[google-scholar-url]: https://scholar.google.es/citations?user=AYtHK3EAAAAJ&hl=en
+[github-shield]: https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white
+[github-url]: https://github.com/sfandres94
 [linkedin-shield]: https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
 [linkedin-url]: https://linkedin.com/in/sfandres
 [paper-doi]: https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=4609443
