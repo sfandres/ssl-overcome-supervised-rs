@@ -1,16 +1,13 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files.
 .ipynb_checkpoints
 __pycache__
 
-# Conda environments
-
-# Custom folders
+# Custom folders.
 input/*
 !input/best_configs
 output
-results_paper_stratified/back-up_final_pretraining
 
-# Specific file extensions
+# Specific file extensions.
 *.out
 *.png
 *.pdf
