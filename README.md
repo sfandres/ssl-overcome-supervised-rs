@@ -8,11 +8,19 @@
 -->
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
-# SSL Evaluation on Fraction Estimation
-Official repo of the self-supervised learning research paper:<br>
-* <i>Evaluation of Self-Supervised Learning Models for Land-Use and Land-Cover Fraction Estimation on RGB Satellite Tiles</i>
+# Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing
+This repository contains the official implementation of the paper <i>[Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing][paper-doi]</i>, published in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing.
 
-Current status: <i>Undergoing review</i>.
+If you use this code or find our work useful, please consider citing our paper:
+```
+@article{sanchez2021vpp,
+    title={Self-supervised learning on small in-domain datasets can overcome supervised learning in remote sensing},
+    author={Sanchez-Fernandez, Andres J and Moreno-Alvarez, Sergio and Rico-Gallego, Juan A and Tabik, Siham},
+    journal={IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing},
+    year={2024},
+    publisher={IEEE}
+}
+```
 
 ## Table of contents
 * [Getting started](#getting-started)
@@ -158,3 +166,4 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [linkedin-shield]: https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
 [linkedin-url]: https://linkedin.com/in/sfandres
+[paper-doi]: https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=4609443
