@@ -8,7 +8,7 @@
 -->
 [![ORCID][orcid-shield]][orcid-url] [![GoogleScholar][google-scholar-shield]][google-scholar-url] [![GitHub][github-shield]][github-url] [![LinkedIn][linkedin-shield]][linkedin-url]
 
-# SSL on Small In-Domain Datasets Can Overcome Supervised Learning in RS
+# Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing
 This repository contains the official implementation of the paper <i>[Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing][paper-doi]</i>, published in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing.
 
 If you use this code or find our work useful, please consider citing our paper:
