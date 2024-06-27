@@ -6,13 +6,21 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
-[![LinkedIn][linkedin-shield]][linkedin-url]
+[![ORCID][orcid-shield]][orcid-url] [![GoogleScholar][google-scholar-shield]][google-scholar-url] [![GitHub][github-shield]][github-url] [![LinkedIn][linkedin-shield]][linkedin-url]
 
-# SSL Evaluation on Fraction Estimation
-Official repo of the self-supervised learning research paper:<br>
-* <i>Evaluation of Self-Supervised Learning Models for Land-Use and Land-Cover Fraction Estimation on RGB Satellite Tiles</i>
+# Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing
+This repository contains the official implementation of the paper <i>[Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing][paper-doi]</i>, published in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing.
 
-Current status: <i>Undergoing review</i>.
+If you use this code or find our work useful, please consider citing our paper:
+```
+@article{sanchez2024ssl,
+    title={Self-supervised learning on small in-domain datasets can overcome supervised learning in remote sensing},
+    author={Sanchez-Fernandez, Andres J and Moreno-Alvarez, Sergio and Rico-Gallego, Juan A and Tabik, Siham},
+    journal={IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing},
+    year={2024},
+    publisher={IEEE}
+}
+```
 
 ## Table of contents
 * [Getting started](#getting-started)
@@ -124,37 +132,17 @@ python3 scripts/sc_5_plot_discussion_bar_graphs.py -i ~/Documents/Experiments/SS
 python3 scripts/sc_5_plot_discussion_bar_graphs.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multilabel_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -r ImageNet -v -sf pdf
 ```
 
-
-
----
----
-
-
-
-
-Some examples of the above command follow:
-* Experiment 1:
-```
-python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_macro --save_fig pdf --ref Random
-```
-* Experiment 2:
-```
-python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_per_class --save_fig pdf --ref ImageNet --bar best
-```
-* Experiment 3:
-```
-python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_per_class --save_fig pdf --ref ImageNet --bar diff
-```
-
-To generate the tables with all values, the script `take_acc_values_from_csv_v2.py` is used. A use example follows:
-```
-python3 scripts/take_acc_values_from_csv_tables.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multilabel/ -o ~/Downloads/
-```
-
 ## License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[orcid-shield]: https://img.shields.io/badge/orcid-A6CE39?style=for-the-badge&logo=orcid&logoColor=white
+[orcid-url]: https://orcid.org/0000-0001-6743-3570
+[google-scholar-shield]: https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&logo=google-scholar&logoColor=white
+[google-scholar-url]: https://scholar.google.es/citations?user=AYtHK3EAAAAJ&hl=en
+[github-shield]: https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white
+[github-url]: https://github.com/sfandres94
 [linkedin-shield]: https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
 [linkedin-url]: https://linkedin.com/in/sfandres
+[paper-doi]: https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=4609443
