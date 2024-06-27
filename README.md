@@ -22,6 +22,8 @@ If you use this code or find our work useful, please consider citing our paper:
 }
 ```
 
+The paper was authored by [Andres J. Sanchez-Fernandez][orcid-url] (University of Extremadura), [Sergio Moreno-Álvarez](https://orcid.org/0000-0002-1858-9920) (National University of Distance Education), [Juan A. Rico-Gallego](https://orcid.org/0000-0002-4264-7473) (CénitS-COMPUTAEX), and [Siham Tabik](https://orcid.org/0000-0003-4093-5356) (University of Granada).
+
 ## Table of contents
 * [Getting started](#getting-started)
   * [Prerequisites](#prerequisites)
