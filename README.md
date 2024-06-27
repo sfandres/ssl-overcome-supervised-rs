@@ -13,7 +13,7 @@ This repository contains the official implementation of the paper <i>[Self-Super
 
 If you use this code or find our work useful, please consider citing our paper:
 ```
-@article{sanchez2021vpp,
+@article{sanchez2024ssl,
     title={Self-supervised learning on small in-domain datasets can overcome supervised learning in remote sensing},
     author={Sanchez-Fernandez, Andres J and Moreno-Alvarez, Sergio and Rico-Gallego, Juan A and Tabik, Siham},
     journal={IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing},
