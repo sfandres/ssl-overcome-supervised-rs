@@ -132,33 +132,6 @@ python3 scripts/sc_5_plot_discussion_bar_graphs.py -i ~/Documents/Experiments/SS
 python3 scripts/sc_5_plot_discussion_bar_graphs.py -i ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/exp_multilabel_best_results_means.csv -o ~/Documents/Experiments/SSL-BSU/02_v3_R1_Fine-tuning_new_results_val_test/03_dfs_final_results/ -r ImageNet -v -sf pdf
 ```
 
-
-
----
----
-
-
-
-
-Some examples of the above command follow:
-* Experiment 1:
-```
-python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_macro --save_fig pdf --ref Random
-```
-* Experiment 2:
-```
-python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_per_class --save_fig pdf --ref ImageNet --bar best
-```
-* Experiment 3:
-```
-python3 scripts/plot_final_graphs.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multiclass/ --metric f1_per_class --save_fig pdf --ref ImageNet --bar diff
-```
-
-To generate the tables with all values, the script `take_acc_values_from_csv_v2.py` is used. A use example follows:
-```
-python3 scripts/take_acc_values_from_csv_tables.py -i ~/Documents/Experiments_2024_TESSL/02_Fine-tuning_imbalanced_dataloader/02_2_avg_csv_files_truncated_100e/multilabel/ -o ~/Downloads/
-```
-
 ## License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
