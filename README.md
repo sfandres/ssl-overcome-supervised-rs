@@ -40,14 +40,18 @@ Anaconda distribution is recommended. You can install it following the [official
 
 Check if Anaconda is installed:
 ```
-conda --version
 conda -V
 ```
 
 ### Installation
-The environment.yml file contains all the necessary packages to use this project inside the environment with the name `ssl-os-rs` provided. You can create a conda environment from the [env.yml](env.yml) file provided as follows:
+The [env.yml](env.yml) file contains all the packages needed to use this project. You can create your own environment from the file provided as follows:
 ```
-conda env create -f env.yml
+conda env create -f environment.yml
+```
+
+Check that the new environment has been installed correctly:
+```
+conda env list
 ```
 
 ### Usage
