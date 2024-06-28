@@ -44,7 +44,7 @@ conda -V
 ```
 
 ### Installation
-The [env.yml](env.yml) file contains all the packages needed to use this project. You can create your own environment from the file provided as follows:
+The [environment.yml](environment.yml) file contains all the packages needed to use this project. You can create your own environment from the file provided as follows:
 ```
 conda env create -f environment.yml
 ```
