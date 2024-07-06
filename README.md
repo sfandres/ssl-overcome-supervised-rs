@@ -163,4 +163,4 @@ This work is licensed under a
 [github-url]: https://github.com/sfandres94
 [linkedin-shield]: https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
 [linkedin-url]: https://linkedin.com/in/sfandres
-[paper-doi]: https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=4609443
+[paper-doi]: https://doi.org/10.1109/JSTARS.2024.3421622
