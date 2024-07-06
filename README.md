@@ -9,7 +9,7 @@
 [![ORCID][orcid-shield]][orcid-url] [![GoogleScholar][google-scholar-shield]][google-scholar-url] [![GitHub][github-shield]][github-url] [![LinkedIn][linkedin-shield]][linkedin-url]
 
 # Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing
-This repository contains the official implementation of the paper <i>[Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing][paper-doi]</i>, published in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing.
+This repository contains the official implementation of the paper <i>Self-Supervised Learning on Small In-Domain Datasets Can Overcome Supervised Learning in Remote Sensing</i>, published in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing.
 
 If you use this code or find our work useful, please consider citing our paper:
 ```
@@ -24,7 +24,7 @@ If you use this code or find our work useful, please consider citing our paper:
 
 The paper was authored by [Andres J. Sanchez-Fernandez][orcid-url] (University of Extremadura), [Sergio Moreno-Álvarez](https://orcid.org/0000-0002-1858-9920) (National University of Distance Education), [Juan A. Rico-Gallego](https://orcid.org/0000-0002-4264-7473) (CénitS-COMPUTAEX), and [Siham Tabik](https://orcid.org/0000-0003-4093-5356) (University of Granada).
 
-[![DOI](https://zenodo.org/badge/doi/10.1109/JSTARS.2024.3421622.svg)](https://doi.org/10.1109/JSTARS.2024.3421622)
+[![DOI](https://zenodo.org/badge/doi/10.1109/JSTARS.2024.3421622.svg)][paper-doi]
 
 ## Table of contents
 * [Getting started](#getting-started)
