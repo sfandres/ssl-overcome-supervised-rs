@@ -160,7 +160,7 @@ This work is licensed under a
 [google-scholar-shield]: https://img.shields.io/badge/Google%20Scholar-4285F4?style=for-the-badge&logo=google-scholar&logoColor=white
 [google-scholar-url]: https://scholar.google.es/citations?user=AYtHK3EAAAAJ&hl=en
 [github-shield]: https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white
-[github-url]: https://github.com/sfandres94
+[github-url]: https://github.com/sfandres
 [linkedin-shield]: https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white
 [linkedin-url]: https://linkedin.com/in/sfandres
 [paper-doi]: https://doi.org/10.1109/JSTARS.2024.3421622
